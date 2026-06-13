@@ -31,7 +31,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. For a given firm, the system retrieves Companies House ownership/PSC data plus Contracts Finder and Find a Tender records, matched by Companies House number rather than name
   4. Contract and procurement records are normalised into one internal shape and deduped across Contracts Finder and Find a Tender
   5. Retrieved raw payloads and config persist in the local cache and survive an app restart
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 01-PLAN-01.md — Walking Skeleton: Next.js + Drizzle/SQLite scaffold, full schema, seed (12 firms + 7 topics), sidebar shell, Firms list (DB read) + Add Firm dialog (DB write)
+- [ ] 01-PLAN-02.md — Config CRUD: firm edit/delete, Topics CRUD, read-only Dashboard comparison table
+- [ ] 01-PLAN-03.md — UK data layer: Companies House/Contracts Finder/Find a Tender clients, OCDS normalise+dedup adapter, SQLite job queue, per-firm refresh + Search CH
 **UI hint**: yes
 
 ### Phase 2: Research Engine
@@ -95,7 +99,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Data Foundation | 0/TBD | Not started | - |
+| 1. Data Foundation | 0/3 | Not started | - |
 | 2. Research Engine | 0/TBD | Not started | - |
 | 3. Dashboard & Profiles | 0/TBD | Not started | - |
 | 4. Cross-Cutting Analysis | 0/TBD | Not started | - |
