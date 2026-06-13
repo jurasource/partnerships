@@ -99,19 +99,50 @@ Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CONF-01 through CONF-06 | — | Pending |
-| RES-01 through RES-07 | — | Pending |
-| DATA-01 through DATA-05 | — | Pending |
-| PROF-01 through PROF-07 | — | Pending |
-| DASH-01 through DASH-04 | — | Pending |
-| ANAL-01 through ANAL-04 | — | Pending |
-| CONS-01 through CONS-05 | — | Pending |
+| CONF-01 | Phase 1 | Pending |
+| CONF-02 | Phase 1 | Pending |
+| CONF-03 | Phase 1 | Pending |
+| CONF-04 | Phase 1 | Pending |
+| CONF-05 | Phase 1 | Pending |
+| CONF-06 | Phase 1 | Pending |
+| DATA-01 | Phase 1 | Pending |
+| DATA-02 | Phase 1 | Pending |
+| DATA-03 | Phase 1 | Pending |
+| DATA-04 | Phase 1 | Pending |
+| DATA-05 | Phase 1 | Pending |
+| RES-01 | Phase 2 | Pending |
+| RES-02 | Phase 2 | Pending |
+| RES-03 | Phase 2 | Pending |
+| RES-04 | Phase 2 | Pending |
+| RES-05 | Phase 2 | Pending |
+| RES-06 | Phase 2 | Pending |
+| RES-07 | Phase 2 | Pending |
+| PROF-01 | Phase 3 | Pending |
+| PROF-02 | Phase 3 | Pending |
+| PROF-03 | Phase 3 | Pending |
+| PROF-06 | Phase 3 | Pending |
+| DASH-01 | Phase 3 | Pending |
+| DASH-02 | Phase 3 | Pending |
+| DASH-03 | Phase 3 | Pending |
+| DASH-04 | Phase 3 | Pending |
+| PROF-04 | Phase 4 | Pending |
+| PROF-05 | Phase 4 | Pending |
+| PROF-07 | Phase 4 | Pending |
+| ANAL-01 | Phase 4 | Pending |
+| ANAL-02 | Phase 4 | Pending |
+| ANAL-03 | Phase 4 | Pending |
+| ANAL-04 | Phase 4 | Pending |
+| CONS-01 | Phase 5 | Pending |
+| CONS-02 | Phase 5 | Pending |
+| CONS-03 | Phase 5 | Pending |
+| CONS-04 | Phase 5 | Pending |
+| CONS-05 | Phase 5 | Pending |
 
 **Coverage:**
-- v1 requirements: 34 total
-- Mapped to phases: 0 (roadmap pending)
-- Unmapped: 34 ⚠️
+- v1 requirements: 38 total
+- Mapped to phases: 38 (100%) ✓
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-06-13*
-*Last updated: 2026-06-13 after initial definition*
+*Last updated: 2026-06-13 after roadmap creation*
