@@ -7,12 +7,12 @@
 
 ### Configuration
 
-- [ ] **CONF-01**: User can add a firm with name, capability tags (Nuc/Infra/Cons), and Companies House number via the UI
+- [x] **CONF-01**: User can add a firm with name, capability tags (Nuc/Infra/Cons), and Companies House number via the UI
 - [ ] **CONF-02**: User can edit firm details (name, tags, Companies House number)
 - [ ] **CONF-03**: User can remove a firm from the list
 - [ ] **CONF-04**: User can add a research topic to be investigated per firm
 - [ ] **CONF-05**: User can edit or remove a research topic
-- [ ] **CONF-06**: System pre-seeds the initial 12 firms and 7 topics on first run
+- [x] **CONF-06**: System pre-seeds the initial 12 firms and 7 topics on first run
 
 ### Research Engine
 
@@ -99,12 +99,12 @@ Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CONF-01 | Phase 1 | Pending |
+| CONF-01 | Phase 1 | Complete (Plan 01-01) |
 | CONF-02 | Phase 1 | Pending |
 | CONF-03 | Phase 1 | Pending |
 | CONF-04 | Phase 1 | Pending |
 | CONF-05 | Phase 1 | Pending |
-| CONF-06 | Phase 1 | Pending |
+| CONF-06 | Phase 1 | Complete (Plan 01-01) |
 | DATA-01 | Phase 1 | Pending |
 | DATA-02 | Phase 1 | Pending |
 | DATA-03 | Phase 1 | Pending |
