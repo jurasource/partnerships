@@ -22,8 +22,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { createFirm } from "@/lib/actions/firm-actions";
-import type { CapabilityTag } from "@/lib/types";
+import { createFirm, updateFirm } from "@/lib/actions/firm-actions";
+import type { CapabilityTag, Firm } from "@/lib/types";
 
 const ALL_TAGS: CapabilityTag[] = ["Nuclear", "Infrastructure", "Construction"];
 
@@ -51,28 +51,68 @@ type FormErrors = {
   form?: string;
 };
 
-export function FirmFormDialog() {
+type FirmFormDialogProps = {
+  /** When provided, the dialog operates in edit mode */
+  firm?: Firm;
+  /** Optional custom trigger element (defaults to the Add/Edit Firm button) */
+  trigger?: React.ReactNode;
+};
+
+export function FirmFormDialog({ firm, trigger }: FirmFormDialogProps) {
+  const isEditMode = Boolean(firm);
+
+  // Parse existing tags from JSON if editing
+  const initialTags: CapabilityTag[] = React.useMemo(() => {
+    if (!firm) return [];
+    try {
+      return JSON.parse(firm.capabilityTags as string) as CapabilityTag[];
+    } catch {
+      return [];
+    }
+  }, [firm]);
+
+  const initialAliases: string = React.useMemo(() => {
+    if (!firm) return "";
+    try {
+      const parsed = JSON.parse(firm.aliases as string) as string[];
+      return parsed.join(", ");
+    } catch {
+      return "";
+    }
+  }, [firm]);
+
   const [open, setOpen] = React.useState(false);
   const [pending, setPending] = React.useState(false);
 
-  // Form state
-  const [canonicalName, setCanonicalName] = React.useState("");
-  const [aliasesRaw, setAliasesRaw] = React.useState("");
-  const [chNumber, setChNumber] = React.useState("");
-  const [selectedTags, setSelectedTags] = React.useState<CapabilityTag[]>([]);
+  // Form state — seeded from firm prop when in edit mode
+  const [canonicalName, setCanonicalName] = React.useState(firm?.canonicalName ?? "");
+  const [aliasesRaw, setAliasesRaw] = React.useState(initialAliases);
+  const [chNumber, setChNumber] = React.useState(firm?.companiesHouseNumber ?? "");
+  const [selectedTags, setSelectedTags] = React.useState<CapabilityTag[]>(initialTags);
   const [errors, setErrors] = React.useState<FormErrors>({});
 
-  function resetForm() {
-    setCanonicalName("");
-    setAliasesRaw("");
-    setChNumber("");
-    setSelectedTags([]);
-    setErrors({});
-  }
-
+  // When the dialog opens in edit mode, re-seed the form from current firm data
   function handleOpenChange(next: boolean) {
     setOpen(next);
-    if (!next) resetForm();
+    if (next && isEditMode && firm) {
+      setCanonicalName(firm.canonicalName);
+      setAliasesRaw(initialAliases);
+      setChNumber(firm.companiesHouseNumber ?? "");
+      setSelectedTags(initialTags);
+      setErrors({});
+    } else if (!next) {
+      resetForm();
+    }
+  }
+
+  function resetForm() {
+    if (!isEditMode) {
+      setCanonicalName("");
+      setAliasesRaw("");
+      setChNumber("");
+      setSelectedTags([]);
+    }
+    setErrors({});
   }
 
   function toggleTag(tag: CapabilityTag) {
@@ -105,41 +145,69 @@ export function FirmFormDialog() {
       .map((s) => s.trim())
       .filter(Boolean);
 
-    const result = await createFirm({
-      canonicalName: canonicalName.trim(),
-      aliases,
-      companiesHouseNumber: chNumber.trim(),
-      capabilityTags: selectedTags,
-    });
+    if (isEditMode && firm) {
+      // Edit mode — call updateFirm
+      const result = await updateFirm(firm.id, {
+        canonicalName: canonicalName.trim(),
+        aliases,
+        companiesHouseNumber: chNumber.trim(),
+        capabilityTags: selectedTags,
+      });
 
-    setPending(false);
+      setPending(false);
 
-    if (result.ok) {
-      toast.success("Firm added");
-      setOpen(false);
-      resetForm();
+      if (result.ok) {
+        toast.success("Changes saved");
+        setOpen(false);
+      } else {
+        setErrors({ form: result.error });
+      }
     } else {
-      setErrors({ form: result.error });
+      // Add mode — call createFirm
+      const result = await createFirm({
+        canonicalName: canonicalName.trim(),
+        aliases,
+        companiesHouseNumber: chNumber.trim(),
+        capabilityTags: selectedTags,
+      });
+
+      setPending(false);
+
+      if (result.ok) {
+        toast.success("Firm added");
+        setOpen(false);
+        resetForm();
+      } else {
+        setErrors({ form: result.error });
+      }
     }
   }
 
+  const defaultTrigger = isEditMode ? (
+    <Button variant="ghost" size="sm" className="h-8 px-2 text-neutral-600 hover:text-neutral-900">
+      Edit
+    </Button>
+  ) : (
+    <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+      Add Firm
+    </Button>
+  );
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      {/* Trigger: controlled via state, so no render prop needed */}
-      <DialogTrigger
-        render={
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white" />
-        }
-      >
-        Add Firm
+      <DialogTrigger render={<span />} onClick={() => setOpen(true)}>
+        {trigger ?? defaultTrigger}
       </DialogTrigger>
 
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
-          <DialogTitle className="text-xl font-semibold">Add Firm</DialogTitle>
+          <DialogTitle className="text-xl font-semibold">
+            {isEditMode ? "Edit Firm" : "Add Firm"}
+          </DialogTitle>
           <DialogDescription className="text-sm text-neutral-500">
-            Add a firm to your intelligence list. Enter the Companies House
-            number directly or search for it.
+            {isEditMode
+              ? "Update this firm's details. Companies House numbers are always editable."
+              : "Add a firm to your intelligence list. Enter the Companies House number directly or search for it."}
           </DialogDescription>
         </DialogHeader>
 
@@ -271,7 +339,13 @@ export function FirmFormDialog() {
               disabled={pending || !canonicalName.trim() || !chNumber.trim()}
               className="bg-blue-600 hover:bg-blue-700 text-white"
             >
-              {pending ? "Adding..." : "Add Firm"}
+              {pending
+                ? isEditMode
+                  ? "Saving..."
+                  : "Adding..."
+                : isEditMode
+                ? "Save Changes"
+                : "Add Firm"}
             </Button>
           </DialogFooter>
         </form>

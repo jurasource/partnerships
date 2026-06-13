@@ -10,6 +10,7 @@ import {
   flexRender,
 } from "@tanstack/react-table";
 import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
+import { toast } from "sonner";
 
 import {
   Table,
@@ -20,7 +21,21 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { deleteFirm } from "@/lib/actions/firm-actions";
+import { FirmFormDialog } from "@/components/firms/firm-form-dialog";
 import type { Firm, CapabilityTag } from "@/lib/types";
 
 // ---------------------------------------------------------------------------
@@ -45,63 +60,134 @@ function CapabilityBadge({ tag }: { tag: string }) {
 }
 
 // ---------------------------------------------------------------------------
+// Row actions: Edit + Delete (+ space reserved for Plan 03 Refresh)
+// ---------------------------------------------------------------------------
+function FirmRowActions({ firm }: { firm: Firm }) {
+  const [deleteOpen, setDeleteOpen] = React.useState(false);
+  const [deleting, setDeleting] = React.useState(false);
+
+  async function handleDelete() {
+    setDeleting(true);
+    const result = await deleteFirm(firm.id);
+    setDeleting(false);
+    setDeleteOpen(false);
+    if (result.ok) {
+      toast.success(`${firm.canonicalName} deleted`);
+    } else {
+      toast.error(result.error ?? "Failed to delete firm");
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-1 justify-end">
+      {/* Edit — opens FirmFormDialog in edit mode */}
+      <FirmFormDialog firm={firm} />
+
+      {/* Delete — AlertDialog destructive (UI-SPEC copy, T-01-06) */}
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogTrigger
+          render={
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+            />
+          }
+        >
+          Delete
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete firm?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Remove {firm.canonicalName} and its cached procurement and research
+              data? This can&apos;t be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleting}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {deleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Space reserved for Plan 03 per-firm refresh control */}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Column definitions
 // ---------------------------------------------------------------------------
-const columns: ColumnDef<Firm>[] = [
-  {
-    accessorKey: "canonicalName",
-    header: "Firm",
-    cell: ({ row }) => (
-      <span className="font-medium text-sm">{row.getValue("canonicalName")}</span>
-    ),
-  },
-  {
-    id: "capabilityTags",
-    header: "Capabilities",
-    accessorFn: (row) => {
-      try {
-        return JSON.parse(row.capabilityTags as string) as string[];
-      } catch {
-        return [];
-      }
+function buildColumns(): ColumnDef<Firm>[] {
+  return [
+    {
+      accessorKey: "canonicalName",
+      header: "Firm",
+      cell: ({ row }) => (
+        <span className="font-medium text-sm">{row.getValue("canonicalName")}</span>
+      ),
     },
-    cell: ({ getValue }) => {
-      const tags = getValue() as string[];
-      if (!tags.length) {
+    {
+      id: "capabilityTags",
+      header: "Capabilities",
+      accessorFn: (row) => {
+        try {
+          return JSON.parse(row.capabilityTags as string) as string[];
+        } catch {
+          return [];
+        }
+      },
+      cell: ({ getValue }) => {
+        const tags = getValue() as string[];
+        if (!tags.length) {
+          return (
+            <span className="text-sm text-neutral-400 italic">None</span>
+          );
+        }
         return (
-          <span className="text-sm text-neutral-400 italic">None</span>
+          <div className="flex flex-wrap gap-1">
+            {tags.map((tag) => (
+              <CapabilityBadge key={tag} tag={tag} />
+            ))}
+          </div>
         );
-      }
-      return (
-        <div className="flex flex-wrap gap-1">
-          {tags.map((tag) => (
-            <CapabilityBadge key={tag} tag={tag} />
-          ))}
-        </div>
-      );
+      },
+      enableSorting: false,
     },
-    enableSorting: false,
-  },
-  {
-    accessorKey: "companiesHouseNumber",
-    header: () => (
-      <span className="block text-right">CH Number</span>
-    ),
-    cell: ({ row }) => {
-      const num = row.getValue("companiesHouseNumber") as string | null;
-      return (
-        <span
-          className={cn(
-            "block text-right text-sm font-mono",
-            num ? "text-neutral-700" : "text-neutral-400 italic"
-          )}
-        >
-          {num ?? "—"}
-        </span>
-      );
+    {
+      accessorKey: "companiesHouseNumber",
+      header: () => (
+        <span className="block text-right">CH Number</span>
+      ),
+      cell: ({ row }) => {
+        const num = row.getValue("companiesHouseNumber") as string | null;
+        return (
+          <span
+            className={cn(
+              "block text-right text-sm font-mono",
+              num ? "text-neutral-700" : "text-neutral-400 italic"
+            )}
+          >
+            {num ?? "—"}
+          </span>
+        );
+      },
     },
-  },
-];
+    {
+      id: "actions",
+      header: () => <span className="sr-only">Actions</span>,
+      cell: ({ row }) => <FirmRowActions firm={row.original} />,
+      enableSorting: false,
+    },
+  ];
+}
 
 // ---------------------------------------------------------------------------
 // FirmsTable component
@@ -112,6 +198,8 @@ type FirmsTableProps = {
 
 export function FirmsTable({ data }: FirmsTableProps) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
+
+  const columns = React.useMemo(() => buildColumns(), []);
 
   const table = useReactTable({
     data,
