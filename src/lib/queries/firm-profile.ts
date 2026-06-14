@@ -62,22 +62,21 @@ export async function getFirmProfile(firmId: string): Promise<FirmProfile | null
     return null;
   }
 
-  // 2. All topics — dynamic; never hard-coded count
-  const allTopics = await db.select().from(topics);
-
-  // 3. All findings for this firm
-  const firmFindings = await db
-    .select()
-    .from(findings)
-    .where(eq(findings.firmId, firmId))
-    .orderBy(desc(findings.createdAt));
-
-  // 4. Procurement records ordered by awardDate DESC (nulls handled by DB, effectively last)
-  const contracts = await db
-    .select()
-    .from(procurementRecords)
-    .where(eq(procurementRecords.firmId, firmId))
-    .orderBy(desc(procurementRecords.awardDate));
+  // 2-4. Fetch topics, findings, and contracts in parallel to reduce latency
+  //      and narrow the TOCTOU window between topic and finding reads.
+  const [allTopics, firmFindings, contracts] = await Promise.all([
+    db.select().from(topics),
+    db
+      .select()
+      .from(findings)
+      .where(eq(findings.firmId, firmId))
+      .orderBy(desc(findings.createdAt)),
+    db
+      .select()
+      .from(procurementRecords)
+      .where(eq(procurementRecords.firmId, firmId))
+      .orderBy(desc(procurementRecords.awardDate)),
+  ]);
 
   // Build a lookup map: topicId → Finding
   const findingByTopicId = new Map<string, Finding>();
