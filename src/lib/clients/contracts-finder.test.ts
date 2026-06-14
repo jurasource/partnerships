@@ -28,6 +28,7 @@ describe("Contracts Finder Client (DATA-01)", () => {
     capabilityTags: JSON.stringify(["Nuclear"]),
     createdAt: "2026-06-14",
     updatedAt: "2026-06-14",
+    lastResearchedAt: null,
   };
 
   describe("fetchContractsFinder pagination", () => {

@@ -28,6 +28,7 @@ describe("Find a Tender Client (DATA-02)", () => {
     capabilityTags: JSON.stringify(["Nuclear"]),
     createdAt: "2026-06-14",
     updatedAt: "2026-06-14",
+    lastResearchedAt: null,
   };
 
   describe("fetchFindATender pagination via links.next", () => {

@@ -49,6 +49,7 @@ const FIRM: Firm = {
   capabilityTags: JSON.stringify(["Nuclear", "Infrastructure"]),
   createdAt: "2026-06-14",
   updatedAt: "2026-06-14",
+  lastResearchedAt: null,
 };
 
 function releaseFromCF(): OcdsRelease {

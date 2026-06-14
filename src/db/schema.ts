@@ -26,6 +26,11 @@ export const firms = sqliteTable("firms", {
   updatedAt: text("updated_at")
     .notNull()
     .default(sql`(datetime('now'))`),
+  /**
+   * ISO timestamp set when a research job for this firm transitions to 'done'.
+   * NULL = never researched. Used by Wave 2/3 for staleness detection (D-07).
+   */
+  lastResearchedAt: text("last_researched_at"),
 });
 
 // --- topics --------------------------------------------------------------

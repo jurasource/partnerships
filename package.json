@@ -12,8 +12,10 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.84",
     "@base-ui/react": "^1.5.0",
     "@tanstack/react-table": "^8.21.3",
+    "ai": "^6.0.205",
     "better-sqlite3": "^12.10.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
