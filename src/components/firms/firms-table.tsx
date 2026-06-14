@@ -37,6 +37,8 @@ import { cn } from "@/lib/utils";
 import { deleteFirm } from "@/lib/actions/firm-actions";
 import { FirmFormDialog } from "@/components/firms/firm-form-dialog";
 import { FirmRowRefresh } from "@/components/firms/firm-row-refresh";
+import { FirmRowResearch } from "@/components/firms/firm-row-research";
+import { StalenessBadge } from "@/components/research/staleness-badge";
 import type { Firm, CapabilityTag } from "@/lib/types";
 
 // ---------------------------------------------------------------------------
@@ -162,6 +164,21 @@ function buildColumns(): ColumnDef<Firm>[] {
         );
       },
       enableSorting: false,
+    },
+    {
+      id: "research",
+      header: "Research",
+      enableSorting: false,
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2">
+          <StalenessBadge lastResearchedAt={row.original.lastResearchedAt} />
+          <FirmRowResearch
+            firmId={row.original.id}
+            firmName={row.original.canonicalName}
+            companiesHouseNumber={row.original.companiesHouseNumber}
+          />
+        </div>
+      ),
     },
     {
       accessorKey: "companiesHouseNumber",
