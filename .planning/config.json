@@ -1,5 +1,5 @@
 {
-  "model_profile": "quality",
+  "model_profile": "adaptive",
   "commit_docs": true,
   "parallelization": true,
   "search_gitignored": false,
@@ -11,7 +11,7 @@
   "perplexity": false,
   "jina": false,
   "git": {
-    "branching_strategy": "none",
+    "branching_strategy": "milestone",
     "create_tag": true,
     "phase_branch_template": "gsd/phase-{phase}-{slug}",
     "milestone_branch_template": "gsd/{milestone}-{slug}",
@@ -21,8 +21,8 @@
     "research": true,
     "plan_check": true,
     "verifier": true,
-    "nyquist_validation": false,
-    "auto_advance": false,
+    "nyquist_validation": true,
+    "auto_advance": true,
     "node_repair": true,
     "node_repair_budget": 2,
     "ui_phase": true,
@@ -46,7 +46,9 @@
     "security_enforcement": true,
     "security_asvs_level": 1,
     "security_block_on": "high",
-    "_auto_chain_active": false
+    "_auto_chain_active": false,
+    "ui_review": true,
+    "use_worktrees": true
   },
   "ship": {
     "pr_body_sections": [
@@ -87,5 +89,11 @@
     "source_grounding_authority": "grep"
   },
   "mode": "interactive",
-  "granularity": "coarse"
+  "granularity": "coarse",
+  "intel": {
+    "enabled": false
+  },
+  "graphify": {
+    "enabled": false
+  }
 }
