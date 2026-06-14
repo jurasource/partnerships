@@ -139,6 +139,12 @@ export const findings = sqliteTable(
      */
     rawSnippet: text("raw_snippet").notNull(),
     /**
+     * Publication date of the cited source (ISO string, e.g. "2024-03-15").
+     * NULL for structured API sources or when the provider does not supply a date.
+     * Used in the UI to indicate how recent the evidence is.
+     */
+    sourceDate: text("source_date"),
+    /**
      * Confidence level (D-11):
      *   HIGH   = from structured UK API (CH / CF / FTS)
      *   MEDIUM = AI-derived with a cited source

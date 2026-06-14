@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { FlaskConical } from "lucide-react";
 import { toast } from "sonner";
 
@@ -38,6 +39,7 @@ export function FirmRowResearch({
   firmName: string;
   companiesHouseNumber: string | null;
 }) {
+  const router = useRouter();
   const [running, setRunning] = React.useState(false);
   const [jobStatus, setJobStatus] = React.useState<JobStatus | null>(null);
   const [topicsComplete, setTopicsComplete] = React.useState(0);
@@ -116,6 +118,7 @@ export function FirmRowResearch({
             id: toastId,
             description: `${count} findings written for ${firmName}.`,
           });
+          router.refresh();
           setRunning(false);
         } else if (job.status === "failed") {
           if (intervalRef.current !== null) {

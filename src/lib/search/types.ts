@@ -16,6 +16,8 @@ export type WebSearchResult = {
   url: string;
   title: string;
   snippet: string;
+  /** ISO date string when the source was published, if available from the provider */
+  publishedDate?: string | null;
 };
 
 export interface WebSearchClient {

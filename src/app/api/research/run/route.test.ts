@@ -162,8 +162,10 @@ CREATE TABLE IF NOT EXISTS findings (
   source_url TEXT NOT NULL,
   source_title TEXT NOT NULL,
   raw_snippet TEXT NOT NULL,
+  source_date TEXT,
   confidence TEXT NOT NULL,
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  CONSTRAINT findings_firm_topic_unique UNIQUE (firm_id, topic_id)
 );
 `;
 

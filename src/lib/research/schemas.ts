@@ -38,6 +38,15 @@ export const FindingSchema = z.object({
     .string()
     .min(1)
     .describe("Verbatim excerpt or data from the source that directly supports the summary"),
+  sourceDate: z
+    .string()
+    .nullable()
+    .optional()
+    .describe(
+      "Publication date of the cited source in ISO format (e.g. '2024-03-15'). " +
+        "Copy from the 'Published:' field shown in the search results for MEDIUM confidence findings. " +
+        "Omit or set null if the source has no date, or for HIGH confidence structured data.",
+    ),
 });
 
 export type SynthesisedFinding = z.infer<typeof FindingSchema>;

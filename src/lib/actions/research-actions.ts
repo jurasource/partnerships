@@ -1,5 +1,7 @@
 "use server";
 
+import { spawn } from "child_process";
+import path from "path";
 import { eq } from "drizzle-orm";
 
 import { db } from "@/db/client";
@@ -7,22 +9,23 @@ import { firms } from "@/db/schema";
 import { enqueueJob } from "@/lib/jobs/queue";
 
 /**
- * runResearch — fire-and-forget server action that enqueues a research job
- * and triggers the /api/research/run worker without blocking the caller (D-03).
+ * runResearch — enqueues a research job and spawns a detached worker process.
  *
- * Returns immediately after enqueue. The worker updates job status independently
- * via the /api/research/run route handler. The caller polls /api/research/status
- * to observe progress (RES-02).
+ * Returns immediately after spawn. The worker runs in a separate Node.js
+ * process so the Next.js server event loop stays responsive while Tavily +
+ * Claude API calls run sequentially for each topic (7 × ~3 s).
+ *
+ * The worker inherits process.env (including API keys loaded from .env.local)
+ * and runs with --conditions react-server so that `import "server-only"` in
+ * the research modules resolves to an empty shim rather than throwing.
  *
  * Guards (RES-01, DATA-04):
  * - Firm must exist in the DB.
- * - Firm must have a Companies House number before research is triggered
- *   (the grounding context depends on it for entity disambiguation).
+ * - Firm must have a Companies House number before research is triggered.
  */
 export async function runResearch(
   firmId: string,
 ): Promise<{ ok: boolean; jobId?: string; error?: string }> {
-  // Firm lookup — never trust caller-supplied data directly
   const [firm] = await db
     .select()
     .from(firms)
@@ -33,7 +36,6 @@ export async function runResearch(
     return { ok: false, error: "Firm not found." };
   }
 
-  // CH number guard (DATA-04 / UI-SPEC disabled-state copy)
   if (!firm.companiesHouseNumber) {
     return {
       ok: false,
@@ -41,23 +43,30 @@ export async function runResearch(
     };
   }
 
-  // Enqueue a durable job row — creates the observable state for polling
   const jobId = await enqueueJob({ firmId });
 
-  // Fire-and-forget POST to the worker route. Do NOT await — the caller returns
-  // immediately and the worker transitions the job through running → done | failed.
-  // Worker failure is tracked via job status polling (AI-SPEC §4b D-03).
-  fetch(
-    `${process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000"}/api/research/run`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ firmId, jobId }),
+  const workerScript = path.join(process.cwd(), "src", "scripts", "research-worker.ts");
+  const tsxBin = path.join(process.cwd(), "node_modules", ".bin", "tsx");
+
+  // Extend NODE_OPTIONS to activate the react-server export condition.
+  // This makes `import "server-only"` in the research modules resolve to the
+  // empty shim (empty.js) instead of the throwing index.js — required when
+  // running outside the Next.js bundler context.
+  const existingNodeOptions = process.env.NODE_OPTIONS ?? "";
+  const nodeOptions = `--conditions react-server${existingNodeOptions ? ` ${existingNodeOptions}` : ""}`;
+
+  const child = spawn(tsxBin, [workerScript, firmId, jobId], {
+    detached: true,
+    stdio: "ignore",
+    cwd: process.cwd(),
+    env: {
+      ...process.env,
+      NODE_OPTIONS: nodeOptions,
     },
-  ).catch(() => {
-    // Intentionally swallowed — the job stays "pending" on network failure;
-    // the UI shows it as pending and the user can re-trigger.
   });
+
+  // Unref so the Next.js process doesn't wait for the worker to exit.
+  child.unref();
 
   return { ok: true, jobId };
 }

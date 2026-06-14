@@ -48,10 +48,10 @@ export function formatSearchResults(results: WebSearchResult[]): string {
   }
 
   return results
-    .map(
-      (r, i) =>
-        `[${i + 1}] ${r.title}\nURL: ${r.url}\nSnippet: ${r.snippet}`,
-    )
+    .map((r, i) => {
+      const dateLine = r.publishedDate ? `\nPublished: ${r.publishedDate}` : "";
+      return `[${i + 1}] ${r.title}\nURL: ${r.url}${dateLine}\nSnippet: ${r.snippet}`;
+    })
     .join("\n\n");
 }
 

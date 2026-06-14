@@ -17,7 +17,14 @@ type CitationEntry = {
   sourceTitle: string;
   sourceType: "structured" | "ai";
   topicName: string;
+  sourceDate: string | null;
 };
+
+function formatSourceDate(dateStr: string): string {
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
+  return d.toLocaleDateString("en-GB", { year: "numeric", month: "short" });
+}
 
 /**
  * Truncate a URL to 40 characters for display (full URL in Tooltip).
@@ -78,6 +85,7 @@ export function CitationPanel({ findingsByTopic }: CitationPanelProps) {
       sourceTitle: entry.finding.sourceTitle,
       sourceType: entry.sourceType,
       topicName: entry.topic.name,
+      sourceDate: entry.finding.sourceDate ?? null,
     }));
 
   // Group: structured first, ai second (PROF-02)
@@ -124,6 +132,11 @@ function CitationEntry({ entry }: { entry: CitationEntry }) {
       <div className="flex items-start gap-1.5 flex-wrap">
         <CitationBadge sourceType={entry.sourceType} />
         <span className="text-xs text-neutral-500">{entry.topicName}</span>
+        {entry.sourceDate && (
+          <span className="text-xs text-neutral-400 ml-auto shrink-0">
+            {formatSourceDate(entry.sourceDate)}
+          </span>
+        )}
       </div>
 
       {safeUrl && (isLong ? (

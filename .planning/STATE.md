@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-stopped_at: Completed 03-02-PLAN.md
-last_updated: "2026-06-14T16:52:23.182Z"
-last_activity: 2026-06-14 -- Phase 03 execution started
+status: human_needed
+stopped_at: Completed 03-02-PLAN.md — Phase 03 verified (human checks pending)
+last_updated: "2026-06-14T18:00:00.000Z"
+last_activity: 2026-06-14 -- Phase 03 verification complete (human_needed)
 progress:
   total_phases: 5
   completed_phases: 3
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-13)
 
 **Core value:** Given a list of firms and research questions, surface the intelligence needed to decide which firms to team with and in what combination — in one place, without manual searching.
-**Current focus:** Phase 03 — dashboard-profiles
+**Current focus:** Phase 03 — dashboard-profiles (verified; awaiting human browser checks)
 
 ## Current Position
 
-Phase: 03 (dashboard-profiles) — EXECUTING
+Phase: 03 (dashboard-profiles) — VERIFIED (human_needed)
 Plan: 2 of 2
-Status: Phase complete — ready for verification
-Last activity: 2026-06-14 -- Phase 03 execution started
+Status: All automated checks pass (11/11 truths, 4+3 unit tests, 0 TS errors in Phase 3 files). 7 browser-interaction items require human confirmation before proceeding to Phase 4.
+Last activity: 2026-06-14 -- Phase 03 verification complete (human_needed)
 
 Progress: [██████████] 100%
 
@@ -81,6 +81,7 @@ Recent decisions affecting current work:
 - [Phase ?]: vi.hoisted() required for mock variable sharing across vitest module boundary
 - [Plan 03-02]: Two-query merge for contractCount: select all firms + grouped count by firmId joined in JS — avoids LEFT JOIN complexity in Drizzle SQLite and keeps queries individually testable
 - [Plan 03-02]: capabilityTagFilterFn.autoRemove ensures zero active tags removes the filter entirely (all firms shown) — DASH-02 all-when-empty spec
+- [Phase 03 verification]: capabilityTags column has enableSorting: false (sorting a JSON array column not meaningful) — acceptable; all other non-Actions columns are sortable
 
 ### Pending Todos
 
@@ -97,6 +98,7 @@ None yet.
 - [Phase 1 readiness]: Entity map (CH number + alias list, e.g. SNC-Lavalin → AtkinsRéalis) must be human-confirmed for the initial 12 firms before research.
 - [Phase 1 readiness]: Web-search vendor decision (Tavily vs Brave vs native) to be confirmed; keep behind a tool interface.
 - [Cross-phase]: Companies House PSC is self-reported and does not trace foreign ultimate parents — corroborate ownership with AI research; never assert absence of contracts.
+- [Phase 3 verification]: 7 browser-interaction items require human smoke testing before Phase 4 can begin (see 03-VERIFICATION.md).
 
 ## Deferred Items
 
@@ -108,6 +110,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-14T16:52:23.177Z
-Stopped at: Completed 03-02-PLAN.md — Phase 03 complete
+Last session: 2026-06-14T18:00:00.000Z
+Stopped at: Phase 03 VERIFICATION complete — status: human_needed
 Resume file: None

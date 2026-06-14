@@ -34,6 +34,7 @@ const TavilyResultItemSchema = z
     url: z.string(),
     title: z.string(),
     content: z.string(),
+    published_date: z.string().nullish(),
   })
   .passthrough();
 
@@ -70,6 +71,7 @@ class TavilySearchClient implements WebSearchClient {
       url: r.url,
       title: r.title,
       snippet: r.content,
+      publishedDate: r.published_date ?? null,
     }));
   }
 }

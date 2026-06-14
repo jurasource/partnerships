@@ -6,6 +6,12 @@ import { Badge } from "@/components/ui/badge";
 import { isSafeUrl } from "@/lib/utils";
 import type { FindingByTopic } from "@/lib/queries/firm-profile";
 
+function formatSourceDate(dateStr: string): string {
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
+  return d.toLocaleDateString("en-GB", { year: "numeric", month: "short" });
+}
+
 type FindingsByTopicProps = {
   findingsByTopic: FindingByTopic[];
 };
@@ -77,7 +83,7 @@ export function FindingsByTopic({ findingsByTopic }: FindingsByTopicProps) {
                 {entry.finding.summary}
               </p>
               {entry.sourceType !== null && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <SourceTypeBadge sourceType={entry.sourceType} />
                   {isSafeUrl(entry.finding.sourceUrl) && (
                     <a
@@ -89,6 +95,11 @@ export function FindingsByTopic({ findingsByTopic }: FindingsByTopicProps) {
                       {entry.finding.sourceTitle || "Source"}
                       <ExternalLink className="h-3 w-3" aria-hidden="true" />
                     </a>
+                  )}
+                  {entry.finding.sourceDate && (
+                    <span className="text-xs text-neutral-400">
+                      {formatSourceDate(entry.finding.sourceDate)}
+                    </span>
                   )}
                 </div>
               )}

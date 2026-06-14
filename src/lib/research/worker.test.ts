@@ -41,6 +41,7 @@ type InsertedFinding = {
   sourceUrl: string;
   sourceTitle: string;
   rawSnippet: string;
+  sourceDate?: string | null;
 };
 
 const insertedFindings: InsertedFinding[] = [];
@@ -96,7 +97,9 @@ vi.mock("@/db/client", () => ({
     insert: vi.fn(() => ({
       values: vi.fn((row: InsertedFinding) => {
         insertedFindings.push(row);
-        return Promise.resolve();
+        return {
+          onConflictDoUpdate: vi.fn(() => Promise.resolve()),
+        };
       }),
     })),
   },
@@ -117,6 +120,7 @@ vi.mock("@/db/schema", () => ({
 vi.mock("drizzle-orm", () => ({
   eq: vi.fn((_field: unknown, _value: unknown) => "eq-stub"),
   desc: vi.fn((_field: unknown) => "desc-stub"),
+  sql: vi.fn(() => "sql-stub"),
 }));
 
 // ---------------------------------------------------------------------------

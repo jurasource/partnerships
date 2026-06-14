@@ -133,6 +133,7 @@ export async function runResearchWorker(
       sourceUrl: finding.sourceUrl,
       sourceTitle: finding.sourceTitle,
       rawSnippet: finding.rawSnippet,
+      sourceDate: finding.sourceDate ?? null,
     }).onConflictDoUpdate({
       target: [findings.firmId, findings.topicId],
       set: {
@@ -141,6 +142,7 @@ export async function runResearchWorker(
         sourceUrl: finding.sourceUrl,
         sourceTitle: finding.sourceTitle,
         rawSnippet: finding.rawSnippet,
+        sourceDate: finding.sourceDate ?? null,
         createdAt: sql`(datetime('now'))`,
       },
     });

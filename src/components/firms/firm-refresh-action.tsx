@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
@@ -29,6 +30,7 @@ export function FirmRefreshAction({
   firmId: string;
   firmName: string;
 }) {
+  const router = useRouter();
   const [running, setRunning] = React.useState(false);
 
   const intervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
@@ -99,6 +101,7 @@ export function FirmRefreshAction({
           toast.success(`${firmName} research updated`, {
             id: toastId,
           });
+          router.refresh();
           setRunning(false);
         } else if (job.status === "failed") {
           if (intervalRef.current !== null) {

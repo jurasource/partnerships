@@ -77,6 +77,7 @@ const FINDING_MEDIUM: Finding = {
   sourceTitle: "Atkins Nuclear",
   rawSnippet: "Atkins nuclear excerpt",
   confidence: "MEDIUM",
+  sourceDate: "2024-03-15",
   createdAt: "2026-06-14",
 };
 
@@ -89,6 +90,7 @@ const FINDING_HIGH: Finding = {
   sourceTitle: "Companies House Profile",
   rawSnippet: "CH data snippet",
   confidence: "HIGH",
+  sourceDate: null,
   createdAt: "2026-06-14",
 };
 
@@ -101,6 +103,7 @@ const FINDING_NOT_FOUND: Finding = {
   sourceTitle: "Research worker",
   rawSnippet: "No verifiable source found",
   confidence: "HIGH",
+  sourceDate: null,
   createdAt: "2026-06-14",
 };
 
