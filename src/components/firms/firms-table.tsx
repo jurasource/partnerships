@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import {
   useReactTable,
   getCoreRowModel,
@@ -135,7 +136,12 @@ function buildColumns(): ColumnDef<Firm>[] {
       accessorKey: "canonicalName",
       header: "Firm",
       cell: ({ row }) => (
-        <span className="font-medium text-sm">{row.getValue("canonicalName")}</span>
+        <Link
+          href={`/firms/${row.original.id}`}
+          className="font-medium text-sm text-blue-600 hover:text-blue-800 hover:underline"
+        >
+          {row.getValue("canonicalName")}
+        </Link>
       ),
     },
     {
