@@ -1,15 +1,14 @@
 import Link from "next/link";
-import { db } from "@/db/client";
-import { firms } from "@/db/schema";
 import { LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ComparisonTable } from "@/components/dashboard/comparison-table";
+import { getComparisonRows } from "@/lib/queries/comparison-rows";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  // RSC direct DB read — full firm comparison (read-only in Phase 1)
-  const allFirms = await db.select().from(firms);
+  // RSC direct DB read — firm comparison with contract counts (DASH-01)
+  const rows = await getComparisonRows();
 
   return (
     <main className="flex flex-col min-h-full">
@@ -22,7 +21,7 @@ export default async function DashboardPage() {
 
       {/* Content */}
       <div className="flex-1 px-6 py-6">
-        {allFirms.length === 0 ? (
+        {rows.length === 0 ? (
           /* Empty state (UI-SPEC Copywriting Contract) */
           <div className="flex flex-col items-center justify-center py-24 text-center">
             <div className="mb-4 rounded-full bg-neutral-100 p-4">
@@ -42,7 +41,7 @@ export default async function DashboardPage() {
             </Button>
           </div>
         ) : (
-          <ComparisonTable firms={allFirms} />
+          <ComparisonTable rows={rows} />
         )}
       </div>
     </main>
