@@ -49,9 +49,11 @@ class TavilySearchClient implements WebSearchClient {
 
     const res = await rateLimitedFetch(`${TAVILY_BASE}/search`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+      },
       body: JSON.stringify({
-        api_key: apiKey,
         query,
         max_results: maxResults,
       }),
