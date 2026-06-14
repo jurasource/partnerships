@@ -28,9 +28,13 @@ export async function executeResearchJob(firmId: string, jobId: string): Promise
   await updateJobStatus(jobId, "running", { startedAt: nowIso() });
 
   try {
-    await runResearchWorker(firmId, jobId, tavilyClient, (msg) =>
-      updateJobProgress(jobId, msg),
-    );
+    await runResearchWorker(firmId, jobId, tavilyClient, async (msg) => {
+      try {
+        await updateJobProgress(jobId, msg);
+      } catch {
+        // Progress updates are best-effort — don't abort the research job
+      }
+    });
     await updateJobStatus(jobId, "done", { completedAt: nowIso() });
     await db
       .update(firms)

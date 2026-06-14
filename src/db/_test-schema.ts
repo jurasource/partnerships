@@ -53,6 +53,7 @@ export const jobs = sqliteTable("jobs", {
   startedAt: text("started_at"),
   completedAt: text("completed_at"),
   errorMessage: text("error_message"),
+  progressMessage: text("progress_message"),
 });
 
 export const findings = sqliteTable(

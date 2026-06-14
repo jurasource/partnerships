@@ -153,7 +153,8 @@ CREATE TABLE IF NOT EXISTS jobs (
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   started_at TEXT,
   completed_at TEXT,
-  error_message TEXT
+  error_message TEXT,
+  progress_message TEXT
 );
 
 CREATE TABLE IF NOT EXISTS findings (
