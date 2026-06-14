@@ -7,7 +7,7 @@ import { z } from "zod";
 
 import { db } from "@/db/client";
 import { firms } from "@/db/schema";
-import { updateJobStatus } from "@/lib/jobs/queue";
+import { getJob, updateJobStatus } from "@/lib/jobs/queue";
 import { runResearchWorker } from "@/lib/research/worker";
 import { tavilyClient } from "@/lib/search/tavily";
 
@@ -53,6 +53,16 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     jobId = parsed.data.jobId;
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  // Ownership check — verify the job row exists and belongs to the supplied firmId
+  // before performing any mutation. Prevents cross-firm job hijacking (T-02-09).
+  const job = await getJob(jobId);
+  if (!job) {
+    return NextResponse.json({ error: "Job not found" }, { status: 404 });
+  }
+  if (job.firmId !== firmId) {
+    return NextResponse.json({ error: "Job/firm mismatch" }, { status: 400 });
   }
 
   // Transition to running immediately so the status endpoint reflects progress
