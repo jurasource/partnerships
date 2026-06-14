@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 03-01-PLAN.md
-last_updated: "2026-06-14T16:46:12.718Z"
+status: verifying
+stopped_at: Completed 03-02-PLAN.md
+last_updated: "2026-06-14T16:52:23.182Z"
 last_activity: 2026-06-14 -- Phase 03 execution started
 progress:
   total_phases: 5
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 8
-  completed_plans: 7
-  percent: 40
+  completed_plans: 8
+  percent: 60
 ---
 
 # Project State
@@ -27,10 +27,10 @@ See: .planning/PROJECT.md (updated 2026-06-13)
 
 Phase: 03 (dashboard-profiles) — EXECUTING
 Plan: 2 of 2
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-06-14 -- Phase 03 execution started
 
-Progress: [████░░░░░░] 40%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -55,6 +55,7 @@ Progress: [████░░░░░░] 40%
 | Phase 02-research-engine P01 | 15 | 3 tasks | 11 files |
 | Phase 02-research-engine P03 | 12 | 2 tasks | 5 files |
 | Phase 03-dashboard-profiles P01 | 10 | 3 tasks | 8 files |
+| Phase 03-dashboard-profiles P02 | 4 | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -78,6 +79,8 @@ Recent decisions affecting current work:
 - [Plan 01-03]: CH API key kept server-side — Search CH and refresh go through server actions; clients are 'server-only' (T-01-08).
 - [Plan 01-03]: vitest adopted as the project test runner (was absent); adapter unit tests prove normalise + dedup-by-ocid + CH-match.
 - [Phase ?]: vi.hoisted() required for mock variable sharing across vitest module boundary
+- [Plan 03-02]: Two-query merge for contractCount: select all firms + grouped count by firmId joined in JS — avoids LEFT JOIN complexity in Drizzle SQLite and keeps queries individually testable
+- [Plan 03-02]: capabilityTagFilterFn.autoRemove ensures zero active tags removes the filter entirely (all firms shown) — DASH-02 all-when-empty spec
 
 ### Pending Todos
 
@@ -105,6 +108,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-14T16:46:12.714Z
-Stopped at: Completed 03-01-PLAN.md
+Last session: 2026-06-14T16:52:23.177Z
+Stopped at: Completed 03-02-PLAN.md — Phase 03 complete
 Resume file: None

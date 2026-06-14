@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [ ] **Phase 1: Data Foundation** - Schema, config store, entity map, UK API clients + OCDS adapter, job-runner skeleton
 - [x] **Phase 2: Research Engine** - Per-(firm x topic) AI research loop with mandatory citations, "not found" output, and visible job status (completed 2026-06-14)
-- [ ] **Phase 3: Dashboard & Profiles** - Firm profiles, citation panel, capability filtering, sortable comparison table, refresh + staleness
+- [x] **Phase 3: Dashboard & Profiles** - Firm profiles, citation panel, capability filtering, sortable comparison table, refresh + staleness (completed 2026-06-14)
 - [ ] **Phase 4: Cross-Cutting Analysis** - Ownership chains, conflict/audit detection, partnership map, risk flags, recompute pass
 - [ ] **Phase 5: Consortium Recommender + Initial Report** - Explainable rules-based recommender with conflict exclusion + NSI overlay, plus the seeded end-to-end report
 
@@ -89,7 +89,7 @@ Plans:
 Plans:
 
 - [x] 03-01-PLAN.md — Firm profile slice: /firms/[id] route, getFirmProfile query, findings-by-topic tabs, citation panel, contract history table, profile refresh (PROF-01/02/03/06)
-- [ ] 03-02-PLAN.md — Comparison dashboard slice: getComparisonRows query, extended filterable/sortable comparison table, capability filter bar, firm-name profile links, per-row refresh (DASH-01/02/03/04)
+- [x] 03-02-PLAN.md — Comparison dashboard slice: getComparisonRows query, extended filterable/sortable comparison table, capability filter bar, firm-name profile links, per-row refresh (DASH-01/02/03/04)
 
 **UI hint**: yes
 
@@ -136,6 +136,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 |-------|----------------|--------|-----------|
 | 1. Data Foundation | 3/3 | Complete | 2026-06-14 |
 | 2. Research Engine | 3/3 | Complete   | 2026-06-14 |
-| 3. Dashboard & Profiles | 1/2 | In Progress|  |
+| 3. Dashboard & Profiles | 2/2 | Complete   | 2026-06-14 |
 | 4. Cross-Cutting Analysis | 0/TBD | Not started | - |
 | 5. Consortium Recommender + Initial Report | 0/TBD | Not started | - |

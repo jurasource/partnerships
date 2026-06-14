@@ -44,10 +44,10 @@
 
 ### Dashboard
 
-- [ ] **DASH-01**: Dashboard shows a cross-firm comparison table with all firms and their capability tags
-- [ ] **DASH-02**: User can filter the comparison table by capability tag (Nuc/Infra/Cons)
-- [ ] **DASH-03**: User can sort the comparison table by any column
-- [ ] **DASH-04**: User can manually trigger a research refresh for any firm from the dashboard
+- [x] **DASH-01**: Dashboard shows a cross-firm comparison table with all firms and their capability tags
+- [x] **DASH-02**: User can filter the comparison table by capability tag (Nuc/Infra/Cons)
+- [x] **DASH-03**: User can sort the comparison table by any column
+- [x] **DASH-04**: User can manually trigger a research refresh for any firm from the dashboard
 
 ### Cross-Cutting Analysis
 
@@ -121,10 +121,10 @@ Updated during roadmap creation.
 | PROF-02 | Phase 3 | Complete |
 | PROF-03 | Phase 3 | Complete |
 | PROF-06 | Phase 3 | Complete |
-| DASH-01 | Phase 3 | Pending |
-| DASH-02 | Phase 3 | Pending |
-| DASH-03 | Phase 3 | Pending |
-| DASH-04 | Phase 3 | Pending |
+| DASH-01 | Phase 3 | Complete |
+| DASH-02 | Phase 3 | Complete |
+| DASH-03 | Phase 3 | Complete |
+| DASH-04 | Phase 3 | Complete |
 | PROF-04 | Phase 4 | Pending |
 | PROF-05 | Phase 4 | Pending |
 | PROF-07 | Phase 4 | Pending |
