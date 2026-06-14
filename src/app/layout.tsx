@@ -21,6 +21,13 @@ export const metadata: Metadata = {
   title: "Firm Intelligence Dashboard",
   description:
     "Research and compare firms for UK civil nuclear and defence consortium planning.",
+  icons: {
+    icon: [
+      { url: "/icons8-network-16.png", sizes: "16x16", type: "image/png" },
+      { url: "/icons8-network-64.png", sizes: "64x64", type: "image/png" },
+    ],
+    shortcut: "/icons8-network-64.png",
+  },
 };
 
 export default function RootLayout({

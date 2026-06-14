@@ -44,6 +44,27 @@ export default async function DashboardPage() {
           <ComparisonTable rows={rows} />
         )}
       </div>
+
+      {/* Icons8 attribution — required by Icons8 free licence */}
+      <footer className="px-6 py-3 border-t border-neutral-100 text-xs text-neutral-400">
+        <a
+          target="_blank"
+          rel="noopener noreferrer"
+          href="https://icons8.com/icon/92036/network"
+          className="hover:text-neutral-600 underline underline-offset-2"
+        >
+          Network
+        </a>{" "}
+        icon by{" "}
+        <a
+          target="_blank"
+          rel="noopener noreferrer"
+          href="https://icons8.com"
+          className="hover:text-neutral-600 underline underline-offset-2"
+        >
+          Icons8
+        </a>
+      </footer>
     </main>
   );
 }
