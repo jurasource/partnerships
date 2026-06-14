@@ -59,25 +59,65 @@ export async function buildGroundingContext(firm: Firm): Promise<GroundingContex
       }
 
       if (psc?.items && psc.items.length > 0) {
-        const nonUkPscs = psc.items.filter(
-          (item) =>
-            item.nationality &&
-            !item.nationality.toLowerCase().includes("british") &&
-            !item.nationality.toLowerCase().includes("uk"),
-        );
         const totalPscs = psc.items.length;
-        const nonUkCount = nonUkPscs.length;
+
+        // Separate natural persons from corporate PSCs — they use different fields
+        // for ownership origin (CR-04). Corporate PSCs have no `nationality` field;
+        // checking `nationality` alone silently skips all corporate parent entities.
+        const UK_NATURAL_PERSON_TERMS = [
+          "british", "english", "scottish", "welsh", "northern irish",
+          "united kingdom",
+        ];
+
+        const naturalPersonNonUk = psc.items.filter((item) => {
+          // Corporate-entity kind — handled separately below
+          if (item.kind?.toLowerCase().includes("corporate-entity")) return false;
+          // No nationality field at all — flag conservatively as non-UK
+          if (!item.nationality) return true;
+          const nat = item.nationality.toLowerCase();
+          return !UK_NATURAL_PERSON_TERMS.some((term) => nat.includes(term));
+        });
+
+        const UK_COUNTRY_TERMS = [
+          "england", "scotland", "wales", "northern ireland",
+          "united kingdom", "england and wales",
+        ];
+
+        const corporatePscs = psc.items.filter((item) =>
+          item.kind?.toLowerCase().includes("corporate-entity"),
+        );
+        const corporateNonUk = corporatePscs.filter((item) => {
+          const country = (item.country_of_residence ?? "").toLowerCase();
+          if (!country) return true; // unknown origin — flag conservatively
+          return !UK_COUNTRY_TERMS.some((term) => country === term);
+        });
+
+        const nonUkCount = naturalPersonNonUk.length + corporateNonUk.length;
 
         lines.push(
           `PSC register: ${totalPscs} person(s) with significant control; ` +
-            `${nonUkCount} non-UK national(s)`,
+            `${nonUkCount} non-UK / non-UK-corporate PSC(s)`,
         );
 
-        if (nonUkPscs.length > 0) {
-          const nationalities = nonUkPscs
-            .map((p) => p.nationality ?? "unknown")
+        if (naturalPersonNonUk.length > 0) {
+          const nationalities = naturalPersonNonUk
+            .map((p) => p.nationality ?? "unknown nationality")
             .join(", ");
-          lines.push(`Non-UK PSC nationalities: ${nationalities}`);
+          lines.push(`Non-UK PSC nationalities (natural persons): ${nationalities}`);
+        }
+
+        if (corporateNonUk.length > 0) {
+          const names = corporateNonUk
+            .map((p) => p.name ?? "unnamed corporate PSC")
+            .join(", ");
+          lines.push(`Non-UK corporate PSC(s): ${names}`);
+        }
+
+        if (corporatePscs.length > 0 && corporateNonUk.length === 0) {
+          const names = corporatePscs
+            .map((p) => p.name ?? "unnamed corporate PSC")
+            .join(", ");
+          lines.push(`UK corporate PSC(s): ${names}`);
         }
       }
 
