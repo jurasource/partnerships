@@ -67,11 +67,23 @@ export function FirmRefreshAction({
 
     const { jobId } = result;
 
-    // Poll /api/research/status/{jobId} until done or failed
+    // Poll /api/research/status/{jobId} until done, failed, or timeout
+    const MAX_POLLS = 60; // 60 × 2.5 s = 2.5 minutes maximum
+    let pollCount = 0;
+
     intervalRef.current = setInterval(async () => {
+      pollCount = pollCount + 1;
       try {
         const res = await fetch(`/api/research/status/${jobId}`);
-        if (!res.ok) return;
+        if (!res.ok) {
+          if (pollCount >= MAX_POLLS) {
+            clearInterval(intervalRef.current!);
+            intervalRef.current = null;
+            toast.error(`Research timed out for ${firmName}. Try again.`, { id: toastId });
+            setRunning(false);
+          }
+          return;
+        }
 
         const job = (await res.json()) as {
           status: JobStatus;
@@ -100,9 +112,20 @@ export function FirmRefreshAction({
               "The research worker stopped unexpectedly. Try again, or check the app logs.",
           });
           setRunning(false);
+        } else if (pollCount >= MAX_POLLS) {
+          clearInterval(intervalRef.current!);
+          intervalRef.current = null;
+          toast.error(`Research timed out for ${firmName}. Try again.`, { id: toastId });
+          setRunning(false);
         }
       } catch {
-        // Network error during poll — continue polling, don't surface to user
+        // Network error during poll — check timeout before continuing
+        if (pollCount >= MAX_POLLS) {
+          clearInterval(intervalRef.current!);
+          intervalRef.current = null;
+          toast.error(`Research failed for ${firmName}. Try again.`, { id: toastId });
+          setRunning(false);
+        }
       }
     }, POLL_INTERVAL_MS);
   }
