@@ -5,7 +5,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
+import { cn, isSafeUrl } from "@/lib/utils";
 import type { FindingByTopic } from "@/lib/queries/firm-profile";
 
 type CitationPanelProps = {
@@ -117,6 +117,7 @@ export function CitationPanel({ findingsByTopic }: CitationPanelProps) {
 function CitationEntry({ entry }: { entry: CitationEntry }) {
   const displayUrl = truncateUrl(entry.sourceUrl);
   const isLong = entry.sourceUrl.length > 40;
+  const safeUrl = isSafeUrl(entry.sourceUrl);
 
   return (
     <div className="space-y-1">
@@ -125,7 +126,7 @@ function CitationEntry({ entry }: { entry: CitationEntry }) {
         <span className="text-xs text-neutral-500">{entry.topicName}</span>
       </div>
 
-      {isLong ? (
+      {safeUrl && (isLong ? (
         <Tooltip>
           <TooltipTrigger
             render={
@@ -152,7 +153,7 @@ function CitationEntry({ entry }: { entry: CitationEntry }) {
         >
           {displayUrl}
         </a>
-      )}
+      ))}
     </div>
   );
 }

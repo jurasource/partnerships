@@ -9,7 +9,7 @@ import {
   TabsContent,
 } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { cn, isSafeUrl } from "@/lib/utils";
 import type { FindingByTopic } from "@/lib/queries/firm-profile";
 
 type FindingsByTopicProps = {
@@ -122,16 +122,18 @@ export function FindingsByTopic({ findingsByTopic }: FindingsByTopicProps) {
                 <div className="flex items-center gap-2">
                   <SourceTypeBadge sourceType={entry.sourceType} />
 
-                  {/* Citation link — only for real URLs (T-03-03: not-found excluded above) */}
-                  <a
-                    href={entry.finding.sourceUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 underline text-xs inline-flex items-center gap-1"
-                  >
-                    {entry.finding.sourceTitle || "Source"}
-                    <ExternalLink className="h-3 w-3" aria-hidden="true" />
-                  </a>
+                  {/* Citation link — only for safe URLs (T-03-03: not-found excluded above) */}
+                  {isSafeUrl(entry.finding.sourceUrl) && (
+                    <a
+                      href={entry.finding.sourceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 underline text-xs inline-flex items-center gap-1"
+                    >
+                      {entry.finding.sourceTitle || "Source"}
+                      <ExternalLink className="h-3 w-3" aria-hidden="true" />
+                    </a>
+                  )}
                 </div>
               )}
             </div>
