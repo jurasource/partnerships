@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard,
-  Building2,
-  BookOpen,
+  Activity,
   BarChart3,
+  BookOpen,
+  Building2,
+  LayoutDashboard,
   Users,
 } from "lucide-react";
 
@@ -33,6 +34,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
   { label: "Firms", href: "/firms", icon: Building2 },
   { label: "Topics", href: "/topics", icon: BookOpen },
+  { label: "Jobs", href: "/jobs", icon: Activity },
 ];
 
 const PLACEHOLDER_ITEMS: NavItem[] = [

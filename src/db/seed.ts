@@ -10,7 +10,7 @@
  * Seed is IDEMPOTENT: skips inserts if any firms already exist.
  */
 
-import { db } from "./client";
+import { db, sql } from "./client";
 import { firms, topics } from "./schema";
 import { eq } from "drizzle-orm";
 
@@ -223,7 +223,9 @@ async function runSeed() {
   console.log("Seed complete.");
 }
 
-runSeed().catch((err) => {
-  console.error("Seed failed:", err);
-  process.exit(1);
-});
+runSeed()
+  .catch((err) => {
+    console.error("Seed failed:", err);
+    process.exit(1);
+  })
+  .finally(() => sql.end());

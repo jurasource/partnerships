@@ -1,5 +1,3 @@
-import "server-only";
-
 import { generateText, Output, NoObjectGeneratedError } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { eq, sql } from "drizzle-orm";
@@ -31,11 +29,13 @@ import { RESEARCH_SYSTEM_PROMPT, buildSearchQuery, buildTopicPrompt } from "./pr
  * @param firmId       ID of the firm to research
  * @param jobId        ID of the research job (used for logging only — Wave 2 updates status)
  * @param searchClient Web search client implementing WebSearchClient interface (D-02)
+ * @param onProgress   Optional callback invoked at the start of each topic with a progress label
  */
 export async function runResearchWorker(
   firmId: string,
   jobId: string,
   searchClient: WebSearchClient,
+  onProgress?: (message: string) => Promise<void>,
 ): Promise<void> {
   // Load firm
   const [firm] = await db.select().from(firms).where(eq(firms.id, firmId)).limit(1);
@@ -52,7 +52,9 @@ export async function runResearchWorker(
 
   // Sequential topic loop — intentionally NOT Promise.all (AI-SPEC §4b async design,
   // Anthropic rate limits, and partial-failure handling require sequential execution)
-  for (const topic of allTopics) {
+  for (let i = 0; i < allTopics.length; i++) {
+    const topic = allTopics[i];
+    await onProgress?.(`Topic ${i + 1}/${allTopics.length}: ${topic.name}`);
     let finding: SynthesisedFinding;
 
     // D-10: 1-2 Tavily searches per topic
@@ -143,7 +145,7 @@ export async function runResearchWorker(
         sourceTitle: finding.sourceTitle,
         rawSnippet: finding.rawSnippet,
         sourceDate: finding.sourceDate ?? null,
-        createdAt: sql`(datetime('now'))`,
+        createdAt: new Date().toISOString(),
       },
     });
   }

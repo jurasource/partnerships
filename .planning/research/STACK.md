@@ -2,11 +2,12 @@
 
 **Project:** Firm Intelligence Dashboard
 **Researched:** 2026-06-13
+**Updated:** 2026-06-14 (db-worker-upgrade — SQLite → Postgres; Redis/BullMQ worker added)
 **Overall confidence:** HIGH (framework/UI/AI), HIGH (UK APIs)
 
 ## Context Recap
 
-Single-user, local-first web dashboard. It runs AI-assisted deep research on a configurable list of firms across configurable topics, pulls structured data from three UK public APIs (Contracts Finder, Find a Tender, Companies House), caches all results in a database, and presents interactive, filterable findings with cross-cutting analysis (ownership, conflicts, partnerships, consortium recommendations). Public-domain data only, no paid feeds, must cite sources. Optimise for speed of build and dashboard quality. Architecture must not preclude future cloud deployment.
+Single-user, local-first web dashboard. It runs AI-assisted deep research on a configurable list of firms across configurable topics, pulls structured data from three UK public APIs (Contracts Finder, Find a Tender, Companies House), caches all results in a Postgres database, and presents interactive, filterable findings with cross-cutting analysis (ownership, conflicts, partnerships, consortium recommendations). Public-domain data only, no paid feeds, must cite sources. Optimise for speed of build and dashboard quality. Architecture must not preclude future cloud deployment.
 
 This profile points to **one full-stack TypeScript application** (Next.js App Router) rather than a separate API + SPA. Reasons: single developer, single user, research orchestration is I/O-bound and long-running (fits server-side route handlers / server actions), and the same codebase gives a first-class dashboard UI. A split backend (e.g. FastAPI + React) would add cross-cutting overhead for no benefit at this scale.
 
@@ -27,13 +28,14 @@ This profile points to **one full-stack TypeScript application** (Next.js App Ro
 
 | Technology | Version | Purpose | Why |
 |------------|---------|---------|-----|
-| SQLite (via better-sqlite3) | better-sqlite3 11.x | Local-first cache of firm profiles, per-topic research findings, raw API responses, refresh timestamps | Zero-ops, single file, synchronous fast reads — ideal for a single-user local tool. Cache-with-manual-refresh is exactly SQLite's sweet spot. |
-| Drizzle ORM | 0.36+ (latest 0.x) | Schema, migrations, typed queries | TypeScript-native, thin over SQL, generates types from schema. Lighter and faster to wire than Prisma for SQLite; trivial later swap to Postgres via dialect change. |
-| Postgres (future) | 16+ | Cloud deployment target | NOT for v1. Drizzle's Postgres dialect means migrating later is a config + connection change, satisfying the "don't preclude cloud" constraint. |
+| PostgreSQL | 16 (docker-compose) | Primary database: firm profiles, per-topic research findings, raw API responses, job status, refresh timestamps | Production-grade, cloud-portable, full SQL. Runs locally via `docker compose up -d db`. Zero-friction path to managed Postgres (Neon/Supabase/RDS) for cloud deployment — connection string swap only. |
+| Drizzle ORM | 0.45+ | Schema, migrations, typed queries | TypeScript-native, thin over SQL. `drizzle-orm/postgres-js` dialect; schema is in `src/db/schema.ts`, pushed with `npm run db:push`. |
+| Redis | 7 (docker-compose) | Job queue transport for BullMQ | Durable pub/sub for dispatching research jobs from the Next.js server action to the long-running worker process. Runs locally via `docker compose up -d redis`. |
+| BullMQ | 5.x | Job queue library | Purpose-built Redis-backed queue: durable dispatch, concurrency control, graceful shutdown. Producer: `src/lib/jobs/bull.ts`. Worker: `src/scripts/worker-process.ts` (`npm run worker`). |
 
-**Migration path:** keep all SQL ANSI-friendly and avoid SQLite-only features; store raw JSON API payloads in a `text`/`jsonb`-compatible column so the cache survives a Postgres move.
+**Cloud path:** Postgres → managed Postgres (connection string in env). Redis → managed Redis (Upstash, Railway Redis, etc. — same env vars).
 
-**Confidence: HIGH.** SQLite + Drizzle is a standard, low-risk local-first pattern.
+**Confidence: HIGH.** Postgres + Drizzle + BullMQ is a proven production stack; docker-compose keeps it zero-ops locally.
 
 ### AI / LLM Research Orchestration
 
@@ -68,7 +70,7 @@ All three are free, public-domain sources. Write thin typed clients (plain `fetc
 **Implementation guidance:**
 - Both procurement APIs speak **OCDS** (Open Contracting Data Standard) JSON — model a shared OCDS release/award type once and reuse across FTS + Contracts Finder.
 - Match firms to notices by company name AND Companies House number where possible (name-only matching is noisy in this sector — many similarly named entities). Store matched notice IDs against the firm to make matches auditable.
-- Cache raw OCDS payloads in SQLite so re-analysis doesn't re-hit the APIs; refresh on manual per-firm refresh.
+- Cache raw OCDS payloads in Postgres so re-analysis doesn't re-hit the APIs; refresh on manual per-firm refresh.
 - These structured sources provide the **verifiable** contract/ownership data; the AI/web-search layer fills reputation/partnership/risk gaps.
 
 **Confidence: HIGH.** Endpoints, standards, and auth models verified against official GOV.UK developer docs and OCDS registry.
@@ -94,7 +96,9 @@ All three are free, public-domain sources. Write thin typed clients (plain `fetc
 |----------|-------------|-------------|---------|
 | Framework | Next.js 15 full-stack | FastAPI (Py) + React SPA | Split stack adds wiring/CORS/duplication for a single-user app; no benefit at this scale. |
 | Framework | Next.js 15 | Remix / TanStack Start | Both fine; Next has the deepest dashboard/AI-SDK ecosystem and docs in 2025. |
-| Database | SQLite | Postgres now | Premature ops for local-first single user; Drizzle makes the later migration cheap. |
+| Database | Postgres 16 | SQLite | Originally considered for local-first simplicity; migrated to Postgres (db-worker-upgrade) for cloud portability and to support a long-running worker process that needs concurrent DB writes. |
+| Job queue | BullMQ + Redis | In-process spawn() | Originally used `child_process.spawn()` per job (db-worker-upgrade replaced this). BullMQ gives durable dispatch, concurrency control, and clean worker/producer separation. |
+| Job queue | BullMQ + Redis | Inngest | Inngest requires cloud infrastructure; BullMQ with local Redis is zero-ops for the local-first requirement and trivially replaceable with managed Redis for cloud. |
 | ORM | Drizzle | Prisma | Prisma heavier, slower cold-start, more codegen; Drizzle is leaner and SQL-transparent. |
 | LLM toolkit | Vercel AI SDK | LangChain / LangGraph | Agent frameworks are over-engineered for a bounded research loop; slower to build, more abstraction to debug. |
 | Web search | Tavily | Scraping / SerpAPI | Scraping is brittle and licence-risky; Tavily returns citation-ready content aligned to the "must cite" requirement. |
@@ -118,9 +122,11 @@ npx create-next-app@latest firm-intel --typescript --tailwind --app --eslint
 
 cd firm-intel
 
-# Database
-npm install better-sqlite3 drizzle-orm
-npm install -D drizzle-kit @types/better-sqlite3
+# Database + job queue
+npm install postgres drizzle-orm bullmq
+npm install -D drizzle-kit
+# Start Postgres + Redis (docker-compose.yml already wired)
+docker compose up -d
 
 # AI / LLM
 npm install ai @ai-sdk/anthropic zod
@@ -132,7 +138,7 @@ npx shadcn@latest init
 npm install @tanstack/react-table @tanstack/react-query recharts lucide-react
 ```
 
-UK API clients are plain `fetch` + Zod — no packages required. Store `COMPANIES_HOUSE_API_KEY`, `ANTHROPIC_API_KEY`, and `TAVILY_API_KEY` in `.env.local`.
+UK API clients are plain `fetch` + Zod — no packages required. Store `DATABASE_URL`, `COMPANIES_HOUSE_API_KEY`, `ANTHROPIC_API_KEY`, and `TAVILY_API_KEY` in `.env.local`. Redis defaults to `localhost:6379` (override with `REDIS_HOST` / `REDIS_PORT` env vars). Start the worker in a separate terminal: `npm run worker`.
 
 ## Sources
 

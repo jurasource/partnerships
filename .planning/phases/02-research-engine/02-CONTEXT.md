@@ -20,7 +20,7 @@ Phase 2 does NOT build firm profile pages, the comparison table filter/sort, or 
 - **D-02:** Tavily is wrapped behind a thin `WebSearchClient` interface (a single file, e.g. `src/lib/search/types.ts`). The Tavily implementation lives in `src/lib/search/tavily.ts`. Swapping providers later is a config change, not a refactor.
 
 ### Research Job Architecture
-- **D-03:** The research worker runs via API Route fire-and-forget. The server action enqueues the job (via existing `enqueueJob`) and immediately calls `POST /api/research/run` without awaiting the response. The route handler runs the full AI research loop and updates job status transitions (pending → running → done/failed) via `updateJobStatus`. This is non-blocking for the UI and Railway-extractable later (only the POST /api/research/run call needs to move).
+- **D-03:** ~~The research worker runs via API Route fire-and-forget.~~ **Superseded by db-worker-upgrade (2026-06-14):** The `runResearch()` server action calls `enqueueJob()` (inserts a `jobs` DB row) then `researchQueue.add()` (pushes `{ firmId, jobId }` to Redis via BullMQ). A separate long-running process (`npm run worker` → `src/scripts/worker-process.ts`) consumes jobs from BullMQ (concurrency=2 by default) and calls `executeResearchJob()`. Status transitions (pending → running → done/failed) and per-topic `progressMessage` updates are written to the `jobs` DB table. The `/api/jobs` endpoint and `/jobs` page show live status via polling.
 - **D-04:** The client polls `GET /api/research/status/[jobId]` every 2–3 seconds and updates a status badge (pending → running → done/failed). No SSE or streaming required for Phase 2.
 - **D-05:** On partial failure (e.g. 3 of 7 topics done, then API error): mark the job `failed` with an error message, but keep the partial findings already written. User can re-trigger to fill the gaps. No rollback.
 
@@ -82,7 +82,7 @@ Phase 2 does NOT build firm profile pages, the comparison table filter/sort, or 
 
 ### Established Patterns
 - Server action → job queue → status polling: established in Phase 1's `refreshFirm`. Phase 2 extends this with the real worker.
-- `"server-only"` imports: all DB and external API code must stay server-side (T-01-08 established in Phase 1)
+- `"server-only"` imports: retained on API route handlers and server actions. **Removed from `src/lib/` files** (db-worker-upgrade) — lib modules must be importable by the standalone worker process (`src/scripts/worker-process.ts`). These files are inherently server-side (Postgres, API keys) so the guard is not needed at the lib layer.
 - Drizzle upsert (`onConflictDoNothing`): used for OCDS dedup; findings should use insert (re-research replaces old findings)
 
 ### Integration Points
@@ -110,7 +110,7 @@ Phase 2 does NOT build firm profile pages, the comparison table filter/sort, or 
 
 - SSE / live streaming of research progress — polling covers RES-02 for v1. Streaming can be added in a later phase if the UX feels too coarse.
 - Per-topic retry on partial failure — Phase 2 just keeps partial findings and lets the user re-trigger the whole firm. Per-topic retry logic is an optimisation for later.
-- Separate Railway worker process — local-first: API route is sufficient. Extract to Railway only when deploying to Vercel (as documented in the folded Railway todo).
+- ~~Separate Railway worker process~~ — **DONE (db-worker-upgrade, 2026-06-14).** `src/scripts/worker-process.ts` is a long-running BullMQ worker (`npm run worker`). For Railway/cloud deployment, run this process as a separate service pointing at the same Postgres + Redis (managed).
 - Configurable staleness threshold — 7 days is hardcoded for v1 (D-07). User-configurable threshold is a v2 feature.
 
 </deferred>

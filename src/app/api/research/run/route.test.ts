@@ -18,7 +18,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 
-import * as schema from "@/db/schema";
+// Uses the SQLite test fixture schema — not the production pg schema —
+// so these tests can run against an in-memory SQLite instance.
+import * as schema from "@/db/_test-schema";
 import { eq } from "drizzle-orm";
 
 // ---------------------------------------------------------------------------
@@ -151,7 +153,8 @@ CREATE TABLE IF NOT EXISTS jobs (
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   started_at TEXT,
   completed_at TEXT,
-  error_message TEXT
+  error_message TEXT,
+  progress_message TEXT
 );
 
 CREATE TABLE IF NOT EXISTS findings (
@@ -203,6 +206,11 @@ describe("POST /api/research/run — job lifecycle integrity (E9)", () => {
     // Inject in-memory DB into all modules that import @/db/client.
     // vi.doMock (not vi.mock) runs per-call after vi.resetModules().
     vi.doMock("@/db/client", () => ({ db: testDb }));
+
+    // Also mock @/db/schema so the worker uses the SQLite test schema tables
+    // (not the pg tables from the production schema, which are incompatible with
+    // the SQLite driver used here).
+    vi.doMock("@/db/schema", () => schema);
 
     // Seed: one firm with a CH number
     const [firm] = await testDb

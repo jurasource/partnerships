@@ -2,7 +2,7 @@
 
 ## Overview
 
-The build follows the project's core architectural shape: a slow, multi-source research pipeline (write-side) feeding a fast, structured dashboard (read-side), with a SQLite cache as the single source of truth. We start by laying the trustworthy data foundation (schema, config store, entity map by Companies House number, UK API clients), then build the highest-risk research engine with citation enforcement and explicit "not found" output. Once findings exist, we surface them through firm profiles and a filterable comparison dashboard, layer in cross-cutting analysis (ownership, conflicts, partnerships, risk), and finish with the explainable consortium recommender — proven by running the seeded 12 firms x 7 topics end-to-end to produce the initial report.
+The build follows the project's core architectural shape: a slow, multi-source research pipeline (write-side) feeding a fast, structured dashboard (read-side), with a Postgres database as the single source of truth and a Redis-backed BullMQ queue dispatching work to a long-running worker process. We start by laying the trustworthy data foundation (schema, config store, entity map by Companies House number, UK API clients), then build the highest-risk research engine with citation enforcement and explicit "not found" output. Once findings exist, we surface them through firm profiles and a filterable comparison dashboard, layer in cross-cutting analysis (ownership, conflicts, partnerships, risk), and finish with the explainable consortium recommender — proven by running the seeded 12 firms x 7 topics end-to-end to produce the initial report.
 
 ## Phases
 
@@ -38,7 +38,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 3 plans
 Plans:
 
-- [x] 01-01-PLAN.md — Walking Skeleton: Next.js + Drizzle/SQLite scaffold, full schema, seed (12 firms + 7 topics), sidebar shell, Firms list (DB read) + Add Firm dialog (DB write) — COMPLETE 2026-06-13
+- [x] 01-01-PLAN.md — Walking Skeleton: Next.js + Drizzle/SQLite scaffold, full schema, seed (12 firms + 7 topics), sidebar shell, Firms list (DB read) + Add Firm dialog (DB write) — COMPLETE 2026-06-13 (database since migrated to Postgres in db-worker-upgrade)
 - [x] 01-02-PLAN.md — Config CRUD: firm edit/delete, Topics CRUD, read-only Dashboard comparison table — COMPLETE 2026-06-14
 - [x] 01-03-PLAN.md — UK data layer: Companies House/Contracts Finder/Find a Tender clients, OCDS normalise+dedup adapter, SQLite job queue, per-firm refresh + Search CH — COMPLETE 2026-06-14
 

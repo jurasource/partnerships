@@ -34,13 +34,14 @@ A configurable web dashboard that conducts deep research on a user-defined list 
 | TypeScript | 5.6+ | Type safety across API clients, DB rows, LLM schemas | Strongly typed OCDS / Companies House responses and Zod-validated LLM output prevent a whole class of integration bugs. |
 | Node.js | 20 LTS or 22 LTS | Runtime | Next 15 baseline; 22 LTS preferred for longevity. |
 
-### Database & Caching
+### Database & Job Queue
 
 | Technology | Version | Purpose | Why |
 |------------|---------|---------|-----|
-| SQLite (via better-sqlite3) | better-sqlite3 11.x | Local-first cache of firm profiles, per-topic research findings, raw API responses, refresh timestamps | Zero-ops, single file, synchronous fast reads — ideal for a single-user local tool. Cache-with-manual-refresh is exactly SQLite's sweet spot. |
-| Drizzle ORM | 0.36+ (latest 0.x) | Schema, migrations, typed queries | TypeScript-native, thin over SQL, generates types from schema. Lighter and faster to wire than Prisma for SQLite; trivial later swap to Postgres via dialect change. |
-| Postgres (future) | 16+ | Cloud deployment target | NOT for v1. Drizzle's Postgres dialect means migrating later is a config + connection change, satisfying the "don't preclude cloud" constraint. |
+| PostgreSQL | 16 (docker-compose) | Primary database: firm profiles, per-topic research findings, raw API responses, job status, refresh timestamps | Production-grade, cloud-portable. Runs locally via `docker compose up -d db`. |
+| Drizzle ORM | 0.45+ | Schema, migrations, typed queries | TypeScript-native, thin over SQL. `drizzle-orm/postgres-js` dialect. Push schema with `npm run db:push`. |
+| Redis | 7 (docker-compose) | Job queue transport for BullMQ | Durable dispatch of research jobs from server action to worker. Runs locally via `docker compose up -d redis`. |
+| BullMQ | 5.x | Job queue library | Redis-backed queue: durable dispatch, concurrency control, graceful shutdown. Producer: `src/lib/jobs/bull.ts`. Worker: `npm run worker`. |
 
 ### AI / LLM Research Orchestration
 
@@ -65,7 +66,7 @@ A configurable web dashboard that conducts deep research on a user-defined list 
 
 - Both procurement APIs speak **OCDS** (Open Contracting Data Standard) JSON — model a shared OCDS release/award type once and reuse across FTS + Contracts Finder.
 - Match firms to notices by company name AND Companies House number where possible (name-only matching is noisy in this sector — many similarly named entities). Store matched notice IDs against the firm to make matches auditable.
-- Cache raw OCDS payloads in SQLite so re-analysis doesn't re-hit the APIs; refresh on manual per-firm refresh.
+- Cache raw OCDS payloads in Postgres so re-analysis doesn't re-hit the APIs; refresh on manual per-firm refresh.
 - These structured sources provide the **verifiable** contract/ownership data; the AI/web-search layer fills reputation/partnership/risk gaps.
 
 ### Dashboard UI
@@ -85,7 +86,8 @@ A configurable web dashboard that conducts deep research on a user-defined list 
 |----------|-------------|-------------|---------|
 | Framework | Next.js 15 full-stack | FastAPI (Py) + React SPA | Split stack adds wiring/CORS/duplication for a single-user app; no benefit at this scale. |
 | Framework | Next.js 15 | Remix / TanStack Start | Both fine; Next has the deepest dashboard/AI-SDK ecosystem and docs in 2025. |
-| Database | SQLite | Postgres now | Premature ops for local-first single user; Drizzle makes the later migration cheap. |
+| Database | Postgres 16 | SQLite (original plan) | Migrated to Postgres (db-worker-upgrade) for cloud portability and concurrent worker DB writes. |
+| Job queue | BullMQ + Redis | child_process.spawn() per job | Replaced spawn pattern with BullMQ (db-worker-upgrade) for durable dispatch, concurrency control, and clean worker/producer separation. |
 | ORM | Drizzle | Prisma | Prisma heavier, slower cold-start, more codegen; Drizzle is leaner and SQL-transparent. |
 | LLM toolkit | Vercel AI SDK | LangChain / LangGraph | Agent frameworks are over-engineered for a bounded research loop; slower to build, more abstraction to debug. |
 | Web search | Tavily | Scraping / SerpAPI | Scraping is brittle and licence-risky; Tavily returns citation-ready content aligned to the "must cite" requirement. |

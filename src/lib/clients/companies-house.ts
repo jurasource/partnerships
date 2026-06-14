@@ -1,4 +1,3 @@
-import "server-only";
 import { z } from "zod";
 
 import { rateLimitedFetch } from "./http";
