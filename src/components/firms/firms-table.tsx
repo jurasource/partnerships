@@ -36,6 +36,7 @@ import {
 import { cn } from "@/lib/utils";
 import { deleteFirm } from "@/lib/actions/firm-actions";
 import { FirmFormDialog } from "@/components/firms/firm-form-dialog";
+import { FirmRowRefresh } from "@/components/firms/firm-row-refresh";
 import type { Firm, CapabilityTag } from "@/lib/types";
 
 // ---------------------------------------------------------------------------
@@ -80,6 +81,9 @@ function FirmRowActions({ firm }: { firm: Firm }) {
 
   return (
     <div className="flex items-center gap-1 justify-end">
+      {/* Per-firm refresh — re-fetches CH/CF/FTS into the cache (Plan 03) */}
+      <FirmRowRefresh firmId={firm.id} firmName={firm.canonicalName} />
+
       {/* Edit — opens FirmFormDialog in edit mode */}
       <FirmFormDialog firm={firm} />
 
@@ -116,8 +120,6 @@ function FirmRowActions({ firm }: { firm: Firm }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Space reserved for Plan 03 per-firm refresh control */}
     </div>
   );
 }

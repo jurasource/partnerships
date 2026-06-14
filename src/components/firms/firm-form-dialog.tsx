@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -16,13 +15,9 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { createFirm, updateFirm } from "@/lib/actions/firm-actions";
+import { ChSearchField } from "@/components/firms/ch-search-field";
 import type { CapabilityTag, Firm } from "@/lib/types";
 
 const ALL_TAGS: CapabilityTag[] = ["Nuclear", "Infrastructure", "Construction"];
@@ -254,39 +249,12 @@ export function FirmFormDialog({ firm, trigger }: FirmFormDialogProps) {
               Companies House Number{" "}
               <span className="text-red-600">*</span>
             </Label>
-            <div className="flex gap-2">
-              <Input
-                id="ch-number"
-                placeholder="e.g. 03846738"
-                value={chNumber}
-                onChange={(e) => setChNumber(e.target.value)}
-                className={cn(
-                  "font-mono",
-                  errors.companiesHouseNumber &&
-                    "border-red-500 focus-visible:ring-red-500"
-                )}
-              />
-              {/* Search CH button — stubbed; live lookup lands in Plan 03 (D-03) */}
-              <Tooltip>
-                <TooltipTrigger
-                  render={
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      disabled
-                      aria-label="Search Companies House"
-                      className="shrink-0 opacity-50"
-                    />
-                  }
-                >
-                  <Search className="h-4 w-4" />
-                </TooltipTrigger>
-                <TooltipContent>
-                  Search comes in the data layer (Plan 03)
-                </TooltipContent>
-              </Tooltip>
-            </div>
+            {/* Live Companies House search (D-03) — auto-fills the CH number */}
+            <ChSearchField
+              value={chNumber}
+              onChange={setChNumber}
+              error={Boolean(errors.companiesHouseNumber)}
+            />
             {errors.companiesHouseNumber && (
               <p className="text-xs text-red-600">
                 {errors.companiesHouseNumber}
