@@ -6,30 +6,32 @@
  * vi.mock('ai') to control generateText output.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { WebSearchResult } from "@/lib/search/types";
 import { NOT_FOUND_SENTINEL, FindingSchema } from "./schemas";
 
 // ---------------------------------------------------------------------------
-// Mock 'ai' module — controls generateText output per test
+// Test fixtures
 // ---------------------------------------------------------------------------
-vi.mock("ai", async () => {
-  const actual = await vi.importActual<typeof import("ai")>("ai");
-  return {
-    ...actual,
-    generateText: vi.fn(),
-    Output: actual.Output,
-    NoObjectGeneratedError: actual.NoObjectGeneratedError,
-  };
-});
+const MOCK_FIRM = {
+  id: "firm-abc",
+  canonicalName: "Test Firm Ltd",
+  aliases: "[]",
+  companiesHouseNumber: "12345678",
+  capabilityTags: "[]",
+  createdAt: "2026-01-01",
+  updatedAt: "2026-01-01",
+  lastResearchedAt: null,
+};
 
-// Mock @ai-sdk/anthropic so ANTHROPIC_API_KEY is not required
-vi.mock("@ai-sdk/anthropic", () => ({
-  anthropic: vi.fn(() => ({ provider: "anthropic-mock", modelId: "claude-sonnet-4-6" })),
-}));
+const MOCK_TOPICS = [
+  { id: "topic-1", name: "UK nuclear capability", description: "Topic 1", createdAt: "2026-01-01", updatedAt: "2026-01-01" },
+  { id: "topic-2", name: "Past government contracts", description: "Topic 2", createdAt: "2026-01-01", updatedAt: "2026-01-01" },
+  { id: "topic-3", name: "Ownership structure", description: "Topic 3", createdAt: "2026-01-01", updatedAt: "2026-01-01" },
+];
 
 // ---------------------------------------------------------------------------
-// Mock the DB client — capture rows inserted into findings
+// Captured findings store — module-level so vi.mock factory closures can write to it
 // ---------------------------------------------------------------------------
 type InsertedFinding = {
   firmId: string;
@@ -43,15 +45,54 @@ type InsertedFinding = {
 
 const insertedFindings: InsertedFinding[] = [];
 
+// ---------------------------------------------------------------------------
+// Mock 'ai' module — controls generateText output per test
+// ---------------------------------------------------------------------------
+const mockGenerateText = vi.fn();
+
+vi.mock("ai", async () => {
+  const actual = await vi.importActual<typeof import("ai")>("ai");
+  return {
+    ...actual,
+    generateText: mockGenerateText,
+  };
+});
+
+// ---------------------------------------------------------------------------
+// Mock @ai-sdk/anthropic so ANTHROPIC_API_KEY is not required
+// ---------------------------------------------------------------------------
+vi.mock("@ai-sdk/anthropic", () => ({
+  anthropic: vi.fn(() => ({ provider: "anthropic-mock", modelId: "claude-sonnet-4-6" })),
+}));
+
+// ---------------------------------------------------------------------------
+// Mock the DB client — separate select call handlers for firms vs topics
+// The worker calls:
+//   db.select().from(firms).where(...).limit(1)  -> [MOCK_FIRM]
+//   db.select().from(topics)                      -> MOCK_TOPICS  (awaited directly)
+//   db.insert(findings).values(row)               -> void
+// ---------------------------------------------------------------------------
+let dbSelectCallIndex = 0;
+
 vi.mock("@/db/client", () => ({
   db: {
-    select: vi.fn(() => ({
-      from: vi.fn(() => ({
-        where: vi.fn(() => ({
-          limit: vi.fn(() => Promise.resolve([MOCK_FIRM])),
-        })),
-      })),
-    })),
+    select: vi.fn(() => {
+      const idx = dbSelectCallIndex++;
+      if (idx === 0) {
+        // First call: firm lookup
+        return {
+          from: vi.fn(() => ({
+            where: vi.fn(() => ({
+              limit: vi.fn(() => Promise.resolve([MOCK_FIRM])),
+            })),
+          })),
+        };
+      }
+      // Subsequent calls: topics query — from() returns a thenable
+      return {
+        from: vi.fn(() => Promise.resolve(MOCK_TOPICS)),
+      };
+    }),
     insert: vi.fn(() => ({
       values: vi.fn((row: InsertedFinding) => {
         insertedFindings.push(row);
@@ -61,69 +102,26 @@ vi.mock("@/db/client", () => ({
   },
 }));
 
-// Mock firms + topics schema references
-const MOCK_TOPICS = [
-  { id: "topic-1", name: "UK nuclear capability", description: "Test topic 1", createdAt: "2026-01-01", updatedAt: "2026-01-01" },
-  { id: "topic-2", name: "Past government contracts", description: "Test topic 2", createdAt: "2026-01-01", updatedAt: "2026-01-01" },
-  { id: "topic-3", name: "Ownership structure", description: "Test topic 3", createdAt: "2026-01-01", updatedAt: "2026-01-01" },
-];
+// ---------------------------------------------------------------------------
+// Mock @/db/schema — minimal stubs for table references used in worker
+// ---------------------------------------------------------------------------
+vi.mock("@/db/schema", () => ({
+  firms: { id: "firms.id" },
+  topics: { id: "topics.id" },
+  findings: { firmId: "findings.firm_id", topicId: "findings.topic_id" },
+}));
 
-const MOCK_FIRM = {
-  id: "firm-abc",
-  canonicalName: "Test Firm Ltd",
-  aliases: "[]",
-  companiesHouseNumber: "12345678",
-  capabilityTags: "[]",
-  createdAt: "2026-01-01",
-  updatedAt: "2026-01-01",
-  lastResearchedAt: null,
-};
+// ---------------------------------------------------------------------------
+// Mock drizzle-orm operators
+// ---------------------------------------------------------------------------
+vi.mock("drizzle-orm", () => ({
+  eq: vi.fn((_field: unknown, _value: unknown) => "eq-stub"),
+  desc: vi.fn((_field: unknown) => "desc-stub"),
+}));
 
-vi.mock("@/db/schema", async () => {
-  const actual = await vi.importActual<typeof import("@/db/schema")>("@/db/schema");
-  return {
-    ...actual,
-  };
-});
-
-// Mock the DB .select().from(topics) chain to return MOCK_TOPICS
-// We need to intercept the topics query specifically
-vi.mock("@/db/client", () => {
-  let callCount = 0;
-  return {
-    db: {
-      select: vi.fn(() => ({
-        from: vi.fn((table: unknown) => {
-          // First call is firm lookup, subsequent calls are topics lookup
-          // Detect by checking if we're being chained with .where() or not
-          const result = {
-            where: vi.fn(() => ({
-              limit: vi.fn(() => Promise.resolve([MOCK_FIRM])),
-            })),
-            // For topics: direct resolution without .where()
-            then: undefined as unknown,
-          };
-          // Make it thenable (so await db.select().from(topics) works)
-          Object.defineProperty(result, Symbol.iterator, {
-            get: () => MOCK_TOPICS[Symbol.iterator].bind(MOCK_TOPICS),
-          });
-          // Return a promise-like that resolves to topics when awaited directly
-          const promise = Promise.resolve(MOCK_TOPICS) as Promise<typeof MOCK_TOPICS> & typeof result;
-          Object.assign(promise, result);
-          return promise;
-        }),
-      })),
-      insert: vi.fn(() => ({
-        values: vi.fn((row: InsertedFinding) => {
-          insertedFindings.push(row);
-          return Promise.resolve();
-        }),
-      })),
-    },
-  };
-});
-
-// Mock grounding and prompts so they don't need CH API
+// ---------------------------------------------------------------------------
+// Mock grounding builder so no CH API calls are made
+// ---------------------------------------------------------------------------
 vi.mock("./grounding", () => ({
   buildGroundingContext: vi.fn(() =>
     Promise.resolve({
@@ -136,6 +134,9 @@ vi.mock("./grounding", () => ({
   formatGroundingContext: vi.fn(() => "Test grounding context"),
 }));
 
+// ---------------------------------------------------------------------------
+// Mock prompts
+// ---------------------------------------------------------------------------
 vi.mock("./prompts", () => ({
   RESEARCH_SYSTEM_PROMPT: "You are a test analyst.",
   buildSearchQuery: vi.fn((firmName: string, topic: { name: string }) => `${firmName} ${topic.name}`),
@@ -144,7 +145,7 @@ vi.mock("./prompts", () => ({
 }));
 
 // ---------------------------------------------------------------------------
-// Stub WebSearchClient — returns fixed search results
+// Stub WebSearchClient
 // ---------------------------------------------------------------------------
 const STUB_SEARCH_RESULTS: WebSearchResult[] = [
   {
@@ -159,26 +160,77 @@ const stubSearchClient = {
 };
 
 // ---------------------------------------------------------------------------
-// Import the module under test AFTER mocks are set up
+// Reset between tests
 // ---------------------------------------------------------------------------
-import { generateText } from "ai";
-const mockGenerateText = generateText as ReturnType<typeof vi.fn>;
+beforeEach(() => {
+  insertedFindings.length = 0;
+  dbSelectCallIndex = 0;
+  vi.clearAllMocks();
+  stubSearchClient.search.mockResolvedValue(STUB_SEARCH_RESULTS);
+  mockGenerateText.mockReset();
+});
 
 // ---------------------------------------------------------------------------
-// Tests
+// Tests: FindingSchema + NOT_FOUND_SENTINEL (no worker import needed)
+// ---------------------------------------------------------------------------
+
+describe("FindingSchema — no-LOW invariant", () => {
+  it("no-LOW: FindingSchema rejects LOW confidence — enum is only HIGH|MEDIUM", () => {
+    const result = FindingSchema.safeParse({
+      summary: "Some AI-derived finding with no source.",
+      confidence: "LOW",
+      sourceUrl: "https://example.com/something",
+      sourceTitle: "Some Page",
+      rawSnippet: "Some text",
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("FindingSchema accepts HIGH confidence", () => {
+    const result = FindingSchema.safeParse({
+      summary: "Test Firm has nuclear decommissioning experience.",
+      confidence: "HIGH",
+      sourceUrl: "companies-house",
+      sourceTitle: "Companies House",
+      rawSnippet: "Active company status: active",
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("FindingSchema accepts MEDIUM confidence", () => {
+    const result = FindingSchema.safeParse({
+      summary: "Test Firm won a £5m Sellafield contract in 2024.",
+      confidence: "MEDIUM",
+      sourceUrl: "https://example.com/sellafield-contracts",
+      sourceTitle: "Sellafield Contracts 2024",
+      rawSnippet: "Awarded in 2023.",
+    });
+
+    expect(result.success).toBe(true);
+  });
+});
+
+describe("NOT_FOUND_SENTINEL", () => {
+  it("returns sourceUrl=not-found and summary starting with 'Not found:'", () => {
+    const sentinel = NOT_FOUND_SENTINEL("topic-xyz", "no search results");
+    expect(sentinel.sourceUrl).toBe("not-found");
+    expect(sentinel.summary).toMatch(/^Not found:/);
+    expect(sentinel.confidence).toBe("HIGH");
+    expect(sentinel.sourceTitle).toBe("Research worker");
+    expect(sentinel.rawSnippet).toContain("topic-xyz");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Tests: runResearchWorker (imports worker after mocks are registered)
 // ---------------------------------------------------------------------------
 
 describe("runResearchWorker invariants", () => {
-  beforeEach(() => {
-    insertedFindings.length = 0;
-    vi.clearAllMocks();
-    stubSearchClient.search.mockResolvedValue(STUB_SEARCH_RESULTS);
-  });
-
-  it("E1 — citation completeness: valid HIGH finding has non-empty sourceUrl, sourceTitle, rawSnippet", async () => {
+  it("E1 — citation completeness: valid HIGH finding writes rows with non-empty citation fields", async () => {
     const { runResearchWorker } = await import("./worker");
 
-    // Arrange: generateText returns a valid HIGH finding
     mockGenerateText.mockResolvedValue({
       output: {
         summary: "Test Firm Ltd holds a nuclear decommissioning licence from ONR.",
@@ -189,10 +241,8 @@ describe("runResearchWorker invariants", () => {
       },
     });
 
-    // Act
     await runResearchWorker("firm-abc", "job-001", stubSearchClient);
 
-    // Assert: every inserted finding has non-empty citation fields
     expect(insertedFindings.length).toBeGreaterThan(0);
     for (const finding of insertedFindings) {
       expect(finding.sourceUrl.length).toBeGreaterThan(0);
@@ -205,54 +255,52 @@ describe("runResearchWorker invariants", () => {
     const { runResearchWorker } = await import("./worker");
     const { NoObjectGeneratedError } = await import("ai");
 
-    // Arrange: first call succeeds, second throws NoObjectGeneratedError
-    mockGenerateText
-      .mockResolvedValueOnce({
-        output: {
-          summary: "Test Firm Ltd has some nuclear work.",
-          confidence: "HIGH",
-          sourceUrl: "https://example.com/nuclear-firm",
-          sourceTitle: "Test Firm Nuclear Work",
-          rawSnippet: "Test Firm Ltd has extensive nuclear decommissioning experience.",
-        },
+    // Topic 1: succeeds
+    mockGenerateText.mockResolvedValueOnce({
+      output: {
+        summary: "Test Firm Ltd has some nuclear work.",
+        confidence: "HIGH",
+        sourceUrl: "https://example.com/nuclear-firm",
+        sourceTitle: "Test Firm Nuclear Work",
+        rawSnippet: "Test Firm Ltd has extensive nuclear decommissioning experience.",
+      },
+    });
+    // Topic 2: throws NoObjectGeneratedError -> sentinel
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockGenerateText.mockRejectedValueOnce(
+      // Cast to avoid strict LanguageModelUsage type requirements in tests
+      new NoObjectGeneratedError({
+        message: "Model failed",
+        text: "bad output",
+        response: { id: "r1", timestamp: new Date(), modelId: "m1", headers: {} },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        usage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 } as any,
+        cause: undefined,
+        finishReason: "stop",
       })
-      .mockRejectedValue(
-        new NoObjectGeneratedError({
-          message: "Model failed to produce structured output",
-          text: "raw model output",
-          response: { id: "test", timestamp: new Date(), modelId: "claude-sonnet-4-6", headers: {}, body: {} },
-          usage: { promptTokens: 100, completionTokens: 0, totalTokens: 100 },
-          cause: undefined,
-          finishReason: "stop",
-        })
-      );
+    );
+    // Topic 3: succeeds
+    mockGenerateText.mockResolvedValueOnce({
+      output: {
+        summary: "Test Firm Ltd has some government contracts.",
+        confidence: "HIGH",
+        sourceUrl: "https://example.com/contracts",
+        sourceTitle: "Contract Info",
+        rawSnippet: "Awarded in 2023.",
+      },
+    });
 
-    // Act
     await runResearchWorker("firm-abc", "job-002", stubSearchClient);
 
-    // Assert: at least one sentinel row exists (sourceUrl === 'not-found')
+    // At least one sentinel row exists
     const sentinelRows = insertedFindings.filter((f) => f.sourceUrl === "not-found");
     expect(sentinelRows.length).toBeGreaterThan(0);
     expect(sentinelRows[0].summary).toMatch(/^Not found:/);
   });
 
-  it("no-LOW: FindingSchema rejects LOW confidence — enum is only HIGH|MEDIUM", () => {
-    // Assert: attempting to parse a LOW finding fails schema validation
-    const result = FindingSchema.safeParse({
-      summary: "Some AI-derived finding with no source.",
-      confidence: "LOW",
-      sourceUrl: "https://example.com/something",
-      sourceTitle: "Some Page",
-      rawSnippet: "Some text",
-    });
-
-    expect(result.success).toBe(false);
-  });
-
   it("topic coverage: COUNT(DISTINCT topicId) equals number of seeded topics", async () => {
     const { runResearchWorker } = await import("./worker");
 
-    // Arrange: all calls succeed with valid findings
     mockGenerateText.mockResolvedValue({
       output: {
         summary: "Test Firm Ltd has some relevant capability.",
@@ -263,11 +311,10 @@ describe("runResearchWorker invariants", () => {
       },
     });
 
-    // Act
     await runResearchWorker("firm-abc", "job-003", stubSearchClient);
 
-    // Assert: one row per topic (MOCK_TOPICS has 3 entries for this test)
     const distinctTopicIds = new Set(insertedFindings.map((f) => f.topicId));
     expect(distinctTopicIds.size).toBe(MOCK_TOPICS.length);
+    expect(insertedFindings.length).toBe(MOCK_TOPICS.length);
   });
 });
