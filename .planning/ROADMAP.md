@@ -48,7 +48,11 @@ Plans:
   2. Every AI-derived finding carries a mandatory source citation with the raw retrieved snippet, and verified structured-API data is visibly distinguished from AI narrative
   3. When nothing is found, the result is an explicit "not found" with a reason — never empty silence
   4. Research results are cached and only re-run on a manual user trigger, with a visible "last researched" timestamp and staleness indicator per firm
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 02-01-PLAN.md — Search client + Finding schema + grounding/prompts + citation-enforced research worker (RES-03/04/05)
+- [ ] 02-02-PLAN.md — runResearch action + /api/research/run worker route + status polling endpoint + lastResearchedAt (RES-01/02/06/07)
+- [ ] 02-03-PLAN.md — Research trigger button, job status badge, N/7 progress, staleness badge wired into the firms table (RES-01/02/07)
 **UI hint**: yes
 
 ### Phase 3: Dashboard & Profiles
@@ -99,8 +103,8 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Data Foundation | 2/3 | In progress | - |
-| 2. Research Engine | 0/TBD | Not started | - |
+| 1. Data Foundation | 3/3 | Complete | 2026-06-14 |
+| 2. Research Engine | 0/3 | Planned | - |
 | 3. Dashboard & Profiles | 0/TBD | Not started | - |
 | 4. Cross-Cutting Analysis | 0/TBD | Not started | - |
 | 5. Consortium Recommender + Initial Report | 0/TBD | Not started | - |
