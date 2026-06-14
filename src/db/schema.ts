@@ -1,8 +1,7 @@
-import { sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
-import { sql } from "drizzle-orm";
+import { pgTable, text, uniqueIndex, timestamp } from "drizzle-orm/pg-core";
 
 // --- firms ---------------------------------------------------------------
-export const firms = sqliteTable("firms", {
+export const firms = pgTable("firms", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
@@ -20,12 +19,8 @@ export const firms = sqliteTable("firms", {
    * Values: "Nuclear" | "Infrastructure" | "Consultancy"
    */
   capabilityTags: text("capability_tags").notNull().default("[]"),
-  createdAt: text("created_at")
-    .notNull()
-    .default(sql`(datetime('now'))`),
-  updatedAt: text("updated_at")
-    .notNull()
-    .default(sql`(datetime('now'))`),
+  createdAt: timestamp("created_at", { mode: "string" }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { mode: "string" }).notNull().defaultNow(),
   /**
    * ISO timestamp set when a research job for this firm transitions to 'done'.
    * NULL = never researched. Used by Wave 2/3 for staleness detection (D-07).
@@ -34,22 +29,18 @@ export const firms = sqliteTable("firms", {
 });
 
 // --- topics --------------------------------------------------------------
-export const topics = sqliteTable("topics", {
+export const topics = pgTable("topics", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
   name: text("name").notNull(),
   description: text("description").notNull().default(""),
-  createdAt: text("created_at")
-    .notNull()
-    .default(sql`(datetime('now'))`),
-  updatedAt: text("updated_at")
-    .notNull()
-    .default(sql`(datetime('now'))`),
+  createdAt: timestamp("created_at", { mode: "string" }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { mode: "string" }).notNull().defaultNow(),
 });
 
 // --- procurementRecords --------------------------------------------------
-export const procurementRecords = sqliteTable(
+export const procurementRecords = pgTable(
   "procurement_records",
   {
     id: text("id")
@@ -78,15 +69,13 @@ export const procurementRecords = sqliteTable(
      * Stored as TEXT so schema changes don't require re-fetching raw data.
      */
     rawJson: text("raw_json").notNull(),
-    createdAt: text("created_at")
-      .notNull()
-      .default(sql`(datetime('now'))`),
+    createdAt: timestamp("created_at", { mode: "string" }).notNull().defaultNow(),
   },
   (table) => [uniqueIndex("procurement_records_ocid_unique").on(table.ocid)],
 );
 
 // --- jobs ----------------------------------------------------------------
-export const jobs = sqliteTable("jobs", {
+export const jobs = pgTable("jobs", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
@@ -100,21 +89,18 @@ export const jobs = sqliteTable("jobs", {
   /**
    * Job lifecycle status (D-08): pending | running | done | failed
    */
-  status: text("status", {
-    enum: ["pending", "running", "done", "failed"],
-  })
+  status: text("status")
+    .$type<"pending" | "running" | "done" | "failed">()
     .notNull()
     .default("pending"),
-  createdAt: text("created_at")
-    .notNull()
-    .default(sql`(datetime('now'))`),
+  createdAt: timestamp("created_at", { mode: "string" }).notNull().defaultNow(),
   startedAt: text("started_at"),
   completedAt: text("completed_at"),
   errorMessage: text("error_message"),
 });
 
 // --- findings ------------------------------------------------------------
-export const findings = sqliteTable(
+export const findings = pgTable(
   "findings",
   {
     id: text("id")
@@ -141,7 +127,6 @@ export const findings = sqliteTable(
     /**
      * Publication date of the cited source (ISO string, e.g. "2024-03-15").
      * NULL for structured API sources or when the provider does not supply a date.
-     * Used in the UI to indicate how recent the evidence is.
      */
     sourceDate: text("source_date"),
     /**
@@ -150,12 +135,10 @@ export const findings = sqliteTable(
      *   MEDIUM = AI-derived with a cited source
      *   LOW    = AI-derived without a verifiable source (triggers "not found" output)
      */
-    confidence: text("confidence", {
-      enum: ["HIGH", "MEDIUM", "LOW"],
-    }).notNull(),
-    createdAt: text("created_at")
-      .notNull()
-      .default(sql`(datetime('now'))`),
+    confidence: text("confidence")
+      .$type<"HIGH" | "MEDIUM" | "LOW">()
+      .notNull(),
+    createdAt: timestamp("created_at", { mode: "string" }).notNull().defaultNow(),
   },
   /**
    * Unique constraint on (firm_id, topic_id) — ensures each re-run replaces the

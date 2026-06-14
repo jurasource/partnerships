@@ -2,8 +2,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { createFirm, updateFirm, deleteFirm } from "./firm-actions";
 import type { Firm } from "@/lib/types";
 
-// Mock the database and next/cache
-vi.mock("@/db/client");
+// Mock the database and next/cache — explicit factory required because the
+// real client.ts throws at load time when DATABASE_URL is not set.
+vi.mock("@/db/client", () => ({ db: {}, sql: {} }));
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));

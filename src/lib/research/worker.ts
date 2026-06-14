@@ -143,7 +143,7 @@ export async function runResearchWorker(
         sourceTitle: finding.sourceTitle,
         rawSnippet: finding.rawSnippet,
         sourceDate: finding.sourceDate ?? null,
-        createdAt: sql`(datetime('now'))`,
+        createdAt: new Date().toISOString(),
       },
     });
   }
