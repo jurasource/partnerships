@@ -50,7 +50,7 @@ type FirmFormDialogProps = {
   /** When provided, the dialog operates in edit mode */
   firm?: Firm;
   /** Optional custom trigger element (defaults to the Add/Edit Firm button) */
-  trigger?: React.ReactNode;
+  trigger?: React.ReactElement;
 };
 
 export function FirmFormDialog({ firm, trigger }: FirmFormDialogProps) {
