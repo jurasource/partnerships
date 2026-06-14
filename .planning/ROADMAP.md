@@ -34,7 +34,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 3 plans
 Plans:
 - [x] 01-01-PLAN.md — Walking Skeleton: Next.js + Drizzle/SQLite scaffold, full schema, seed (12 firms + 7 topics), sidebar shell, Firms list (DB read) + Add Firm dialog (DB write) — COMPLETE 2026-06-13
-- [ ] 01-PLAN-02.md — Config CRUD: firm edit/delete, Topics CRUD, read-only Dashboard comparison table
+- [x] 01-02-PLAN.md — Config CRUD: firm edit/delete, Topics CRUD, read-only Dashboard comparison table — COMPLETE 2026-06-14
 - [ ] 01-PLAN-03.md — UK data layer: Companies House/Contracts Finder/Find a Tender clients, OCDS normalise+dedup adapter, SQLite job queue, per-firm refresh + Search CH
 **UI hint**: yes
 
@@ -99,7 +99,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Data Foundation | 1/3 | In progress | - |
+| 1. Data Foundation | 2/3 | In progress | - |
 | 2. Research Engine | 0/TBD | Not started | - |
 | 3. Dashboard & Profiles | 0/TBD | Not started | - |
 | 4. Cross-Cutting Analysis | 0/TBD | Not started | - |
