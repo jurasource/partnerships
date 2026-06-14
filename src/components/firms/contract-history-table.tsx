@@ -133,7 +133,14 @@ const columns: ColumnDef<ContractRow>[] = [
         {formatDate(row.getValue("awardDate"))}
       </span>
     ),
-    sortingFn: "alphanumeric",
+    sortingFn: (rowA, rowB, columnId) => {
+      const a = rowA.getValue<string | null>(columnId);
+      const b = rowB.getValue<string | null>(columnId);
+      if (a === null && b === null) return 0;
+      if (a === null) return -1; // nulls sort lowest (before valid dates)
+      if (b === null) return 1;
+      return a < b ? -1 : a > b ? 1 : 0;
+    },
   },
   {
     accessorKey: "value",
