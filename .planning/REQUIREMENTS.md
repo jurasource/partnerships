@@ -16,13 +16,13 @@
 
 ### Research Engine
 
-- [ ] **RES-01**: User can trigger AI-assisted research for a firm across all topics
-- [ ] **RES-02**: Research progress is visible in the UI via job-status polling (no silent freezes)
+- [x] **RES-01**: User can trigger AI-assisted research for a firm across all topics
+- [x] **RES-02**: Research progress is visible in the UI via job-status polling (no silent freezes)
 - [x] **RES-03**: Each AI-derived finding includes mandatory source citations with raw retrieved snippet
 - [x] **RES-04**: Findings distinguish verified structured data (from UK APIs) from AI-derived narrative
 - [x] **RES-05**: Explicit "not found" is a first-class output — silence is never returned without a reason
 - [x] **RES-06**: Research results are cached in a local database; re-research only on manual user trigger
-- [ ] **RES-07**: Each firm shows a "last researched" timestamp and a staleness indicator
+- [x] **RES-07**: Each firm shows a "last researched" timestamp and a staleness indicator
 
 ### UK Data Integration
 
@@ -110,13 +110,13 @@ Updated during roadmap creation.
 | DATA-03 | Phase 1 | Complete (Plan 01-03) |
 | DATA-04 | Phase 1 | Complete (Plan 01-03) |
 | DATA-05 | Phase 1 | Complete (Plan 01-03) |
-| RES-01 | Phase 2 | Pending |
-| RES-02 | Phase 2 | Pending |
+| RES-01 | Phase 2 | Complete |
+| RES-02 | Phase 2 | Complete |
 | RES-03 | Phase 2 | Complete |
 | RES-04 | Phase 2 | Complete |
 | RES-05 | Phase 2 | Complete |
 | RES-06 | Phase 2 | Complete |
-| RES-07 | Phase 2 | Pending |
+| RES-07 | Phase 2 | Complete |
 | PROF-01 | Phase 3 | Pending |
 | PROF-02 | Phase 3 | Pending |
 | PROF-03 | Phase 3 | Pending |

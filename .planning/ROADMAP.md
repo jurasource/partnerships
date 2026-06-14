@@ -64,7 +64,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 02-02-PLAN.md — runResearch action + /api/research/run worker route + status polling endpoint + lastResearchedAt (RES-01/02/06/07)
+- [x] 02-02-PLAN.md — runResearch action + /api/research/run worker route + status polling endpoint + lastResearchedAt (RES-01/02/06/07)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -130,7 +130,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Data Foundation | 3/3 | Complete | 2026-06-14 |
-| 2. Research Engine | 1/3 | In Progress|  |
+| 2. Research Engine | 2/3 | In Progress|  |
 | 3. Dashboard & Profiles | 0/TBD | Not started | - |
 | 4. Cross-Cutting Analysis | 0/TBD | Not started | - |
 | 5. Consortium Recommender + Initial Report | 0/TBD | Not started | - |
