@@ -4,7 +4,7 @@ import { FindingsByTopic } from "@/components/firms/findings-by-topic";
 import { CitationPanel } from "@/components/firms/citation-panel";
 import { FirmRefreshAction } from "@/components/firms/firm-refresh-action";
 import { ContractHistoryTable } from "@/components/firms/contract-history-table";
-import { cn } from "@/lib/utils";
+import { cn, parseCapabilityTags } from "@/lib/utils";
 import type { FirmProfile } from "@/lib/queries/firm-profile";
 import type { CapabilityTag } from "@/lib/types";
 
@@ -44,13 +44,8 @@ type FirmProfileLayoutProps = {
 export function FirmProfileLayout({ profile }: FirmProfileLayoutProps) {
   const { firm, findingsByTopic, contracts } = profile;
 
-  // Parse capabilityTags JSON (raw from DB)
-  let capabilityTags: string[] = [];
-  try {
-    capabilityTags = JSON.parse(firm.capabilityTags) as string[];
-  } catch {
-    capabilityTags = [];
-  }
+  // Parse capabilityTags JSON (raw from DB) — warns in development on invalid JSON
+  const capabilityTags = parseCapabilityTags(firm.capabilityTags);
 
   return (
     <main className="flex flex-col min-h-full">

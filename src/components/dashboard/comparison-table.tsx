@@ -24,7 +24,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { cn, parseCapabilityTags } from "@/lib/utils";
 import { StalenessBadge } from "@/components/research/staleness-badge";
 import { FirmRefreshAction } from "@/components/dashboard/firm-refresh-action";
 import { ComparisonTableFilter } from "@/components/dashboard/comparison-table-filter";
@@ -88,13 +88,7 @@ const columns: ColumnDef<ComparisonRow>[] = [
   {
     id: "capabilityTags",
     header: "Capabilities",
-    accessorFn: (row) => {
-      try {
-        return JSON.parse(row.capabilityTags as string) as string[];
-      } catch {
-        return [];
-      }
-    },
+    accessorFn: (row) => parseCapabilityTags(row.capabilityTags as string),
     cell: ({ getValue }) => {
       const tags = getValue() as string[];
       if (!tags.length) {
