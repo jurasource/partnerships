@@ -3,13 +3,13 @@ import { db } from "@/db/client";
 import { firms } from "@/db/schema";
 import { LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ComparisonTable } from "@/components/dashboard/comparison-table";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  // Minimal count check — full comparison table arrives in Plan 02
-  const allFirms = await db.select({ id: firms.id }).from(firms);
-  const firmCount = allFirms.length;
+  // RSC direct DB read — full firm comparison (read-only in Phase 1)
+  const allFirms = await db.select().from(firms);
 
   return (
     <main className="flex flex-col min-h-full">
@@ -22,7 +22,7 @@ export default async function DashboardPage() {
 
       {/* Content */}
       <div className="flex-1 px-6 py-6">
-        {firmCount === 0 ? (
+        {allFirms.length === 0 ? (
           /* Empty state (UI-SPEC Copywriting Contract) */
           <div className="flex flex-col items-center justify-center py-24 text-center">
             <div className="mb-4 rounded-full bg-neutral-100 p-4">
@@ -42,14 +42,7 @@ export default async function DashboardPage() {
             </Button>
           </div>
         ) : (
-          <div className="rounded-md border border-neutral-200 bg-neutral-50 p-6 text-center">
-            <p className="text-sm text-neutral-500">
-              {firmCount} firm{firmCount !== 1 ? "s" : ""} in your list.
-            </p>
-            <p className="mt-1 text-xs text-neutral-400">
-              The full firm comparison table arrives in Plan 02.
-            </p>
-          </div>
+          <ComparisonTable firms={allFirms} />
         )}
       </div>
     </main>
