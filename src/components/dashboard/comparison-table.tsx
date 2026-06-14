@@ -167,16 +167,17 @@ type ComparisonTableProps = {
 export function ComparisonTable({ rows }: ComparisonTableProps) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [activeTags, setActiveTags] = React.useState<CapabilityTag[]>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
 
-  // Sync activeTags → columnFilters on the capabilityTags column
-  React.useEffect(() => {
-    setColumnFilters(
+  // Derive columnFilters directly from activeTags — activeTags is the single source of truth.
+  // Do NOT pass onColumnFiltersChange to the table; TanStack Table must not write to this
+  // state independently, as that would cause the toggle bar and filter to diverge.
+  const columnFilters: ColumnFiltersState = React.useMemo(
+    () =>
       activeTags.length > 0
         ? [{ id: "capabilityTags", value: activeTags }]
         : [],
-    );
-  }, [activeTags]);
+    [activeTags],
+  );
 
   function handleToggleTag(tag: CapabilityTag) {
     setActiveTags((prev) =>
@@ -189,7 +190,7 @@ export function ComparisonTable({ rows }: ComparisonTableProps) {
     columns,
     state: { sorting, columnFilters },
     onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
+    // Do NOT pass onColumnFiltersChange — activeTags is the only write path
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
