@@ -2,7 +2,7 @@ import "server-only";
 
 import { generateText, Output, NoObjectGeneratedError } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 import { db } from "@/db/client";
 import { findings, firms, topics } from "@/db/schema";
@@ -121,7 +121,10 @@ export async function runResearchWorker(
       }
     }
 
-    // Persist the finding — exactly one row per topic (E2 guarantee)
+    // Persist the finding — upsert so re-runs replace stale rows rather than
+    // accumulating duplicates (CR-03). The unique constraint on (firmId, topicId)
+    // in schema.ts makes ON CONFLICT deterministic; createdAt is refreshed so
+    // the status endpoint's "findings since startedAt" count stays accurate.
     await db.insert(findings).values({
       firmId,
       topicId: topic.id,
@@ -130,6 +133,16 @@ export async function runResearchWorker(
       sourceUrl: finding.sourceUrl,
       sourceTitle: finding.sourceTitle,
       rawSnippet: finding.rawSnippet,
+    }).onConflictDoUpdate({
+      target: [findings.firmId, findings.topicId],
+      set: {
+        summary: finding.summary,
+        confidence: finding.confidence,
+        sourceUrl: finding.sourceUrl,
+        sourceTitle: finding.sourceTitle,
+        rawSnippet: finding.rawSnippet,
+        createdAt: sql`(datetime('now'))`,
+      },
     });
   }
 }

@@ -114,38 +114,46 @@ export const jobs = sqliteTable("jobs", {
 });
 
 // --- findings ------------------------------------------------------------
-export const findings = sqliteTable("findings", {
-  id: text("id")
-    .primaryKey()
-    .$defaultFn(() => crypto.randomUUID()),
-  firmId: text("firm_id")
-    .notNull()
-    .references(() => firms.id),
-  topicId: text("topic_id")
-    .notNull()
-    .references(() => topics.id),
-  summary: text("summary").notNull(),
+export const findings = sqliteTable(
+  "findings",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    firmId: text("firm_id")
+      .notNull()
+      .references(() => firms.id),
+    topicId: text("topic_id")
+      .notNull()
+      .references(() => topics.id),
+    summary: text("summary").notNull(),
+    /**
+     * Mandatory citation fields (D-11).
+     * Every finding MUST carry a retrievable source URL.
+     */
+    sourceUrl: text("source_url").notNull(),
+    sourceTitle: text("source_title").notNull(),
+    /**
+     * Exact snippet retrieved from the source (D-11).
+     * Stored alongside the URL so link rot doesn't erase the evidence.
+     */
+    rawSnippet: text("raw_snippet").notNull(),
+    /**
+     * Confidence level (D-11):
+     *   HIGH   = from structured UK API (CH / CF / FTS)
+     *   MEDIUM = AI-derived with a cited source
+     *   LOW    = AI-derived without a verifiable source (triggers "not found" output)
+     */
+    confidence: text("confidence", {
+      enum: ["HIGH", "MEDIUM", "LOW"],
+    }).notNull(),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
   /**
-   * Mandatory citation fields (D-11).
-   * Every finding MUST carry a retrievable source URL.
+   * Unique constraint on (firm_id, topic_id) — ensures each re-run replaces the
+   * prior finding via upsert rather than accumulating duplicate rows (CR-03).
    */
-  sourceUrl: text("source_url").notNull(),
-  sourceTitle: text("source_title").notNull(),
-  /**
-   * Exact snippet retrieved from the source (D-11).
-   * Stored alongside the URL so link rot doesn't erase the evidence.
-   */
-  rawSnippet: text("raw_snippet").notNull(),
-  /**
-   * Confidence level (D-11):
-   *   HIGH   = from structured UK API (CH / CF / FTS)
-   *   MEDIUM = AI-derived with a cited source
-   *   LOW    = AI-derived without a verifiable source (triggers "not found" output)
-   */
-  confidence: text("confidence", {
-    enum: ["HIGH", "MEDIUM", "LOW"],
-  }).notNull(),
-  createdAt: text("created_at")
-    .notNull()
-    .default(sql`(datetime('now'))`),
-});
+  (table) => [uniqueIndex("findings_firm_topic_unique").on(table.firmId, table.topicId)],
+);
