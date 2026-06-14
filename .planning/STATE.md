@@ -5,7 +5,7 @@ milestone_name: milestone
 status: executing
 stopped_at: Phase 01 Plan 03 complete — Phase 01 complete
 last_updated: "2026-06-14T00:00:00Z"
-last_activity: 2026-06-14 -- Phase 01 Plan 03 executed (UK data layer + job queue + per-firm refresh + Search CH)
+last_activity: 2026-06-14 - Completed quick task 260614-hly: fix firm-form-dialog.tsx:193 — change trigger?: React.ReactNode to React.ReactElement
 progress:
   total_phases: 5
   completed_phases: 1
@@ -78,6 +78,12 @@ Recent decisions affecting current work:
 ### Pending Todos
 
 None yet.
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260614-hly | fix firm-form-dialog.tsx:193 — change trigger?: React.ReactNode to React.ReactElement | 2026-06-14 | cb3fd9d | [260614-hly-fix-firm-form-dialog-tsx-193-change-trig](./quick/260614-hly-fix-firm-form-dialog-tsx-193-change-trig/) |
 
 ### Blockers/Concerns
 
