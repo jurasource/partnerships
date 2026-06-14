@@ -4,12 +4,9 @@ import type { Firm } from "@/lib/types";
 // ---------------------------------------------------------------------------
 // Hoist mocks before any module imports that depend on them
 // ---------------------------------------------------------------------------
-const { mockSelect, mockLeftJoin, mockGroupBy, mockFrom } = vi.hoisted(() => {
-  const mockFrom = vi.fn();
-  const mockLeftJoin = vi.fn();
-  const mockGroupBy = vi.fn();
+const { mockSelect } = vi.hoisted(() => {
   const mockSelect = vi.fn();
-  return { mockSelect, mockLeftJoin, mockGroupBy, mockFrom };
+  return { mockSelect };
 });
 
 vi.mock("@/db/client", () => ({
@@ -92,14 +89,10 @@ function buildSelectMock(
         from: () => Promise.resolve(firmsRows),
       };
     }
-    // c === 2: contract counts — .from().groupBy() or .from().leftJoin().groupBy()
-    // Return the raw count rows — implementation merges
+    // c === 2: contract counts — .from().groupBy() (no leftJoin in current implementation)
     return {
       from: () => ({
         groupBy: () => Promise.resolve(contractCountRows),
-        leftJoin: () => ({
-          groupBy: () => Promise.resolve(contractCountRows),
-        }),
       }),
     };
   });
