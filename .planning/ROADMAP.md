@@ -60,7 +60,7 @@ Plans:
 **Plans**: 3 plansPlans:
 **Wave 1**
 
-- [ ] 02-01-PLAN.md — Search client + Finding schema + grounding/prompts + citation-enforced research worker (RES-03/04/05)
+- [x] 02-01-PLAN.md — Search client + Finding schema + grounding/prompts + citation-enforced research worker (RES-03/04/05)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -130,7 +130,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Data Foundation | 3/3 | Complete | 2026-06-14 |
-| 2. Research Engine | 0/3 | Planned | - |
+| 2. Research Engine | 1/3 | In Progress|  |
 | 3. Dashboard & Profiles | 0/TBD | Not started | - |
 | 4. Cross-Cutting Analysis | 0/TBD | Not started | - |
 | 5. Consortium Recommender + Initial Report | 0/TBD | Not started | - |

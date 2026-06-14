@@ -8,20 +8,20 @@
 ### Configuration
 
 - [x] **CONF-01**: User can add a firm with name, capability tags (Nuc/Infra/Cons), and Companies House number via the UI
-- [ ] **CONF-02**: User can edit firm details (name, tags, Companies House number)
-- [ ] **CONF-03**: User can remove a firm from the list
-- [ ] **CONF-04**: User can add a research topic to be investigated per firm
-- [ ] **CONF-05**: User can edit or remove a research topic
+- [x] **CONF-02**: User can edit firm details (name, tags, Companies House number)
+- [x] **CONF-03**: User can remove a firm from the list
+- [x] **CONF-04**: User can add a research topic to be investigated per firm
+- [x] **CONF-05**: User can edit or remove a research topic
 - [x] **CONF-06**: System pre-seeds the initial 12 firms and 7 topics on first run
 
 ### Research Engine
 
 - [ ] **RES-01**: User can trigger AI-assisted research for a firm across all topics
 - [ ] **RES-02**: Research progress is visible in the UI via job-status polling (no silent freezes)
-- [ ] **RES-03**: Each AI-derived finding includes mandatory source citations with raw retrieved snippet
-- [ ] **RES-04**: Findings distinguish verified structured data (from UK APIs) from AI-derived narrative
-- [ ] **RES-05**: Explicit "not found" is a first-class output — silence is never returned without a reason
-- [ ] **RES-06**: Research results are cached in a local database; re-research only on manual user trigger
+- [x] **RES-03**: Each AI-derived finding includes mandatory source citations with raw retrieved snippet
+- [x] **RES-04**: Findings distinguish verified structured data (from UK APIs) from AI-derived narrative
+- [x] **RES-05**: Explicit "not found" is a first-class output — silence is never returned without a reason
+- [x] **RES-06**: Research results are cached in a local database; re-research only on manual user trigger
 - [ ] **RES-07**: Each firm shows a "last researched" timestamp and a staleness indicator
 
 ### UK Data Integration
@@ -100,10 +100,10 @@ Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | CONF-01 | Phase 1 | Complete (Plan 01-01) |
-| CONF-02 | Phase 1 | Pending |
-| CONF-03 | Phase 1 | Pending |
-| CONF-04 | Phase 1 | Pending |
-| CONF-05 | Phase 1 | Pending |
+| CONF-02 | Phase 1 | Complete (Plan 01-02) |
+| CONF-03 | Phase 1 | Complete (Plan 01-02) |
+| CONF-04 | Phase 1 | Complete (Plan 01-02) |
+| CONF-05 | Phase 1 | Complete (Plan 01-02) |
 | CONF-06 | Phase 1 | Complete (Plan 01-01) |
 | DATA-01 | Phase 1 | Complete (Plan 01-03) |
 | DATA-02 | Phase 1 | Complete (Plan 01-03) |
@@ -112,10 +112,10 @@ Updated during roadmap creation.
 | DATA-05 | Phase 1 | Complete (Plan 01-03) |
 | RES-01 | Phase 2 | Pending |
 | RES-02 | Phase 2 | Pending |
-| RES-03 | Phase 2 | Pending |
-| RES-04 | Phase 2 | Pending |
-| RES-05 | Phase 2 | Pending |
-| RES-06 | Phase 2 | Pending |
+| RES-03 | Phase 2 | Complete |
+| RES-04 | Phase 2 | Complete |
+| RES-05 | Phase 2 | Complete |
+| RES-06 | Phase 2 | Complete |
 | RES-07 | Phase 2 | Pending |
 | PROF-01 | Phase 3 | Pending |
 | PROF-02 | Phase 3 | Pending |
@@ -139,6 +139,7 @@ Updated during roadmap creation.
 | CONS-05 | Phase 5 | Pending |
 
 **Coverage:**
+
 - v1 requirements: 38 total
 - Mapped to phases: 38 (100%) ✓
 - Unmapped: 0
