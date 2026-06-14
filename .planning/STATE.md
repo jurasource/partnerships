@@ -1,0 +1,115 @@
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: milestone
+status: human_needed
+stopped_at: Completed 03-02-PLAN.md — Phase 03 verified (human checks pending)
+last_updated: "2026-06-14T18:00:00.000Z"
+last_activity: 2026-06-14 -- Phase 03 verification complete (human_needed)
+progress:
+  total_phases: 5
+  completed_phases: 3
+  total_plans: 8
+  completed_plans: 8
+  percent: 60
+---
+
+# Project State
+
+## Project Reference
+
+See: .planning/PROJECT.md (updated 2026-06-13)
+
+**Core value:** Given a list of firms and research questions, surface the intelligence needed to decide which firms to team with and in what combination — in one place, without manual searching.
+**Current focus:** Phase 03 — dashboard-profiles (verified; awaiting human browser checks)
+
+## Current Position
+
+Phase: 03 (dashboard-profiles) — VERIFIED (human_needed)
+Plan: 2 of 2
+Status: All automated checks pass (11/11 truths, 4+3 unit tests, 0 TS errors in Phase 3 files). 7 browser-interaction items require human confirmation before proceeding to Phase 4.
+Last activity: 2026-06-14 -- Phase 03 verification complete (human_needed)
+
+Progress: [██████████] 100%
+
+## Performance Metrics
+
+**Velocity:**
+
+- Total plans completed: 3
+- Average duration: 8 min
+- Total execution time: 0.4 hours
+
+**By Phase:**
+
+| Phase | Plans | Total | Avg/Plan |
+|-------|-------|-------|----------|
+| 01-data-foundation | 3 | 24 min | 8 min |
+
+**Recent Trend:**
+
+- Last 5 plans: 11 min, 6 min, 7 min
+- Trend: steady
+
+*Updated after each plan completion*
+| Phase 02-research-engine P01 | 15 | 3 tasks | 11 files |
+| Phase 02-research-engine P03 | 12 | 2 tasks | 5 files |
+| Phase 03-dashboard-profiles P01 | 10 | 3 tasks | 8 files |
+| Phase 03-dashboard-profiles P02 | 4 | 3 tasks | 6 files |
+
+## Accumulated Context
+
+### Decisions
+
+Decisions are logged in PROJECT.md Key Decisions table.
+Recent decisions affecting current work:
+
+- [Roadmap]: Phase 1 (Data Foundation) gates everything — entity map (CH numbers) and API clients must land before research.
+- [Roadmap]: Trust mitigations (citation enforcement, faithfulness checks, explicit "not found") built into Phase 2 before the dashboard, not retrofitted.
+- [Roadmap]: Consortium engine deferred to Phase 5 so it runs on reliable contract/COI/partnership data.
+- [Plan 01-01]: shadcn 2025 uses Base UI (render prop) not Radix (asChild) — all components adapted to new API.
+- [Plan 01-01]: Next.js 16.2.9 scaffolded (create-next-app@latest); 15.x was specified but 16.x App Router API is identical for Phase 1.
+- [Plan 01-01]: Zod v4 .issues replaces .errors — firm-actions.ts updated accordingly.
+- [Plan 01-01]: 3 of 12 seed firms have null CH numbers (Framatome UK, GEH UK, Orano UK) — unconfirmable from public search; per Pitfall 2 guidance.
+- [Plan 01-02]: Edit-mode Dialog pattern — optional entity prop pre-fills fields and swaps submit copy + action (firm + topic dialogs); destructive deletes gated behind AlertDialog (T-01-06).
+- [Plan 01-02]: Phase 1 Dashboard comparison table is read-only by design — filtering/refresh deferred to Phase 3 DASH requirements.
+- [Plan 01-03]: OCDS dedup is at write-time via Drizzle onConflictDoNothing keyed on the UNIQUE ocid — a notice present in both CF + FTS yields one row (D-09/DATA-05).
+- [Plan 01-03]: Firm↔supplier matching uses Companies House number as the primary signal (DATA-04) with alias fuzzy name-match as a weaker secondary — never name-only.
+- [Plan 01-03]: refreshFirm runs synchronously within the server action for Phase 1 but routes through the SQLite job-queue contract (enqueue→running→done/failed) so Phase 2 can move it to a worker without changing callers.
+- [Plan 01-03]: CH API key kept server-side — Search CH and refresh go through server actions; clients are 'server-only' (T-01-08).
+- [Plan 01-03]: vitest adopted as the project test runner (was absent); adapter unit tests prove normalise + dedup-by-ocid + CH-match.
+- [Phase ?]: vi.hoisted() required for mock variable sharing across vitest module boundary
+- [Plan 03-02]: Two-query merge for contractCount: select all firms + grouped count by firmId joined in JS — avoids LEFT JOIN complexity in Drizzle SQLite and keeps queries individually testable
+- [Plan 03-02]: capabilityTagFilterFn.autoRemove ensures zero active tags removes the filter entirely (all firms shown) — DASH-02 all-when-empty spec
+- [Phase 03 verification]: capabilityTags column has enableSorting: false (sorting a JSON array column not meaningful) — acceptable; all other non-Actions columns are sortable
+
+### Pending Todos
+
+None yet.
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260614-hly | fix firm-form-dialog.tsx:193 — change trigger?: React.ReactNode to React.ReactElement | 2026-06-14 | cb3fd9d | [260614-hly-fix-firm-form-dialog-tsx-193-change-trig](./quick/260614-hly-fix-firm-form-dialog-tsx-193-change-trig/) |
+
+### Blockers/Concerns
+
+- [Phase 1 readiness]: Entity map (CH number + alias list, e.g. SNC-Lavalin → AtkinsRéalis) must be human-confirmed for the initial 12 firms before research.
+- [Phase 1 readiness]: Web-search vendor decision (Tavily vs Brave vs native) to be confirmed; keep behind a tool interface.
+- [Cross-phase]: Companies House PSC is self-reported and does not trace foreign ultimate parents — corroborate ownership with AI research; never assert absence of contracts.
+- [Phase 3 verification]: 7 browser-interaction items require human smoke testing before Phase 4 can begin (see 03-VERIFICATION.md).
+
+## Deferred Items
+
+Items acknowledged and carried forward from previous milestone close:
+
+| Category | Item | Status | Deferred At |
+|----------|------|--------|-------------|
+| *(none)* | | | |
+
+## Session Continuity
+
+Last session: 2026-06-14T18:00:00.000Z
+Stopped at: Phase 03 VERIFICATION complete — status: human_needed
+Resume file: None
