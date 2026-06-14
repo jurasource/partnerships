@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: planning
-stopped_at: Phase 3 UI-SPEC approved
-last_updated: "2026-06-14T13:49:52.070Z"
-last_activity: 2026-06-14 -- Phase 02 complete (all 3 plans done)
+status: executing
+stopped_at: Completed 03-01-PLAN.md
+last_updated: "2026-06-14T16:46:12.718Z"
+last_activity: 2026-06-14 -- Phase 03 execution started
 progress:
   total_phases: 5
   completed_phases: 2
-  total_plans: 6
-  completed_plans: 6
+  total_plans: 8
+  completed_plans: 7
   percent: 40
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-13)
 
 **Core value:** Given a list of firms and research questions, surface the intelligence needed to decide which firms to team with and in what combination — in one place, without manual searching.
-**Current focus:** Phase 02 — research-engine
+**Current focus:** Phase 03 — dashboard-profiles
 
 ## Current Position
 
-Phase: 02 (research-engine) — COMPLETE
-Plan: 3 of 3 — all plans complete
-Status: Phase 2 complete; ready to plan/execute Phase 3
-Last activity: 2026-06-14 -- Phase 02 complete (all 3 plans done)
+Phase: 03 (dashboard-profiles) — EXECUTING
+Plan: 2 of 2
+Status: Ready to execute
+Last activity: 2026-06-14 -- Phase 03 execution started
 
 Progress: [████░░░░░░] 40%
 
@@ -54,6 +54,7 @@ Progress: [████░░░░░░] 40%
 *Updated after each plan completion*
 | Phase 02-research-engine P01 | 15 | 3 tasks | 11 files |
 | Phase 02-research-engine P03 | 12 | 2 tasks | 5 files |
+| Phase 03-dashboard-profiles P01 | 10 | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -76,6 +77,7 @@ Recent decisions affecting current work:
 - [Plan 01-03]: refreshFirm runs synchronously within the server action for Phase 1 but routes through the SQLite job-queue contract (enqueue→running→done/failed) so Phase 2 can move it to a worker without changing callers.
 - [Plan 01-03]: CH API key kept server-side — Search CH and refresh go through server actions; clients are 'server-only' (T-01-08).
 - [Plan 01-03]: vitest adopted as the project test runner (was absent); adapter unit tests prove normalise + dedup-by-ocid + CH-match.
+- [Phase ?]: vi.hoisted() required for mock variable sharing across vitest module boundary
 
 ### Pending Todos
 
@@ -103,6 +105,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-14T13:49:52.061Z
-Stopped at: Phase 3 UI-SPEC approved
-Resume file: .planning/phases/03-dashboard-profiles/03-UI-SPEC.md
+Last session: 2026-06-14T16:46:12.714Z
+Stopped at: Completed 03-01-PLAN.md
+Resume file: None

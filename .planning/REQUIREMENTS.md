@@ -34,12 +34,12 @@
 
 ### Firm Profiles
 
-- [ ] **PROF-01**: Each firm has a profile page aggregating all research findings by topic
-- [ ] **PROF-02**: Profile shows a source/citation panel clearly distinguishing structured API data from AI findings
-- [ ] **PROF-03**: Profile shows UK contract history (titles, dates, values, sources) from procurement APIs
+- [x] **PROF-01**: Each firm has a profile page aggregating all research findings by topic
+- [x] **PROF-02**: Profile shows a source/citation panel clearly distinguishing structured API data from AI findings
+- [x] **PROF-03**: Profile shows UK contract history (titles, dates, values, sources) from procurement APIs
 - [ ] **PROF-04**: Profile shows ownership structure: UK-incorporated status, ultimate parent company, country of ownership, and source
 - [ ] **PROF-05**: Profile shows risk flags (financial, reputational, regulatory) with severity level and dated sources
-- [ ] **PROF-06**: Profile shows capability tags (Nuc/Infra/Cons)
+- [x] **PROF-06**: Profile shows capability tags (Nuc/Infra/Cons)
 - [ ] **PROF-07**: Profile shows collaboration history and cultural fit indicators: prior joint delivery evidence (shared contracts/JVs) and org culture signals (size, public-sector focus, partnership vs competitive stance)
 
 ### Dashboard
@@ -117,10 +117,10 @@ Updated during roadmap creation.
 | RES-05 | Phase 2 | Complete |
 | RES-06 | Phase 2 | Complete |
 | RES-07 | Phase 2 | Complete |
-| PROF-01 | Phase 3 | Pending |
-| PROF-02 | Phase 3 | Pending |
-| PROF-03 | Phase 3 | Pending |
-| PROF-06 | Phase 3 | Pending |
+| PROF-01 | Phase 3 | Complete |
+| PROF-02 | Phase 3 | Complete |
+| PROF-03 | Phase 3 | Complete |
+| PROF-06 | Phase 3 | Complete |
 | DASH-01 | Phase 3 | Pending |
 | DASH-02 | Phase 3 | Pending |
 | DASH-03 | Phase 3 | Pending |

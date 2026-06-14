@@ -85,7 +85,12 @@ Plans:
   3. User can view a cross-firm comparison table and filter it by capability tag (Nuc/Infra/Cons) and sort it by any column
   4. User can trigger a research refresh for any firm directly from the dashboard
 
-**Plans**: TBD
+**Plans**: 2 plans (Wave 1 — parallel, no file overlap)
+Plans:
+
+- [x] 03-01-PLAN.md — Firm profile slice: /firms/[id] route, getFirmProfile query, findings-by-topic tabs, citation panel, contract history table, profile refresh (PROF-01/02/03/06)
+- [ ] 03-02-PLAN.md — Comparison dashboard slice: getComparisonRows query, extended filterable/sortable comparison table, capability filter bar, firm-name profile links, per-row refresh (DASH-01/02/03/04)
+
 **UI hint**: yes
 
 ### Phase 4: Cross-Cutting Analysis
@@ -131,6 +136,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 |-------|----------------|--------|-----------|
 | 1. Data Foundation | 3/3 | Complete | 2026-06-14 |
 | 2. Research Engine | 3/3 | Complete   | 2026-06-14 |
-| 3. Dashboard & Profiles | 0/TBD | Not started | - |
+| 3. Dashboard & Profiles | 1/2 | In Progress|  |
 | 4. Cross-Cutting Analysis | 0/TBD | Not started | - |
 | 5. Consortium Recommender + Initial Report | 0/TBD | Not started | - |
