@@ -1,4 +1,3 @@
-import "server-only";
 
 import { rateLimitedFetch } from "./http";
 import type { OcdsRelease } from "@/lib/adapters/ocds";

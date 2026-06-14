@@ -1,4 +1,3 @@
-import "server-only";
 import { eq } from "drizzle-orm";
 
 import { db } from "@/db/client";
@@ -47,6 +46,11 @@ export async function enqueueJob(input: EnqueueJobInput): Promise<string> {
 export async function getJob(id: string) {
   const [row] = await db.select().from(jobs).where(eq(jobs.id, id)).limit(1);
   return row ?? null;
+}
+
+/** Update the human-readable progress message shown in the jobs UI. */
+export async function updateJobProgress(id: string, message: string): Promise<void> {
+  await db.update(jobs).set({ progressMessage: message }).where(eq(jobs.id, id));
 }
 
 /**

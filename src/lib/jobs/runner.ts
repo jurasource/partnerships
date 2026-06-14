@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 
 import { db } from "@/db/client";
 import { firms } from "@/db/schema";
-import { getJob, updateJobStatus } from "@/lib/jobs/queue";
+import { getJob, updateJobProgress, updateJobStatus } from "@/lib/jobs/queue";
 import { runResearchWorker } from "@/lib/research/worker";
 import { tavilyClient } from "@/lib/search/tavily";
 
@@ -28,7 +28,9 @@ export async function executeResearchJob(firmId: string, jobId: string): Promise
   await updateJobStatus(jobId, "running", { startedAt: nowIso() });
 
   try {
-    await runResearchWorker(firmId, jobId, tavilyClient);
+    await runResearchWorker(firmId, jobId, tavilyClient, (msg) =>
+      updateJobProgress(jobId, msg),
+    );
     await updateJobStatus(jobId, "done", { completedAt: nowIso() });
     await db
       .update(firms)

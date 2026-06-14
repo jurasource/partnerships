@@ -75,8 +75,8 @@ Recent decisions affecting current work:
 - [Plan 01-02]: Phase 1 Dashboard comparison table is read-only by design — filtering/refresh deferred to Phase 3 DASH requirements.
 - [Plan 01-03]: OCDS dedup is at write-time via Drizzle onConflictDoNothing keyed on the UNIQUE ocid — a notice present in both CF + FTS yields one row (D-09/DATA-05).
 - [Plan 01-03]: Firm↔supplier matching uses Companies House number as the primary signal (DATA-04) with alias fuzzy name-match as a weaker secondary — never name-only.
-- [Plan 01-03]: refreshFirm runs synchronously within the server action for Phase 1 but routes through the SQLite job-queue contract (enqueue→running→done/failed) so Phase 2 can move it to a worker without changing callers.
-- [Plan 01-03]: CH API key kept server-side — Search CH and refresh go through server actions; clients are 'server-only' (T-01-08).
+- [Plan 01-03]: refreshFirm routes through the job-queue contract (enqueue→running→done/failed). **Superseded by db-worker-upgrade:** jobs are now dispatched via BullMQ Redis queue to a long-running worker process (`npm run worker`). The `jobs` DB table still tracks status and is polled by the `/jobs` UI page.
+- [Plan 01-03]: CH API key kept server-side — Search CH and refresh go through server actions. **Note:** `import "server-only"` was removed from lib files (clients, queue, research worker) in db-worker-upgrade so they can be imported by the standalone worker process (`src/scripts/worker-process.ts`). API route handlers and server actions retain `server-only`. These files are inherently server-side (Postgres, API keys) so the guard is not needed at the lib layer.
 - [Plan 01-03]: vitest adopted as the project test runner (was absent); adapter unit tests prove normalise + dedup-by-ocid + CH-match.
 - [Phase ?]: vi.hoisted() required for mock variable sharing across vitest module boundary
 - [Plan 03-02]: Two-query merge for contractCount: select all firms + grouped count by firmId joined in JS — avoids LEFT JOIN complexity in Drizzle SQLite and keeps queries individually testable
@@ -92,6 +92,16 @@ None yet.
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260614-hly | fix firm-form-dialog.tsx:193 — change trigger?: React.ReactNode to React.ReactElement | 2026-06-14 | cb3fd9d | [260614-hly-fix-firm-form-dialog-tsx-193-change-trig](./quick/260614-hly-fix-firm-form-dialog-tsx-193-change-trig/) |
+
+### db-worker-upgrade Branch (2026-06-14)
+
+Delivered on branch `db-worker-upgrade` (not yet merged):
+
+- **Database:** SQLite → Postgres 16 (`docker-compose.yml`). `DATABASE_URL` env var required.
+- **Job queue:** `child_process.spawn()` per job replaced by BullMQ + Redis. `docker compose up -d redis` required. Worker starts with `npm run worker`.
+- **New files:** `src/lib/jobs/bull.ts` (queue config), `src/scripts/worker-process.ts` (long-running BullMQ worker), `src/app/api/jobs/route.ts`, `src/app/jobs/page.tsx` (live job status UI).
+- **Schema:** `jobs.progressMessage` column added; worker writes per-topic progress ("Topic 3/7: Nuclear safety record").
+- **`server-only` removed** from all `src/lib/` files — they must be importable by the standalone worker process. API route handlers and server actions retain it.
 
 ### Blockers/Concerns
 

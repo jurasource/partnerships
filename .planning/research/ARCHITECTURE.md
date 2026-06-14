@@ -2,11 +2,12 @@
 
 **Domain:** AI-assisted firm intelligence research + filterable dashboard
 **Researched:** 2026-06-13
+**Updated:** 2026-06-14 (db-worker-upgrade branch — Postgres + Redis/BullMQ worker)
 **Confidence:** HIGH (component model, data flow, job pattern), MEDIUM (exact analysis-layer boundary)
 
 ## Context Recap
 
-Single-user, local-first Next.js 15 full-stack app (per STACK.md): SQLite/Drizzle cache, Vercel AI SDK tool-calling research loop, thin `fetch`+Zod clients for three UK public APIs (Companies House, Find a Tender, Contracts Finder) plus a web-search tool (Tavily). Research is long-running (minutes per firm), cached, and manually refreshed per firm. Output is an interactive, filterable dashboard with cross-cutting analysis (ownership, conflicts, partnerships, consortium recommendations, risk flags).
+Single-user, local-first Next.js 15 full-stack app (per STACK.md): Postgres/Drizzle database, Redis-backed BullMQ job queue, Vercel AI SDK tool-calling research loop, thin `fetch`+Zod clients for three UK public APIs (Companies House, Find a Tender, Contracts Finder) plus a web-search tool (Tavily). Research is long-running (minutes per firm), cached, and manually refreshed per firm. Output is an interactive, filterable dashboard with cross-cutting analysis (ownership, conflicts, partnerships, consortium recommendations, risk flags).
 
 The defining architectural problem is **a slow, multi-source research pipeline feeding a fast, structured read model.** Everything below follows from separating those two concerns: write-side (research jobs) and read-side (dashboard).
 
@@ -22,7 +23,7 @@ The defining architectural problem is **a slow, multi-source research pipeline f
                                           │ read findings │ trigger refresh
                                           │ (RSC query)    │ poll job status
                           ┌───────────────┴──────────────▼────────────────┐
-                          │            SQLITE CACHE (source of truth)       │
+                          │           POSTGRES DATABASE (source of truth)    │
                           │  firms · topics · findings · raw_payloads ·     │
                           │  research_jobs · firm_relationships             │
                           └───────────────▲──────────────┬────────────────┘
@@ -47,14 +48,14 @@ The defining architectural problem is **a slow, multi-source research pipeline f
 
 | Component | Responsibility | Communicates With |
 |-----------|---------------|-------------------|
-| **Config store** | Persist user-defined firms (+ capability tags) and topics | SQLite; read by orchestrator and dashboard |
+| **Config store** | Persist user-defined firms (+ capability tags) and topics | Postgres (Drizzle); read by orchestrator and dashboard |
 | **API clients** (4) | Thin typed wrappers: web search, Companies House, Find a Tender, Contracts Finder. No business logic — fetch + Zod validate + return | Called only by the orchestrator (as AI-SDK tools or directly); write raw payloads to cache |
 | **OCDS adapter** | Normalise FTS + Contracts Finder OCDS releases into one internal `Notice`/`Award` shape; match notices to firms by name + CH number | Wraps the two procurement clients; consumed by orchestrator and dashboard |
 | **Research orchestrator** | Per `(firm × topic)` AI-SDK tool-calling loop producing schema-validated findings with citations | Reads config; calls API-client tools; writes findings + raw payloads to cache; updates job status |
-| **Job runner / queue** | Owns long-running execution, status, retries, per-firm refresh | Enqueued by dashboard refresh action; drives orchestrator; writes `research_jobs` |
+| **Job runner / queue** | Owns long-running execution, status, retries, per-firm refresh. Redis queue (BullMQ) for durable dispatch; `jobs` DB table for status tracking and UI visibility | Enqueued by dashboard refresh action (server action pushes to BullMQ); driven by long-running worker process; writes `jobs` status + `progressMessage` |
 | **Analysis layer** | Derive cross-cutting outputs from cached findings: ownership (UK vs non-UK), conflicts/audit relationships, partnerships, consortium recommendations, risk flags | Reads findings + CH/OCDS data; writes `firm_relationships` + analysis records |
-| **Cache (SQLite)** | Single source of truth: config, raw payloads, structured findings, relationships, job state | Written by orchestrator/analysis; read by dashboard |
-| **Dashboard** | Render firm profiles, filter by tag, cross-cutting views, trigger refresh, poll job status | Reads cache via RSC; calls refresh server action; polls job-status endpoint |
+| **Cache (Postgres)** | Single source of truth: config, raw payloads, structured findings, relationships, job state | Written by orchestrator/analysis; read by dashboard |
+| **Dashboard** | Render firm profiles, filter by tag, cross-cutting views, trigger refresh, poll job status | Reads cache via RSC; calls refresh server action; polls `/api/jobs` endpoint |
 
 **Boundary rule:** the dashboard NEVER calls an external API directly and NEVER runs an LLM call in a request handler. It only reads the cache and enqueues jobs. This keeps reads instant and makes the slow path fully asynchronous.
 
@@ -80,10 +81,10 @@ The defining architectural problem is **a slow, multi-source research pipeline f
 
 ## Key Architectural Decisions
 
-### 1. Async research jobs via a DB-backed queue (NOT synchronous request handlers)
-**Decision:** Refresh is fire-and-forget: server action enqueues, worker processes, status lives in `research_jobs`.
-**Why:** Research is minutes-per-firm and multi-step; running it inside a request would block the UI, risk timeouts, and lose work on navigation. A `research_jobs` table is the queue — durable, observable, survives page reloads, and is trivially the same in local SQLite and a future Postgres deployment. This is the standard Next.js long-running-task pattern.
-**Local-first nuance:** because v1 runs on one machine, the "worker" can be an in-process async task kicked off by the server action (no external queue infra needed for v1). Keep the enqueue/claim/status contract clean so a real worker (Inngest, BullMQ, a separate process) can replace it later without touching the dashboard.
+### 1. Async research jobs via Redis/BullMQ + DB status tracking (NOT synchronous request handlers)
+**Decision:** Refresh is fire-and-forget: server action inserts a `jobs` DB row (for status tracking) and pushes to the Redis BullMQ queue; a long-running worker process (`npm run worker`) consumes jobs concurrently (default: 2 at a time).
+**Why:** Research is minutes-per-firm and multi-step; running it inside a request would block the UI, risk timeouts, and lose work on navigation. BullMQ provides durable job dispatch, concurrency control, and a clean worker/producer boundary. The `jobs` DB table provides the observable status trail the UI polls.
+**Implementation (db-worker-upgrade branch, 2026-06-14):** `runResearch()` server action → `enqueueJob()` (inserts DB row) + `researchQueue.add()` (pushes to Redis) → `src/scripts/worker-process.ts` BullMQ Worker picks up and calls `executeResearchJob()` → updates `jobs.status` + `jobs.progressMessage` per-topic → `/api/jobs` + `/jobs` page show live status via polling.
 
 ### 2. Polling over WebSockets/SSE for job status (v1)
 **Decision:** Client polls a job-status endpoint with TanStack Query.
@@ -107,8 +108,8 @@ The defining architectural problem is **a slow, multi-source research pipeline f
 
 ## Patterns to Follow
 
-### Pattern 1: Job table as queue
-**What:** `research_jobs(id, firm_id, status, progress, error, created_at, updated_at)`. Enqueue → claim → update status; client polls by `id`.
+### Pattern 1: Redis queue (dispatch) + DB table (status)
+**What:** `runResearch()` server action calls `enqueueJob()` (inserts a `jobs` row with `status = "pending"`) then `researchQueue.add()` (pushes `{ firmId, jobId }` to Redis BullMQ queue). The long-running worker process picks up the BullMQ job, transitions `jobs.status` through `pending → running → done/failed`, and writes `jobs.progressMessage` per-topic so the `/jobs` page shows granular progress. The `jobs` table is the observable status trail; Redis is the dispatch mechanism.
 **When:** Any user-triggered refresh or the initial-report run.
 
 ### Pattern 2: Tool-per-source, model orchestrates
@@ -142,7 +143,7 @@ The defining architectural problem is **a slow, multi-source research pipeline f
 This ordering is the primary input to roadmap phase structure. Each layer is usable/testable before the next depends on it.
 
 1. **Schema + config store + API clients (foundation).**
-   SQLite schema (firms, topics, findings, raw_payloads, research_jobs, firm_relationships) via Drizzle; thin typed clients for Companies House, FTS, Contracts Finder, web search; OCDS adapter + firm↔notice matching. *Verifiable standalone via scripts — no UI needed.* Everything depends on this.
+   Postgres schema (firms, topics, findings, raw_payloads, research_jobs, firm_relationships) via Drizzle; thin typed clients for Companies House, FTS, Contracts Finder, web search; OCDS adapter + firm↔notice matching. *Verifiable standalone via scripts — no UI needed.* Everything depends on this.
 
 2. **Research orchestrator + job runner (the engine).**
    AI-SDK per-topic tool-calling loop with structured `Finding` output and citations; `research_jobs` enqueue/claim/status contract; write findings + raw payloads to cache. *Depends on #1.* This is the highest-risk component (LLM behaviour, tool wiring, rate limits) — flag for deeper research.
@@ -163,13 +164,13 @@ This ordering is the primary input to roadmap phase structure. Each layer is usa
 
 ## Scalability Considerations
 
-| Concern | At 12 firms (v1) | At ~100 firms | Cloud / multi-user (future) |
-|---------|------------------|---------------|------------------------------|
-| Job execution | In-process async task | Dedicated worker process; concurrency cap to respect CH rate limits (~600/5min) | External queue (Inngest/BullMQ), horizontal workers |
-| Status updates | Polling | Polling | SSE/WebSocket if live progress matters |
-| Cache | SQLite file | SQLite still fine | Postgres (Drizzle dialect swap; raw payloads already JSON) |
+| Concern | At 12 firms (v1 — current) | At ~100 firms | Cloud / multi-user (future) |
+|---------|----------------------------|---------------|------------------------------|
+| Job execution | Long-running BullMQ worker process (`npm run worker`), concurrency=2 | Increase `WORKER_CONCURRENCY`; add CH rate-limit throttling in client layer | Horizontal workers on Railway/Fly; Redis already the shared queue |
+| Status updates | `/jobs` page polls every 2s (active) / 10s (idle) | Same — still sufficient | SSE/WebSocket if sub-second progress matters |
+| Cache | Postgres 16 (docker-compose) | Same | Managed Postgres (Neon/Supabase/RDS); connection string swap only |
 | Analysis recompute | Full recompute per refresh | Incremental: only edges touching the refreshed firm | Same, plus background recompute job |
-| Rate limits | Sequential per firm | Token-bucket / throttle in client layer + cache to avoid re-fetch | Shared cache, per-key throttling |
+| Rate limits | Sequential per topic within a job | Token-bucket / throttle in client layer + cache to avoid re-fetch | Shared cache, per-key throttling |
 
 ## Sources
 

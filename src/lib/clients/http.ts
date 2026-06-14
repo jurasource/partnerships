@@ -1,4 +1,3 @@
-import "server-only";
 
 /**
  * Server-side rate-limited fetch wrapper (Pitfall 6, T-01-11).

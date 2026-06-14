@@ -97,6 +97,8 @@ export const jobs = pgTable("jobs", {
   startedAt: text("started_at"),
   completedAt: text("completed_at"),
   errorMessage: text("error_message"),
+  /** Short human-readable progress update written by the worker as it runs. */
+  progressMessage: text("progress_message"),
 });
 
 // --- findings ------------------------------------------------------------
