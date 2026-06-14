@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 01 Plan 02 complete
+stopped_at: Phase 01 Plan 03 complete — Phase 01 complete
 last_updated: "2026-06-14T00:00:00Z"
-last_activity: 2026-06-14 -- Phase 01 Plan 02 executed (config CRUD + dashboard comparison table)
+last_activity: 2026-06-14 -- Phase 01 Plan 03 executed (UK data layer + job queue + per-firm refresh + Search CH)
 progress:
   total_phases: 5
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 3
-  completed_plans: 2
-  percent: 13
+  completed_plans: 3
+  percent: 20
 ---
 
 # Project State
@@ -25,31 +25,31 @@ See: .planning/PROJECT.md (updated 2026-06-13)
 
 ## Current Position
 
-Phase: 01 (data-foundation) — EXECUTING
-Plan: 3 of 3
-Status: Plan 02 complete — resume at Plan 03
-Last activity: 2026-06-14 -- Phase 01 Plan 02 complete (config CRUD + dashboard comparison table)
+Phase: 01 (data-foundation) — COMPLETE
+Plan: 3 of 3 (all complete)
+Status: Phase 01 complete — all 3 plans executed; ready for Phase 02 transition
+Last activity: 2026-06-14 -- Phase 01 Plan 03 complete (UK data layer + job queue + per-firm refresh + Search CH)
 
-Progress: [█░░░░░░░░░] 13%
+Progress: [██░░░░░░░░] 20%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 2
-- Average duration: 9 min
-- Total execution time: 0.3 hours
+- Total plans completed: 3
+- Average duration: 8 min
+- Total execution time: 0.4 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-data-foundation | 2 | 17 min | 9 min |
+| 01-data-foundation | 3 | 24 min | 8 min |
 
 **Recent Trend:**
 
-- Last 5 plans: 11 min, 6 min
-- Trend: faster
+- Last 5 plans: 11 min, 6 min, 7 min
+- Trend: steady
 
 *Updated after each plan completion*
 
@@ -69,6 +69,11 @@ Recent decisions affecting current work:
 - [Plan 01-01]: 3 of 12 seed firms have null CH numbers (Framatome UK, GEH UK, Orano UK) — unconfirmable from public search; per Pitfall 2 guidance.
 - [Plan 01-02]: Edit-mode Dialog pattern — optional entity prop pre-fills fields and swaps submit copy + action (firm + topic dialogs); destructive deletes gated behind AlertDialog (T-01-06).
 - [Plan 01-02]: Phase 1 Dashboard comparison table is read-only by design — filtering/refresh deferred to Phase 3 DASH requirements.
+- [Plan 01-03]: OCDS dedup is at write-time via Drizzle onConflictDoNothing keyed on the UNIQUE ocid — a notice present in both CF + FTS yields one row (D-09/DATA-05).
+- [Plan 01-03]: Firm↔supplier matching uses Companies House number as the primary signal (DATA-04) with alias fuzzy name-match as a weaker secondary — never name-only.
+- [Plan 01-03]: refreshFirm runs synchronously within the server action for Phase 1 but routes through the SQLite job-queue contract (enqueue→running→done/failed) so Phase 2 can move it to a worker without changing callers.
+- [Plan 01-03]: CH API key kept server-side — Search CH and refresh go through server actions; clients are 'server-only' (T-01-08).
+- [Plan 01-03]: vitest adopted as the project test runner (was absent); adapter unit tests prove normalise + dedup-by-ocid + CH-match.
 
 ### Pending Todos
 
@@ -91,5 +96,5 @@ Items acknowledged and carried forward from previous milestone close:
 ## Session Continuity
 
 Last session: 2026-06-14T00:00:00Z
-Stopped at: Phase 01 Plan 02 complete — Config CRUD + Dashboard comparison table
-Resume file: .planning/phases/01-data-foundation/01-03-PLAN.md
+Stopped at: Phase 01 Plan 03 complete — Phase 01 (data-foundation) fully executed
+Resume file: None — run /gsd-transition to close Phase 01 and plan Phase 02 (Research Engine)

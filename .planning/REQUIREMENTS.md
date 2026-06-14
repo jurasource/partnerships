@@ -26,11 +26,11 @@
 
 ### UK Data Integration
 
-- [ ] **DATA-01**: System queries Contracts Finder for published UK contracts per firm
-- [ ] **DATA-02**: System queries Find a Tender for published UK procurement notices per firm
-- [ ] **DATA-03**: System queries Companies House for ownership/PSC data per firm
-- [ ] **DATA-04**: Firms are matched to procurement records by Companies House number (not name alone)
-- [ ] **DATA-05**: Contract and procurement data is deduped across Contracts Finder and Find a Tender
+- [x] **DATA-01**: System queries Contracts Finder for published UK contracts per firm
+- [x] **DATA-02**: System queries Find a Tender for published UK procurement notices per firm
+- [x] **DATA-03**: System queries Companies House for ownership/PSC data per firm
+- [x] **DATA-04**: Firms are matched to procurement records by Companies House number (not name alone)
+- [x] **DATA-05**: Contract and procurement data is deduped across Contracts Finder and Find a Tender
 
 ### Firm Profiles
 
@@ -105,11 +105,11 @@ Updated during roadmap creation.
 | CONF-04 | Phase 1 | Pending |
 | CONF-05 | Phase 1 | Pending |
 | CONF-06 | Phase 1 | Complete (Plan 01-01) |
-| DATA-01 | Phase 1 | Pending |
-| DATA-02 | Phase 1 | Pending |
-| DATA-03 | Phase 1 | Pending |
-| DATA-04 | Phase 1 | Pending |
-| DATA-05 | Phase 1 | Pending |
+| DATA-01 | Phase 1 | Complete (Plan 01-03) |
+| DATA-02 | Phase 1 | Complete (Plan 01-03) |
+| DATA-03 | Phase 1 | Complete (Plan 01-03) |
+| DATA-04 | Phase 1 | Complete (Plan 01-03) |
+| DATA-05 | Phase 1 | Complete (Plan 01-03) |
 | RES-01 | Phase 2 | Pending |
 | RES-02 | Phase 2 | Pending |
 | RES-03 | Phase 2 | Pending |
