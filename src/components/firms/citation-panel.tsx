@@ -95,8 +95,8 @@ export function CitationPanel({ findingsByTopic }: CitationPanelProps) {
       ) : (
         <div className="space-y-3">
           {/* Structured / Verified API entries */}
-          {structuredEntries.map((entry, i) => (
-            <CitationEntry key={`structured-${i}`} entry={entry} />
+          {structuredEntries.map((entry) => (
+            <CitationEntry key={`${entry.topicName}::${entry.sourceUrl}`} entry={entry} />
           ))}
 
           {/* Separator between source types (only when both groups have entries) */}
@@ -105,8 +105,8 @@ export function CitationPanel({ findingsByTopic }: CitationPanelProps) {
           )}
 
           {/* AI Research entries */}
-          {aiEntries.map((entry, i) => (
-            <CitationEntry key={`ai-${i}`} entry={entry} />
+          {aiEntries.map((entry) => (
+            <CitationEntry key={`${entry.topicName}::${entry.sourceUrl}`} entry={entry} />
           ))}
         </div>
       )}
