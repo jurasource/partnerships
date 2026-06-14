@@ -19,7 +19,7 @@ const CreateFirmSchema = z.object({
     .optional()
     .transform((v) => (v === "" ? undefined : v)),
   capabilityTags: z
-    .array(z.enum(["Nuclear", "Infrastructure", "Construction"]))
+    .array(z.enum(["Nuclear", "Infrastructure", "Consultancy"]))
     .default([]),
 });
 
@@ -36,7 +36,7 @@ const UpdateFirmSchema = z.object({
     .optional()
     .transform((v) => (v === "" ? undefined : v)),
   capabilityTags: z
-    .array(z.enum(["Nuclear", "Infrastructure", "Construction"]))
+    .array(z.enum(["Nuclear", "Infrastructure", "Consultancy"]))
     .optional(),
 });
 

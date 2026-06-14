@@ -11,7 +11,7 @@ import type {
  * Capability tags — data-driven (Pitfall 10).
  * The initial seed uses these three; users can extend via the config UI.
  */
-export type CapabilityTag = "Nuclear" | "Infrastructure" | "Construction";
+export type CapabilityTag = "Nuclear" | "Infrastructure" | "Consultancy";
 
 // Row types inferred directly from the Drizzle schema
 export type Firm = InferSelectModel<typeof firms>;

@@ -81,7 +81,7 @@ export function ChSearchField({
       <div className="flex gap-2">
         <Input
           id="ch-number"
-          placeholder="e.g. 03846738"
+          placeholder="Company name or CH number"
           value={value}
           onChange={(e) => onChange(e.target.value)}
           className={cn(

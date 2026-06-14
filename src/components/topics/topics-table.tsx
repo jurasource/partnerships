@@ -116,7 +116,7 @@ function buildColumns(): ColumnDef<Topic>[] {
       cell: ({ row }) => {
         const desc = row.getValue("description") as string;
         return desc ? (
-          <span className="text-sm text-neutral-600 line-clamp-2">{desc}</span>
+          <span className="text-sm text-neutral-600 break-words">{desc}</span>
         ) : (
           <span className="text-sm text-neutral-400 italic">No description</span>
         );
@@ -128,6 +128,7 @@ function buildColumns(): ColumnDef<Topic>[] {
       header: () => <span className="sr-only">Actions</span>,
       cell: ({ row }) => <TopicRowActions topic={row.original} />,
       enableSorting: false,
+      size: 120,
     },
   ];
 }
@@ -155,7 +156,7 @@ export function TopicsTable({ data }: TopicsTableProps) {
 
   return (
     <div className="rounded-md border border-neutral-200 bg-white overflow-hidden">
-      <Table>
+      <Table className="table-fixed w-full">
         <TableHeader className="bg-neutral-50">
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id} className="border-neutral-200">
@@ -165,6 +166,7 @@ export function TopicsTable({ data }: TopicsTableProps) {
                 return (
                   <TableHead
                     key={header.id}
+                    style={header.column.columnDef.size ? { width: header.column.columnDef.size } : undefined}
                     className={cn(
                       "text-xs font-semibold text-neutral-500 uppercase tracking-wide py-3",
                       canSort && "cursor-pointer select-none hover:text-neutral-700"
@@ -201,7 +203,13 @@ export function TopicsTable({ data }: TopicsTableProps) {
               className="border-neutral-100 hover:bg-neutral-50 transition-colors"
             >
               {row.getVisibleCells().map((cell) => (
-                <TableCell key={cell.id} className="py-3 text-sm">
+                <TableCell
+                  key={cell.id}
+                  className={cn(
+                    "py-3 text-sm",
+                    cell.column.id === "description" && "whitespace-normal"
+                  )}
+                >
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </TableCell>
               ))}

@@ -29,7 +29,7 @@ import type { Firm, CapabilityTag } from "@/lib/types";
 const TAG_STYLES: Record<CapabilityTag, string> = {
   Nuclear: "bg-amber-100 text-amber-700 border-amber-200",
   Infrastructure: "bg-sky-100 text-sky-700 border-sky-200",
-  Construction: "bg-violet-100 text-violet-700 border-violet-200",
+  Consultancy: "bg-violet-100 text-violet-700 border-violet-200",
 };
 
 function CapabilityBadge({ tag }: { tag: string }) {

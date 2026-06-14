@@ -17,7 +17,7 @@ export const firms = sqliteTable("firms", {
   /**
    * JSON array of capability tag strings.
    * Data-driven (never hard-coded enum column) per Pitfall 10.
-   * Values: "Nuclear" | "Infrastructure" | "Construction"
+   * Values: "Nuclear" | "Infrastructure" | "Consultancy"
    */
   capabilityTags: text("capability_tags").notNull().default("[]"),
   createdAt: text("created_at")

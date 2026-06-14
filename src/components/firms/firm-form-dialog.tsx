@@ -20,7 +20,7 @@ import { createFirm, updateFirm } from "@/lib/actions/firm-actions";
 import { ChSearchField } from "@/components/firms/ch-search-field";
 import type { CapabilityTag, Firm } from "@/lib/types";
 
-const ALL_TAGS: CapabilityTag[] = ["Nuclear", "Infrastructure", "Construction"];
+const ALL_TAGS: CapabilityTag[] = ["Nuclear", "Infrastructure", "Consultancy"];
 
 const TAG_STYLES: Record<CapabilityTag, { selected: string; unselected: string }> = {
   Nuclear: {
@@ -33,7 +33,7 @@ const TAG_STYLES: Record<CapabilityTag, { selected: string; unselected: string }
     unselected:
       "bg-white text-neutral-500 border-neutral-300 hover:border-sky-300 hover:text-sky-600",
   },
-  Construction: {
+  Consultancy: {
     selected: "bg-violet-100 text-violet-700 border-violet-300",
     unselected:
       "bg-white text-neutral-500 border-neutral-300 hover:border-violet-300 hover:text-violet-600",
@@ -190,9 +190,7 @@ export function FirmFormDialog({ firm, trigger }: FirmFormDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger render={<span />} onClick={() => setOpen(true)}>
-        {trigger ?? defaultTrigger}
-      </DialogTrigger>
+      <DialogTrigger render={trigger ?? defaultTrigger} />
 
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>

@@ -119,9 +119,7 @@ export function TopicFormDialog({ topic }: TopicFormDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger render={<span />} onClick={() => setOpen(true)}>
-        {defaultTrigger}
-      </DialogTrigger>
+      <DialogTrigger render={defaultTrigger} />
 
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>

@@ -97,7 +97,7 @@ const SEED_FIRMS: SeedFirm[] = [
       "Laing O'Rourke Construction Limited",
     ],
     companiesHouseNumber: "01910086",
-    capabilityTags: ["Nuclear", "Construction", "Infrastructure"],
+    capabilityTags: ["Nuclear", "Consultancy", "Infrastructure"],
   },
   {
     // EDF Energy Nuclear Generation Ltd — the licensed nuclear operating entity.
