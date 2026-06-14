@@ -14,7 +14,7 @@ The build follows the project's core architectural shape: a slow, multi-source r
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [ ] **Phase 1: Data Foundation** - Schema, config store, entity map, UK API clients + OCDS adapter, job-runner skeleton
-- [ ] **Phase 2: Research Engine** - Per-(firm x topic) AI research loop with mandatory citations, "not found" output, and visible job status
+- [x] **Phase 2: Research Engine** - Per-(firm x topic) AI research loop with mandatory citations, "not found" output, and visible job status (completed 2026-06-14)
 - [ ] **Phase 3: Dashboard & Profiles** - Firm profiles, citation panel, capability filtering, sortable comparison table, refresh + staleness
 - [ ] **Phase 4: Cross-Cutting Analysis** - Ownership chains, conflict/audit detection, partnership map, risk flags, recompute pass
 - [ ] **Phase 5: Consortium Recommender + Initial Report** - Explainable rules-based recommender with conflict exclusion + NSI overlay, plus the seeded end-to-end report
@@ -68,7 +68,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 02-03-PLAN.md — Research trigger button, job status badge, N/7 progress, staleness badge wired into the firms table (RES-01/02/07)
+- [x] 02-03-PLAN.md — Research trigger button, job status badge, N/7 progress, staleness badge wired into the firms table (RES-01/02/07)
 
 **UI hint**: yes
 
@@ -130,7 +130,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Data Foundation | 3/3 | Complete | 2026-06-14 |
-| 2. Research Engine | 2/3 | In Progress|  |
+| 2. Research Engine | 3/3 | Complete   | 2026-06-14 |
 | 3. Dashboard & Profiles | 0/TBD | Not started | - |
 | 4. Cross-Cutting Analysis | 0/TBD | Not started | - |
 | 5. Consortium Recommender + Initial Report | 0/TBD | Not started | - |
