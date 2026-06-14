@@ -3,6 +3,7 @@ import { StalenessBadge } from "@/components/research/staleness-badge";
 import { FindingsByTopic } from "@/components/firms/findings-by-topic";
 import { CitationPanel } from "@/components/firms/citation-panel";
 import { FirmRefreshAction } from "@/components/firms/firm-refresh-action";
+import { ContractHistoryTable } from "@/components/firms/contract-history-table";
 import { cn } from "@/lib/utils";
 import type { FirmProfile } from "@/lib/queries/firm-profile";
 import type { CapabilityTag } from "@/lib/types";
@@ -41,7 +42,7 @@ type FirmProfileLayoutProps = {
  *   contract history: full-width below the body (PROF-03 — added in Task 3)
  */
 export function FirmProfileLayout({ profile }: FirmProfileLayoutProps) {
-  const { firm, findingsByTopic } = profile;
+  const { firm, findingsByTopic, contracts } = profile;
 
   // Parse capabilityTags JSON (raw from DB)
   let capabilityTags: string[] = [];
@@ -94,7 +95,13 @@ export function FirmProfileLayout({ profile }: FirmProfileLayoutProps) {
         </aside>
       </div>
 
-      {/* Contract history section — populated in Task 3 */}
+      {/* UK Contract History — full-width section below findings/citation row (PROF-03) */}
+      <section className="px-6 pb-6">
+        <h2 className="text-xl font-semibold text-neutral-900 mb-4">
+          UK Contract History
+        </h2>
+        <ContractHistoryTable contracts={contracts} />
+      </section>
     </main>
   );
 }
