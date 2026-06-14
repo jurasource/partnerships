@@ -42,6 +42,22 @@ export function FirmRowResearch({
   const [jobStatus, setJobStatus] = React.useState<JobStatus | null>(null);
   const [topicsComplete, setTopicsComplete] = React.useState(0);
 
+  // Ref holds the active polling interval so React's useEffect can clear it on
+  // unmount. The interval must NOT be stored only as a local variable inside the
+  // click handler — async handlers return a cleanup to no one; React never calls it.
+  const intervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Cleanup on unmount — guarantees no interval leaks when the user navigates away
+  // while research is still running (CR-02).
+  React.useEffect(() => {
+    return () => {
+      if (intervalRef.current !== null) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, []);
+
   const isDisabled = companiesHouseNumber === null;
 
   async function handleResearch() {
@@ -71,8 +87,9 @@ export function FirmRowResearch({
 
     const { jobId } = result;
 
-    // Begin polling job status every 2.5s until done or failed
-    const intervalId = setInterval(async () => {
+    // Begin polling job status every 2.5s until done or failed.
+    // Store in intervalRef so the useEffect cleanup above can clear it on unmount.
+    intervalRef.current = setInterval(async () => {
       try {
         const res = await fetch(`/api/research/status/${jobId}`);
         if (!res.ok) return;
@@ -90,7 +107,10 @@ export function FirmRowResearch({
         }
 
         if (job.status === "done") {
-          clearInterval(intervalId);
+          if (intervalRef.current !== null) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+          }
           const count = typeof job.topicsComplete === "number" ? job.topicsComplete : topicsComplete;
           toast.success("Research complete", {
             id: toastId,
@@ -98,7 +118,10 @@ export function FirmRowResearch({
           });
           setRunning(false);
         } else if (job.status === "failed") {
-          clearInterval(intervalId);
+          if (intervalRef.current !== null) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+          }
           toast.error(`Research failed for ${firmName}`, {
             id: toastId,
             description:
@@ -111,14 +134,7 @@ export function FirmRowResearch({
         // Network error during poll — continue polling, don't surface to user
       }
     }, POLL_INTERVAL_MS);
-
-    // Cleanup on component unmount (handles navigation away mid-research)
-    return () => clearInterval(intervalId);
   }
-
-  // Cleanup on unmount: if running is still true we need to clean up the interval
-  // The handleResearch function handles interval cleanup internally on done/failed
-  // This is safe because the interval reference is scoped inside handleResearch
 
   const progressValue = topicsComplete > 0
     ? Math.round((topicsComplete / TOPICS_TOTAL) * 100)
