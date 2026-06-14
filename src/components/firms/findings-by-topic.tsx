@@ -2,31 +2,15 @@
 
 import { ExternalLink } from "lucide-react";
 
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { cn, isSafeUrl } from "@/lib/utils";
+import { isSafeUrl } from "@/lib/utils";
 import type { FindingByTopic } from "@/lib/queries/firm-profile";
 
 type FindingsByTopicProps = {
   findingsByTopic: FindingByTopic[];
 };
 
-/**
- * Source-type badge inline below each finding body.
- *
- * "Verified API" — bg-sky-50 text-sky-700 border-sky-100 (PROF-02)
- * "AI Research"  — bg-violet-50 text-violet-700 border-violet-100 (PROF-02)
- */
-function SourceTypeBadge({
-  sourceType,
-}: {
-  sourceType: "structured" | "ai";
-}) {
+function SourceTypeBadge({ sourceType }: { sourceType: "structured" | "ai" }) {
   if (sourceType === "structured") {
     return (
       <Badge
@@ -47,15 +31,6 @@ function SourceTypeBadge({
   );
 }
 
-/**
- * FindingsByTopic — per-topic tab set for the firm profile page.
- *
- * One TabsTrigger/TabsContent per topic. Content rendering:
- *   - finding === null → empty state: "No findings yet" heading + body
- *   - isNotFound === true → "Nothing found for this topic." + AI reason
- *   - else → full finding summary (text-sm, no truncation per UI-SPEC),
- *             source-type badge below, citation link if sourceUrl is real
- */
 export function FindingsByTopic({ findingsByTopic }: FindingsByTopicProps) {
   if (findingsByTopic.length === 0) {
     return (
@@ -64,43 +39,30 @@ export function FindingsByTopic({ findingsByTopic }: FindingsByTopicProps) {
           No findings yet
         </h2>
         <p className="text-sm text-neutral-500">
-          Research hasn&apos;t run for this topic. Use Refresh Research to generate findings.
+          Research hasn&apos;t run for this firm. Use Refresh Research to generate findings.
         </p>
       </div>
     );
   }
 
-  const defaultTab = findingsByTopic[0]?.topic.id;
-
   return (
-    <Tabs defaultValue={defaultTab}>
-      <TabsList
-        variant="line"
-        className="flex w-full flex-wrap gap-1 mb-4"
-      >
-        {findingsByTopic.map((entry) => (
-          <TabsTrigger key={entry.topic.id} value={entry.topic.id}>
-            {entry.topic.name}
-          </TabsTrigger>
-        ))}
-      </TabsList>
-
+    <div className="space-y-6">
       {findingsByTopic.map((entry) => (
-        <TabsContent key={entry.topic.id} value={entry.topic.id}>
+        <section
+          key={entry.topic.id}
+          className="border border-neutral-200 rounded-lg p-5 bg-white"
+        >
+          <h3 className="text-sm font-semibold text-neutral-900 mb-3">
+            {entry.topic.name}
+          </h3>
+
           {entry.finding === null ? (
-            /* Empty state — topic has no finding at all */
-            <div className="py-6">
-              <h2 className="text-xl font-semibold text-neutral-700 mb-2">
-                No findings yet
-              </h2>
-              <p className="text-sm text-neutral-500">
-                Research hasn&apos;t run for this topic. Use Refresh Research to generate findings.
-              </p>
-            </div>
+            <p className="text-sm text-neutral-400 italic">
+              No findings yet — run Refresh Research to populate.
+            </p>
           ) : entry.isNotFound ? (
-            /* Not-found sentinel — research ran but found nothing */
-            <div className="py-6">
-              <p className="text-sm font-medium text-neutral-700 mb-2">
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-neutral-600">
                 Nothing found for this topic.
               </p>
               <p className="text-sm text-neutral-500">
@@ -110,19 +72,13 @@ export function FindingsByTopic({ findingsByTopic }: FindingsByTopicProps) {
               </p>
             </div>
           ) : (
-            /* Real finding */
-            <div className="py-6 space-y-3">
-              {/* Full finding body — no truncation per UI-SPEC (intelligence tool) */}
+            <div className="space-y-3">
               <p className="text-sm text-neutral-700 leading-relaxed">
                 {entry.finding.summary}
               </p>
-
-              {/* Source-type badge */}
               {entry.sourceType !== null && (
                 <div className="flex items-center gap-2">
                   <SourceTypeBadge sourceType={entry.sourceType} />
-
-                  {/* Citation link — only for safe URLs (T-03-03: not-found excluded above) */}
                   {isSafeUrl(entry.finding.sourceUrl) && (
                     <a
                       href={entry.finding.sourceUrl}
@@ -138,8 +94,8 @@ export function FindingsByTopic({ findingsByTopic }: FindingsByTopicProps) {
               )}
             </div>
           )}
-        </TabsContent>
+        </section>
       ))}
-    </Tabs>
+    </div>
   );
 }
