@@ -107,7 +107,24 @@ Plans:
   4. Each firm shows risk flags (financial, reputational, regulatory) with severity and dated sources
   5. Cross-cutting analysis results recompute when any firm is refreshed
 
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+**Wave 1**
+
+- [x] 04-01-PLAN.md — Schema (5 tables + jobs.jobType) + ownership/risk-flag extraction + [BLOCKING] schema push (PROF-04/05, ANAL-03)
+
+**Wave 2** *(blocked on Wave 1)*
+
+- [x] 04-02-PLAN.md — Conflict/partnership/collaboration extraction + co-supplier SQL + cross-cutting BullMQ job chaining (ANAL-01/02/04, PROF-07)
+
+**Wave 3** *(blocked on Wave 2)*
+
+- [x] 04-03-PLAN.md — Firm profile sections + sortable Ownership column on comparison table (PROF-04/05/07, ANAL-01/02/03)
+
+**Wave 4** *(blocked on Wave 3)*
+
+- [ ] 04-04-PLAN.md — /analysis page (ownership roll-up, conflict matrix, partnership table) + sidebar nav + /jobs labels (ANAL-01/02/03, PROF-07)
+
 **UI hint**: yes
 
 ### Phase 5: Consortium Recommender + Initial Report
@@ -137,5 +154,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 1. Data Foundation | 3/3 | Complete | 2026-06-14 |
 | 2. Research Engine | 3/3 | Complete   | 2026-06-14 |
 | 3. Dashboard & Profiles | 2/2 | Complete   | 2026-06-14 |
-| 4. Cross-Cutting Analysis | 0/TBD | Not started | - |
+| 4. Cross-Cutting Analysis | 3/4 | In Progress|  |
 | 5. Consortium Recommender + Initial Report | 0/TBD | Not started | - |

@@ -4,9 +4,14 @@ import { FindingsByTopic } from "@/components/firms/findings-by-topic";
 import { CitationPanel } from "@/components/firms/citation-panel";
 import { FirmRefreshAction } from "@/components/firms/firm-refresh-action";
 import { ContractHistoryTable } from "@/components/firms/contract-history-table";
+import { OwnershipSection } from "@/components/firms/ownership-section";
+import { RiskFlagsSection } from "@/components/firms/risk-flags-section";
+import { CollaborationSection } from "@/components/firms/collaboration-section";
+import { FirmConflictsList } from "@/components/firms/firm-conflicts-list";
+import { FirmPartnershipsList } from "@/components/firms/firm-partnerships-list";
 import { cn, parseCapabilityTags } from "@/lib/utils";
 import type { FirmProfile } from "@/lib/queries/firm-profile";
-import type { CapabilityTag } from "@/lib/types";
+import type { CapabilityTag, Firm } from "@/lib/types";
 
 // Reuse tag styles from comparison-table (UI-SPEC Color — semantic badge palette)
 const TAG_STYLES: Record<CapabilityTag, string> = {
@@ -31,6 +36,8 @@ function CapabilityBadge({ tag }: { tag: string }) {
 
 type FirmProfileLayoutProps = {
   profile: FirmProfile;
+  /** All firms — needed by conflict/partnership sections to resolve counterpart names. */
+  allFirms: Firm[];
 };
 
 /**
@@ -39,13 +46,31 @@ type FirmProfileLayoutProps = {
  * Layout per UI-SPEC section 1:
  *   sticky header: firm name h1, capabilities section (PROF-06), staleness badge, refresh button
  *   body: findings-by-topic (left flex-1) + citation panel (right w-72)
- *   contract history: full-width below the body (PROF-03 — added in Task 3)
+ *   contract history: full-width below the body (PROF-03)
+ *   Phase 4 cross-cutting sections (below contract history, border-t per section):
+ *     - Ownership (PROF-04)
+ *     - Risk Flags (PROF-05)
+ *     - Collaboration History (PROF-07)
+ *     - Conflicts of Interest (ANAL-01)
+ *     - Known Partnerships (ANAL-02)
  */
-export function FirmProfileLayout({ profile }: FirmProfileLayoutProps) {
-  const { firm, findingsByTopic, contracts } = profile;
+export function FirmProfileLayout({ profile, allFirms }: FirmProfileLayoutProps) {
+  const {
+    firm,
+    findingsByTopic,
+    contracts,
+    ownership,
+    riskFlags,
+    collaboration,
+    conflicts,
+    partnerships,
+  } = profile;
 
   // Parse capabilityTags JSON (raw from DB) — warns in development on invalid JSON
   const capabilityTags = parseCapabilityTags(firm.capabilityTags);
+
+  // Determine if the firm has ever been researched (drives empty state copy)
+  const isResearched = firm.lastResearchedAt !== null;
 
   return (
     <main className="flex flex-col min-h-full">
@@ -97,6 +122,45 @@ export function FirmProfileLayout({ profile }: FirmProfileLayoutProps) {
         </h2>
         <ContractHistoryTable contracts={contracts} />
       </section>
+
+      {/* Phase 4 cross-cutting sections */}
+
+      {/* Ownership — PROF-04 */}
+      <OwnershipSection
+        ownership={ownership}
+        companiesHouseNumber={firm.companiesHouseNumber}
+      />
+
+      {/* Risk Flags — PROF-05 */}
+      <RiskFlagsSection
+        riskFlags={riskFlags}
+        isResearched={isResearched}
+      />
+
+      {/* Collaboration History — PROF-07 */}
+      <CollaborationSection
+        collaboration={collaboration}
+        partnerships={partnerships}
+        allFirms={allFirms}
+        firmId={firm.id}
+        isResearched={isResearched}
+      />
+
+      {/* Conflicts of Interest — ANAL-01 (firm perspective) */}
+      <FirmConflictsList
+        conflicts={conflicts}
+        firmId={firm.id}
+        allFirms={allFirms}
+        isResearched={isResearched}
+      />
+
+      {/* Known Partnerships — ANAL-02 (firm perspective) */}
+      <FirmPartnershipsList
+        partnerships={partnerships}
+        firmId={firm.id}
+        allFirms={allFirms}
+        isResearched={isResearched}
+      />
     </main>
   );
 }

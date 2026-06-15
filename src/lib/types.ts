@@ -5,6 +5,11 @@ import type {
   procurementRecords,
   jobs,
   findings,
+  ownershipRecords,
+  riskFlags,
+  collaborationRecords,
+  conflictPairs,
+  partnershipPairs,
 } from "@/db/schema";
 
 /**
@@ -19,3 +24,10 @@ export type Topic = InferSelectModel<typeof topics>;
 export type ProcurementRecord = InferSelectModel<typeof procurementRecords>;
 export type Job = InferSelectModel<typeof jobs>;
 export type Finding = InferSelectModel<typeof findings>;
+
+// Cross-cutting row types (Phase 4)
+export type OwnershipRecord = InferSelectModel<typeof ownershipRecords>;
+export type RiskFlag = InferSelectModel<typeof riskFlags>;
+export type CollaborationRecord = InferSelectModel<typeof collaborationRecords>;
+export type ConflictPair = InferSelectModel<typeof conflictPairs>;
+export type PartnershipPair = InferSelectModel<typeof partnershipPairs>;

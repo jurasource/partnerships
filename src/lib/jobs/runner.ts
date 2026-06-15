@@ -2,7 +2,8 @@ import { eq } from "drizzle-orm";
 
 import { db } from "@/db/client";
 import { firms } from "@/db/schema";
-import { getJob, updateJobProgress, updateJobStatus } from "@/lib/jobs/queue";
+import { enqueueJob, getJob, updateJobProgress, updateJobStatus } from "@/lib/jobs/queue";
+import { crossCuttingQueue } from "@/lib/jobs/bull";
 import { runResearchWorker } from "@/lib/research/worker";
 import { tavilyClient } from "@/lib/search/tavily";
 
@@ -40,6 +41,11 @@ export async function executeResearchJob(firmId: string, jobId: string): Promise
       .update(firms)
       .set({ lastResearchedAt: nowIso() })
       .where(eq(firms.id, firmId));
+
+    // Enqueue a cross-cutting analysis job after successful research (ANAL-04 / D-10)
+    // This is inside the try block — only enqueued on research success, not on failure.
+    const ccJobId = await enqueueJob({ firmId, jobType: "cross-cutting-analysis" });
+    await crossCuttingQueue.add("cross-cutting", { firmId, jobId: ccJobId });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     console.error(

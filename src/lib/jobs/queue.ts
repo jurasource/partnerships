@@ -20,6 +20,12 @@ export type EnqueueJobInput = {
   firmId: string;
   /** NULL = "run all topics for this firm" (D-08). */
   topicId?: string | null;
+  /**
+   * Type of job to enqueue (D-12).
+   * "research"                = standard Phase 2 firm research job (default)
+   * "cross-cutting-analysis"  = Phase 4 derived-record extraction job
+   */
+  jobType?: "research" | "cross-cutting-analysis";
 };
 
 export type JobStatusUpdate = {
@@ -36,6 +42,7 @@ export async function enqueueJob(input: EnqueueJobInput): Promise<string> {
       firmId: input.firmId,
       topicId: input.topicId ?? null,
       status: "pending",
+      jobType: input.jobType ?? "research",
     })
     .returning({ id: jobs.id });
 

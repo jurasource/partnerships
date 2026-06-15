@@ -99,7 +99,194 @@ export const jobs = pgTable("jobs", {
   errorMessage: text("error_message"),
   /** Short human-readable progress update written by the worker as it runs. */
   progressMessage: text("progress_message"),
+  /**
+   * Discriminator for the job type (D-12).
+   * "research"                = standard Phase 2 firm research job
+   * "cross-cutting-analysis"  = Phase 4 derived-record extraction job
+   */
+  jobType: text("job_type")
+    .$type<"research" | "cross-cutting-analysis">()
+    .notNull()
+    .default("research"),
 });
+
+// --- ownershipRecords ----------------------------------------------------
+export const ownershipRecords = pgTable(
+  "ownership_records",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    firmId: text("firm_id")
+      .notNull()
+      .references(() => firms.id),
+    /**
+     * Whether the firm is UK incorporated: yes | no | unknown.
+     * Derived from CH PSC jurisdiction/nationality data.
+     */
+    ukIncorporated: text("uk_incorporated")
+      .$type<"yes" | "no" | "unknown">()
+      .notNull(),
+    /**
+     * Name of the ultimate parent entity — null when not determinable.
+     */
+    ultimateParent: text("ultimate_parent"),
+    /**
+     * ISO 2-letter country code of beneficial ownership, "UK", or null.
+     */
+    countryOfOwnership: text("country_of_ownership"),
+    /**
+     * Whether the PSC chain cannot be traced further through CH data.
+     */
+    pscNotTraceable: text("psc_not_traceable")
+      .$type<"yes" | "no">()
+      .notNull()
+      .default("no"),
+    /**
+     * Source of the ownership record: structured CH data or AI research.
+     */
+    sourceType: text("source_type")
+      .$type<"companies_house" | "ai_research">()
+      .notNull(),
+    sourceUrl: text("source_url").notNull(),
+    sourceTitle: text("source_title").notNull(),
+    rawSnippet: text("raw_snippet").notNull(),
+    createdAt: timestamp("created_at", { mode: "string" }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex("ownership_records_firm_unique").on(table.firmId)],
+);
+
+// --- riskFlags -----------------------------------------------------------
+export const riskFlags = pgTable("risk_flags", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  firmId: text("firm_id")
+    .notNull()
+    .references(() => firms.id),
+  /**
+   * Category of risk flag.
+   */
+  flagType: text("flag_type")
+    .$type<"financial" | "reputational" | "regulatory">()
+    .notNull(),
+  /**
+   * Severity level of the risk flag.
+   */
+  severity: text("severity")
+    .$type<"High" | "Medium" | "Low">()
+    .notNull(),
+  description: text("description").notNull(),
+  sourceUrl: text("source_url").notNull(),
+  sourceTitle: text("source_title").notNull(),
+  /**
+   * ISO date of the evidence source — null when not available.
+   */
+  sourceDate: text("source_date"),
+  rawSnippet: text("raw_snippet").notNull(),
+  createdAt: timestamp("created_at", { mode: "string" }).notNull().defaultNow(),
+});
+// Note: risk_flags has no uniqueIndex — re-extraction uses delete-then-insert (Pitfall 1).
+
+// --- collaborationRecords ------------------------------------------------
+export const collaborationRecords = pgTable(
+  "collaboration_records",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    firmId: text("firm_id")
+      .notNull()
+      .references(() => firms.id),
+    /**
+     * Cultural fit summary derived from topic-7 AI finding — null when not determinable.
+     */
+    cultureFitSummary: text("culture_fit_summary"),
+    sourceUrl: text("source_url").notNull(),
+    sourceTitle: text("source_title").notNull(),
+    rawSnippet: text("raw_snippet").notNull(),
+    createdAt: timestamp("created_at", { mode: "string" }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex("collaboration_records_firm_unique").on(table.firmId)],
+);
+
+// --- conflictPairs -------------------------------------------------------
+export const conflictPairs = pgTable(
+  "conflict_pairs",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    /**
+     * Always firmAId < firmBId lexicographically (canonical ordering — Pitfall 2).
+     */
+    firmAId: text("firm_a_id")
+      .notNull()
+      .references(() => firms.id),
+    firmBId: text("firm_b_id")
+      .notNull()
+      .references(() => firms.id),
+    conflictType: text("conflict_type")
+      .$type<"audit" | "competitor">()
+      .notNull(),
+    evidenceSummary: text("evidence_summary").notNull(),
+    sourceUrl: text("source_url").notNull(),
+    sourceTitle: text("source_title").notNull(),
+    rawSnippet: text("raw_snippet").notNull(),
+    createdAt: timestamp("created_at", { mode: "string" }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("conflict_pairs_unique").on(
+      table.firmAId,
+      table.firmBId,
+      table.conflictType,
+    ),
+  ],
+);
+
+// --- partnershipPairs ----------------------------------------------------
+export const partnershipPairs = pgTable(
+  "partnership_pairs",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    firmAId: text("firm_a_id")
+      .notNull()
+      .references(() => firms.id),
+    firmBId: text("firm_b_id")
+      .notNull()
+      .references(() => firms.id),
+    partnershipType: text("partnership_type")
+      .$type<"co-supplier" | "jv">()
+      .notNull(),
+    evidenceSummary: text("evidence_summary").notNull(),
+    /**
+     * Source of partnership evidence: OCDS procurement data or AI research.
+     */
+    sourceType: text("source_type")
+      .$type<"ocds" | "ai_research">()
+      .notNull(),
+    /**
+     * OCDS notice ID for co-supplier type; URL for AI research type.
+     */
+    sourceUrl: text("source_url").notNull(),
+    sourceTitle: text("source_title").notNull(),
+    /**
+     * ISO date of the award or announcement — null when not available.
+     */
+    evidenceDate: text("evidence_date"),
+    createdAt: timestamp("created_at", { mode: "string" }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("partnership_pairs_unique").on(
+      table.firmAId,
+      table.firmBId,
+      table.partnershipType,
+      table.sourceUrl,
+    ),
+  ],
+);
 
 // --- findings ------------------------------------------------------------
 export const findings = pgTable(

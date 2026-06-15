@@ -49,6 +49,9 @@ export const jobs = sqliteTable("jobs", {
   status: text("status", { enum: ["pending", "running", "done", "failed"] })
     .notNull()
     .default("pending"),
+  jobType: text("job_type", { enum: ["research", "cross-cutting-analysis"] })
+    .notNull()
+    .default("research"),
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
   startedAt: text("started_at"),
   completedAt: text("completed_at"),

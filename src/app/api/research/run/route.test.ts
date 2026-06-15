@@ -62,6 +62,19 @@ vi.mock("next/cache", () => ({
 }));
 
 // ---------------------------------------------------------------------------
+// Mock @/lib/jobs/bull so BullMQ never opens a Redis connection in tests.
+// Without this, crossCuttingQueue.add() hangs waiting for Redis and the
+// E9 happy-path test times out.
+// ---------------------------------------------------------------------------
+vi.mock("@/lib/jobs/bull", () => ({
+  RESEARCH_QUEUE_NAME: "research",
+  CROSS_CUTTING_QUEUE_NAME: "cross-cutting-analysis",
+  researchQueue: { add: vi.fn().mockResolvedValue({ id: "mock-research-job" }) },
+  crossCuttingQueue: { add: vi.fn().mockResolvedValue({ id: "mock-cc-job" }) },
+  getRedisConnection: vi.fn().mockReturnValue({ host: "localhost", port: 6379 }),
+}));
+
+// ---------------------------------------------------------------------------
 // Mock next/server with real-ish NextRequest/NextResponse shims.
 // We only need JSON response and status code in tests.
 // ---------------------------------------------------------------------------
@@ -150,6 +163,7 @@ CREATE TABLE IF NOT EXISTS jobs (
   firm_id TEXT NOT NULL REFERENCES firms(id),
   topic_id TEXT REFERENCES topics(id),
   status TEXT NOT NULL DEFAULT 'pending',
+  job_type TEXT NOT NULL DEFAULT 'research',
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   started_at TEXT,
   completed_at TEXT,
