@@ -5,7 +5,7 @@ import { eq, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import { findings, firms, topics } from "@/db/schema";
 import type { WebSearchClient } from "@/lib/search/types";
-import { FindingSchema, NOT_FOUND_SENTINEL, type SynthesisedFinding } from "./schemas";
+import { FindingSchema, NOT_FOUND_SENTINEL, RESEARCH_ERROR_SENTINEL, type SynthesisedFinding } from "./schemas";
 import { buildGroundingContext } from "./grounding";
 import { RESEARCH_SYSTEM_PROMPT, buildSearchQuery, buildTopicPrompt } from "./prompts";
 
@@ -80,14 +80,14 @@ export async function runResearchWorker(
     let genRawText: string | undefined;
 
     try {
-      const result = await generateText({
+      let result = await generateText({
         model: anthropic("claude-sonnet-4-6"),
         system: RESEARCH_SYSTEM_PROMPT,
         prompt: buildTopicPrompt(topic, groundingContext, searchResults),
         output: Output.object({ schema: FindingSchema }),
-        maxOutputTokens: 1024, // 512 proved too tight when rawSnippet is verbose (observed 504/512)
-        temperature: 0.1,     // near-deterministic for factual extraction
-        maxRetries: 2,        // SDK-level retry on transient provider errors
+        maxOutputTokens: 2048,
+        temperature: 0.1,
+        maxRetries: 2,
       });
 
       // Capture diagnostics before accessing result.output, which can throw
@@ -101,12 +101,35 @@ export async function runResearchWorker(
           `tokens in=${result.usage?.inputTokens} out=${result.usage?.outputTokens}`,
       );
 
+      // Retry with a higher ceiling when the response was truncated mid-JSON
+      if (result.finishReason === "length") {
+        console.warn(
+          `[research] finishReason=length for "${topic.name}" — retrying with 4096 output tokens`,
+        );
+        result = await generateText({
+          model: anthropic("claude-sonnet-4-6"),
+          system: RESEARCH_SYSTEM_PROMPT,
+          prompt: buildTopicPrompt(topic, groundingContext, searchResults),
+          output: Output.object({ schema: FindingSchema }),
+          maxOutputTokens: 4096,
+          temperature: 0.1,
+          maxRetries: 2,
+        });
+        genFinishReason = result.finishReason;
+        genInputTokens = result.usage?.inputTokens;
+        genOutputTokens = result.usage?.outputTokens;
+        genRawText = result.text;
+        console.log(
+          `[research] retry generateText: finishReason=${result.finishReason}, ` +
+            `tokens in=${result.usage?.inputTokens} out=${result.usage?.outputTokens}`,
+        );
+      }
+
       if (!result.output) {
-        // Schema validation passed but output is unexpectedly undefined
         console.warn(
           `[research] Empty output for ${firmId}/${topic.id} (job ${jobId})`,
         );
-        finding = NOT_FOUND_SENTINEL(
+        finding = RESEARCH_ERROR_SENTINEL(
           topic.id,
           "Schema validation passed but no structured output was produced",
         );
@@ -116,8 +139,7 @@ export async function runResearchWorker(
     } catch (err) {
       if (err instanceof NoObjectGeneratedError || err instanceof NoOutputGeneratedError) {
         // NoObjectGeneratedError: model produced output but it failed schema validation after retries
-        // NoOutputGeneratedError: model produced no output at all (result.output getter throws)
-        // Both are safe to sentinel — the topic will show "not found" rather than aborting the job
+        // NoOutputGeneratedError: truncated JSON (finishReason=length) that couldn't be parsed
         const rawText = err instanceof NoObjectGeneratedError
           ? err.text?.slice(0, 500)
           : genRawText?.slice(0, 500);
@@ -127,7 +149,7 @@ export async function runResearchWorker(
             `tokens in=${genInputTokens ?? "?"} out=${genOutputTokens ?? "?"}, ` +
             `rawText="${rawText ?? "(none)"}"`,
         );
-        finding = NOT_FOUND_SENTINEL(
+        finding = RESEARCH_ERROR_SENTINEL(
           topic.id,
           "Model failed to produce structured output after retries",
         );

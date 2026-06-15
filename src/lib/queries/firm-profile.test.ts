@@ -110,6 +110,20 @@ const FINDING_NOT_FOUND: Finding = {
   createdAt: "2026-06-14",
 };
 
+const FINDING_RESEARCH_ERROR: Finding = {
+  id: "finding-4",
+  firmId: "firm-1",
+  topicId: "topic-c",
+  summary: "Research error: Model failed to produce structured output after retries.",
+  sourceUrl: "research-error",
+  sourceTitle: "Research worker",
+  rawSnippet: "Research failed for topic topic-c.",
+  confidence: "HIGH",
+  sourceDate: null,
+  citations: "[]",
+  createdAt: "2026-06-14",
+};
+
 const CONTRACT_A: ProcurementRecord = {
   id: "contract-1",
   firmId: "firm-1",
@@ -250,14 +264,34 @@ describe("getFirmProfile", () => {
     const topicA = result!.findingsByTopic.find(e => e.topic.id === "topic-a");
     expect(topicA?.sourceType).toBe("ai"); // MEDIUM → ai
     expect(topicA?.isNotFound).toBe(false);
+    expect(topicA?.isError).toBe(false);
 
     const topicB = result!.findingsByTopic.find(e => e.topic.id === "topic-b");
     expect(topicB?.sourceType).toBe("structured"); // HIGH, real URL → structured
     expect(topicB?.isNotFound).toBe(false);
+    expect(topicB?.isError).toBe(false);
 
     const topicC = result!.findingsByTopic.find(e => e.topic.id === "topic-c");
     expect(topicC?.sourceType).toBe("structured"); // not-found sentinel → structured
     expect(topicC?.isNotFound).toBe(true); // sourceUrl === "not-found"
+    expect(topicC?.isError).toBe(false);
+  });
+
+  it("Test 3b: research-error sentinel → sourceType:structured, isError:true, isNotFound:false", async () => {
+    buildSelectMock(
+      FIRM,
+      [TOPIC_A, TOPIC_B, TOPIC_C],
+      [FINDING_MEDIUM, FINDING_HIGH, FINDING_RESEARCH_ERROR],
+      [],
+    );
+
+    const result = await getFirmProfile("firm-1");
+    expect(result).not.toBeNull();
+
+    const topicC = result!.findingsByTopic.find(e => e.topic.id === "topic-c");
+    expect(topicC?.sourceType).toBe("structured"); // error sentinel → structured
+    expect(topicC?.isError).toBe(true);
+    expect(topicC?.isNotFound).toBe(false);
   });
 
   it("Test 4: contracts array is ordered by awardDate descending and carries required fields", async () => {

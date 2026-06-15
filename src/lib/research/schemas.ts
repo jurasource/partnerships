@@ -90,3 +90,22 @@ export function NOT_FOUND_SENTINEL(topicId: string, reason: string): Synthesised
     citations: [],
   };
 }
+
+/**
+ * Technical failure sentinel — distinct from NOT_FOUND_SENTINEL.
+ *
+ * Used when a technical error prevented research from completing (token truncation,
+ * schema parse failure, etc.) rather than a genuine absence of information.
+ * Stored with sourceUrl="research-error" so the UI can show a user-facing error
+ * message rather than "Nothing found" (which would be misleading).
+ */
+export function RESEARCH_ERROR_SENTINEL(topicId: string, reason: string): SynthesisedFinding {
+  return {
+    summary: `Research error: ${reason}`,
+    confidence: "HIGH",
+    sourceUrl: "research-error",
+    sourceTitle: "Research worker",
+    rawSnippet: `Research failed for topic "${topicId}". Reason: ${reason}`,
+    citations: [],
+  };
+}

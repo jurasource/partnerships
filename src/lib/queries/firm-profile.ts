@@ -8,19 +8,24 @@ import type { Firm, Topic, Finding, ProcurementRecord } from "@/lib/types";
  * A single topic + associated finding for one firm.
  *
  * sourceType:
- *   "structured" — HIGH confidence and NOT a not-found sentinel, OR is a not-found sentinel
+ *   "structured" — HIGH confidence and NOT a sentinel, OR is a not-found/error sentinel
  *   "ai"         — MEDIUM confidence
  *   null         — no finding exists for this topic
  *
  * isNotFound:
- *   true  — finding.sourceUrl === "not-found" (NOT_FOUND_SENTINEL was stored)
- *   false — real finding or no finding
+ *   true  — finding.sourceUrl === "not-found" (NOT_FOUND_SENTINEL: genuine absence)
+ *   false — real finding, error sentinel, or no finding
+ *
+ * isError:
+ *   true  — finding.sourceUrl === "research-error" (RESEARCH_ERROR_SENTINEL: technical failure)
+ *   false — real finding, not-found sentinel, or no finding
  */
 export type FindingByTopic = {
   topic: Topic;
   finding: Finding | null;
   sourceType: "structured" | "ai" | null;
   isNotFound: boolean;
+  isError: boolean;
 };
 
 /**
@@ -43,10 +48,11 @@ export type FirmProfile = {
  *
  * Derives findingsByTopic: one entry per topic, joined on topicId.
  * sourceType derivation per plan spec:
- *   finding === null         → sourceType: null, isNotFound: false
- *   sourceUrl === "not-found" → sourceType: "structured", isNotFound: true
- *   confidence === "HIGH"    → sourceType: "structured", isNotFound: false
- *   confidence === "MEDIUM"  → sourceType: "ai", isNotFound: false
+ *   finding === null            → sourceType: null, isNotFound: false, isError: false
+ *   sourceUrl === "not-found"   → sourceType: "structured", isNotFound: true, isError: false
+ *   sourceUrl === "research-error" → sourceType: "structured", isNotFound: false, isError: true
+ *   confidence === "HIGH"       → sourceType: "structured", isNotFound: false, isError: false
+ *   confidence === "MEDIUM"     → sourceType: "ai", isNotFound: false, isError: false
  *
  * Does NOT parse capabilityTags JSON — returned as raw firm row (consumer's responsibility).
  */
@@ -90,11 +96,15 @@ export async function getFirmProfile(firmId: string): Promise<FirmProfile | null
 
     let sourceType: "structured" | "ai" | null = null;
     let isNotFound = false;
+    let isError = false;
 
     if (finding !== null) {
       if (finding.sourceUrl === "not-found") {
         sourceType = "structured";
         isNotFound = true;
+      } else if (finding.sourceUrl === "research-error") {
+        sourceType = "structured";
+        isError = true;
       } else if (finding.confidence === "HIGH") {
         sourceType = "structured";
       } else {
@@ -108,6 +118,7 @@ export async function getFirmProfile(firmId: string): Promise<FirmProfile | null
       finding,
       sourceType,
       isNotFound,
+      isError,
     };
   });
 

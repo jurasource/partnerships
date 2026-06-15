@@ -86,6 +86,7 @@ export function CitationPanel({ findingsByTopic }: CitationPanelProps) {
       (entry): entry is FindingByTopic & { finding: NonNullable<FindingByTopic["finding"]>; sourceType: "structured" | "ai" } =>
         entry.finding !== null &&
         !entry.isNotFound &&
+        !entry.isError &&
         entry.sourceType !== null,
     )
     .map((entry) => {
