@@ -162,6 +162,38 @@ Use these entry points:
 Do not make direct repo edits outside a GSD workflow unless the user explicitly asks to bypass it.
 <!-- GSD:workflow-end -->
 
+## Commit & Release Workflow
+
+These rules apply to every commit, without exception.
+
+### Before committing
+
+1. Run the full test suite and fix any failures before committing.
+2. Do not commit with failing tests.
+
+### Before committing (continued)
+
+3. **PENDING_RELEASE.md** — append any deployment steps required for this change (both dev and prod). Create the file if it doesn't exist. Format:
+   ```
+   ## <commit subject>
+   ### Dev
+   - <step>
+   ### Prod
+   - <step>
+   ```
+4. **RELEASE_NOTES.md** — append a brief summary of the commit grouped by date with bullet points. Create the file if it doesn't exist. Format:
+   ```
+   ## YYYY-MM-DD
+   - <summary of what changed and why>
+   ```
+5. Stage `PENDING_RELEASE.md` and `RELEASE_NOTES.md` alongside the other changes so they are included in the same commit and PR.
+
+### Branching & pushing
+
+5. **Never push directly to `main`.**
+6. Always work on a feature branch.
+7. When ready to push, confirm with the user first, then submit a PR (never force-push to main).
+
 <!-- GSD:profile-start -->
 
 ## Developer Profile
