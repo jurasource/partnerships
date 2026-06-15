@@ -1,6 +1,9 @@
 # Release Notes
 
 ## 2026-06-15
+- fix: `extractOwnership` outer try-catch was silently swallowing DB errors (e.g. table-not-found) when writing to `ch_snapshots`, causing CH data to never appear on firm profiles even after running the cross-cutting job; DB errors now propagate and fail the job visibly; CH API fetch errors continue to be caught individually per-call
+- feat: "Refresh CH Data" button added to every firm profile Companies House panel; calls a new `refreshCHData` server action that fetches profile/PSC/officers from CH API and upserts the snapshot inline (no queue) — provides a direct way to populate CH data without running a full analysis job
+- test: added 4 snapshot write tests to `ownership.test.ts` covering: snapshot written with data, LLP empty-PSC regression (Baringa), no snapshot when all CH calls return null, no snapshot for firm with no CH number
 - fix(CH panel): `CompaniesHousePanel` now correctly distinguishes three states: no CH number recorded, snapshot not yet fetched (has CH number but analysis not run), and data unavailable from CH API — previously a missing snapshot was silently displayed as "No Companies House number recorded."
 - feat: CH data now cached in a new `ch_snapshots` table (profile, PSC, officers) during cross-cutting analysis — firm profile pages read from DB instead of calling the CH API live; CH registered name shown in the panel; `getOfficers` added to the ownership extraction fetch
 - feat: Companies House data panel added to firm profile pages, displayed to the right of the Ownership panel; shows live-fetched company status, type, incorporation date, jurisdiction, registered address, persons with significant control, and top officers; fetched in parallel from the CH API on page load; gracefully handles missing CH numbers and API errors

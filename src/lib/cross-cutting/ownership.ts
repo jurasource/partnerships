@@ -15,7 +15,7 @@ import { eq } from "drizzle-orm";
 
 import { db } from "@/db/client";
 import { firms, ownershipRecords, chSnapshots } from "@/db/schema";
-import { getCompanyProfile, getPSC, getOfficers } from "@/lib/clients/companies-house";
+import { getCompanyProfile, getPSC, getOfficers, type CompanyProfile, type PscRecord, type OfficersRecord } from "@/lib/clients/companies-house";
 import { findFindingByTopicName, TOPIC_NAMES } from "./topic-lookup";
 
 // ---------------------------------------------------------------------------
@@ -149,6 +149,66 @@ function deriveForeignCountry(item: {
 }
 
 // ---------------------------------------------------------------------------
+// CH fetch + snapshot helper
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetch the three Companies House endpoints for a given CH number and upsert
+ * the raw responses into ch_snapshots.
+ *
+ * Individual API call failures are caught and return null — a partial fetch
+ * (e.g. profile OK but PSC 404) is still cached. DB errors are NOT caught
+ * here and will propagate to the caller so the job fails visibly rather than
+ * silently writing nothing.
+ */
+async function fetchAndCacheCH(
+  firmId: string,
+  chNumber: string,
+): Promise<{ profile: CompanyProfile | null; psc: PscRecord | null; officers: OfficersRecord | null }> {
+  const [profile, psc, officers] = await Promise.all([
+    getCompanyProfile(chNumber).catch(() => null),
+    getPSC(chNumber).catch(() => null),
+    getOfficers(chNumber).catch(() => null),
+  ]);
+
+  if (profile !== null || psc !== null || officers !== null) {
+    const now = new Date().toISOString();
+    await db
+      .insert(chSnapshots)
+      .values({
+        firmId,
+        profileJson: profile ? JSON.stringify(profile) : null,
+        pscJson: psc ? JSON.stringify(psc) : null,
+        officersJson: officers ? JSON.stringify(officers) : null,
+        fetchedAt: now,
+      })
+      .onConflictDoUpdate({
+        target: [chSnapshots.firmId],
+        set: {
+          profileJson: profile ? JSON.stringify(profile) : null,
+          pscJson: psc ? JSON.stringify(psc) : null,
+          officersJson: officers ? JSON.stringify(officers) : null,
+          fetchedAt: now,
+        },
+      });
+  }
+
+  return { profile, psc, officers };
+}
+
+/**
+ * Fetch and cache Companies House data for a firm without running the full
+ * ownership extraction. Safe to call standalone (e.g. from a "Refresh CH"
+ * server action on the firm profile page). No-ops if the firm has no CH number.
+ */
+export async function refreshCHSnapshot(firmId: string): Promise<void> {
+  const [firm] = await db.select().from(firms).where(eq(firms.id, firmId)).limit(1);
+  if (!firm) throw new Error(`refreshCHSnapshot: firm not found: ${firmId}`);
+  if (!firm.companiesHouseNumber) return;
+  await fetchAndCacheCH(firmId, firm.companiesHouseNumber);
+}
+
+// ---------------------------------------------------------------------------
 // Main extraction function
 // ---------------------------------------------------------------------------
 
@@ -184,38 +244,7 @@ export async function extractOwnership(firmId: string): Promise<void> {
   let officers = null;
 
   if (chNumber) {
-    try {
-      [profile, psc, officers] = await Promise.all([
-        getCompanyProfile(chNumber).catch(() => null),
-        getPSC(chNumber).catch(() => null),
-        getOfficers(chNumber).catch(() => null),
-      ]);
-
-      // Cache raw CH responses so the firm profile page reads from DB, not CH API
-      if (profile !== null || psc !== null || officers !== null) {
-        const now = new Date().toISOString();
-        await db
-          .insert(chSnapshots)
-          .values({
-            firmId,
-            profileJson: profile ? JSON.stringify(profile) : null,
-            pscJson: psc ? JSON.stringify(psc) : null,
-            officersJson: officers ? JSON.stringify(officers) : null,
-            fetchedAt: now,
-          })
-          .onConflictDoUpdate({
-            target: [chSnapshots.firmId],
-            set: {
-              profileJson: profile ? JSON.stringify(profile) : null,
-              pscJson: psc ? JSON.stringify(psc) : null,
-              officersJson: officers ? JSON.stringify(officers) : null,
-              fetchedAt: now,
-            },
-          });
-      }
-    } catch {
-      // CH API failure — fall through to AI research fallback
-    }
+    ({ profile, psc, officers } = await fetchAndCacheCH(firmId, chNumber));
   }
 
   // Attempt to load the "Ownership structure" finding for corroboration / fallback

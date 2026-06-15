@@ -6,6 +6,7 @@ import { db } from "@/db/client";
 import { firms } from "@/db/schema";
 import { researchQueue, crossCuttingQueue } from "@/lib/jobs/bull";
 import { enqueueJob } from "@/lib/jobs/queue";
+import { refreshCHSnapshot } from "@/lib/cross-cutting/ownership";
 
 /**
  * runResearch — inserts a pending job row then pushes the job onto the Redis
@@ -147,4 +148,22 @@ export async function runBatchJobs(
   }
 
   return { enqueued, skipped };
+}
+
+/**
+ * refreshCHData — fetches the Companies House profile, PSC, and officers for a
+ * firm and upserts them into ch_snapshots. Runs inline (no queue); completes in
+ * a few seconds. Safe to call from a "Refresh CH" button on the firm profile.
+ */
+export async function refreshCHData(
+  firmId: string,
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    await refreshCHSnapshot(firmId);
+    return { ok: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    console.error(`[refreshCHData] Failed for firm ${firmId}:`, message);
+    return { ok: false, error: message };
+  }
 }

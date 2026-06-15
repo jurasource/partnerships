@@ -98,6 +98,7 @@ const FOREIGN_PSC_RECORD = {
 
 type InsertedOwnershipRow = Record<string, unknown>;
 let capturedOwnershipInserts: InsertedOwnershipRow[] = [];
+let capturedSnapshotInserts: InsertedOwnershipRow[] = [];
 let capturedUpsertCalls: number = 0;
 
 // Control which firm to return from the select mock
@@ -119,9 +120,11 @@ vi.mock("@/db/client", () => ({
     })),
     insert: vi.fn(() => ({
       values: vi.fn((row: InsertedOwnershipRow) => {
-        // Only capture ownership record inserts (not ch_snapshots inserts)
         if ("ukIncorporated" in row) {
           capturedOwnershipInserts.push({ ...row });
+        }
+        if ("profileJson" in row) {
+          capturedSnapshotInserts.push({ ...row });
         }
         return {
           onConflictDoUpdate: vi.fn(() => {
@@ -214,6 +217,7 @@ vi.mock("@/lib/cross-cutting/topic-lookup", () => ({
 
 beforeEach(() => {
   capturedOwnershipInserts = [];
+  capturedSnapshotInserts = [];
   capturedUpsertCalls = 0;
   firmToReturn = MOCK_UK_FIRM; // default
   vi.clearAllMocks();
@@ -373,5 +377,73 @@ describe("extractOwnership — fallback to finding when CH unavailable", () => {
     const row = capturedOwnershipInserts[0];
     expect(row.sourceType).toBe("ai_research");
     expect(row.sourceUrl).toBe("https://example.com/ownership");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// ch_snapshots write tests
+// Regression suite for the silent-failure bug: the outer try-catch was
+// swallowing DB errors, leaving ch_snapshots unpopulated even after a
+// "successful" cross-cutting job.
+// ---------------------------------------------------------------------------
+
+describe("extractOwnership — ch_snapshots write", () => {
+  it("writes a ch_snapshots row with profileJson and pscJson when CH API returns data", async () => {
+    firmToReturn = MOCK_UK_FIRM;
+    mockGetCompanyProfile.mockResolvedValue(UK_CH_PROFILE);
+    mockGetPSC.mockResolvedValue(UK_PSC_RECORD);
+    mockGetOfficers.mockResolvedValue({ active_count: 1, items: [{ name: "Jane Smith", officer_role: "director" }] });
+
+    const { extractOwnership } = await import("../ownership");
+    await extractOwnership("firm-uk");
+
+    expect(capturedSnapshotInserts.length).toBe(1);
+    const snap = capturedSnapshotInserts[0];
+    expect(snap.firmId).toBe("firm-uk");
+    expect(typeof snap.profileJson).toBe("string");
+    const profile = JSON.parse(snap.profileJson as string);
+    expect(profile.company_number).toBe("12345678");
+    expect(typeof snap.pscJson).toBe("string");
+    expect(snap.officersJson).not.toBeNull();
+  });
+
+  it("writes a ch_snapshots row for a UK LLP with empty PSC register (Baringa regression)", async () => {
+    // Regression: the outer try-catch was silently swallowing DB errors so
+    // ch_snapshots was never written. For LLPs the PSC register is empty but
+    // the profile fetch succeeds — the snapshot MUST still be written.
+    firmToReturn = MOCK_UK_FIRM;
+    mockGetCompanyProfile.mockResolvedValue({ ...UK_CH_PROFILE, type: "llp" });
+    mockGetPSC.mockResolvedValue({ active_count: 0, items: [] });
+    mockGetOfficers.mockResolvedValue(null);
+
+    const { extractOwnership } = await import("../ownership");
+    await extractOwnership("firm-uk");
+
+    expect(capturedSnapshotInserts.length).toBe(1);
+    const snap = capturedSnapshotInserts[0];
+    expect(snap.firmId).toBe("firm-uk");
+    expect(typeof snap.profileJson).toBe("string");
+    expect(snap.officersJson).toBeNull();
+  });
+
+  it("does NOT write a ch_snapshots row when all three CH API calls return null", async () => {
+    firmToReturn = MOCK_UK_FIRM;
+    mockGetCompanyProfile.mockResolvedValue(null);
+    mockGetPSC.mockResolvedValue(null);
+    mockGetOfficers.mockResolvedValue(null);
+
+    const { extractOwnership } = await import("../ownership");
+    await extractOwnership("firm-uk");
+
+    expect(capturedSnapshotInserts.length).toBe(0);
+  });
+
+  it("does NOT write a ch_snapshots row when the firm has no CH number", async () => {
+    firmToReturn = MOCK_NO_CH_FIRM;
+
+    const { extractOwnership } = await import("../ownership");
+    await extractOwnership("firm-noch");
+
+    expect(capturedSnapshotInserts.length).toBe(0);
   });
 });

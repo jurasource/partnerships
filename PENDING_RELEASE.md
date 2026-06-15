@@ -1,12 +1,22 @@
 # Pending Release Steps
 
+## fix: CH snapshot silent failure + Refresh CH Data button
+
+### Dev
+- Run `npm run db:push` to ensure `ch_snapshots` table exists (if not already done)
+- Use the new "Refresh CH Data" button on any firm profile page to fetch and cache CH data immediately (no queue required)
+- Alternatively, "Re-run Analysis" still refreshes CH data as part of the cross-cutting job
+
+### Prod
+- Same: `npm run db:push` then use "Refresh CH Data" buttons per firm
+
 ## fix(CH panel): distinguish "no CH number" from "no snapshot yet"
 
 ### Dev
-- Re-run cross-cutting analysis for each firm (the "Re-run Analysis" button on each profile) to populate `ch_snapshots` and update `ukIncorporated`
+- No steps required — UI change only
 
 ### Prod
-- Same: run analysis per firm after deploying
+- No steps required
 
 ## feat: cache Companies House data in DB; show CH name on firm profile
 

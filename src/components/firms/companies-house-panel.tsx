@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { FirmCHRefresh } from "@/components/firms/firm-ch-refresh";
 import type {
   CompanyProfile,
   PscRecord,
@@ -119,23 +120,24 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
   );
 }
 
-type Props = { chData: CHData | null; hasChNumber: boolean };
+type Props = { chData: CHData | null; hasChNumber: boolean; firmId: string };
 
-export function CompaniesHousePanel({ chData, hasChNumber }: Props) {
+export function CompaniesHousePanel({ chData, hasChNumber, firmId }: Props) {
   if (!chData || !chData.profile) {
     let message: string;
     if (!hasChNumber) {
       message = "No Companies House number recorded.";
     } else if (!chData) {
-      message = "No snapshot yet — run the analysis to fetch Companies House data.";
+      message = "No snapshot yet — click 'Refresh CH Data' to fetch from Companies House.";
     } else {
       message = "Data unavailable from Companies House.";
     }
     return (
       <section className="px-6 py-6 border-t border-neutral-200">
-        <h2 className="text-xl font-semibold text-neutral-900 mb-4">
-          Companies House
-        </h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold text-neutral-900">Companies House</h2>
+          {hasChNumber && <FirmCHRefresh firmId={firmId} />}
+        </div>
         <p className="text-sm text-neutral-500">{message}</p>
       </section>
     );
@@ -149,9 +151,10 @@ export function CompaniesHousePanel({ chData, hasChNumber }: Props) {
 
   return (
     <section className="px-6 py-6 border-t border-neutral-200">
-      <h2 className="text-xl font-semibold text-neutral-900 mb-4">
-        Companies House
-      </h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-semibold text-neutral-900">Companies House</h2>
+        <FirmCHRefresh firmId={firmId} />
+      </div>
 
       {/* Company details */}
       <dl className="flex flex-col gap-3">
