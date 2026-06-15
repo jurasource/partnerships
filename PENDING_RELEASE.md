@@ -16,3 +16,16 @@
 - Run `npm run db:push` against production database to create `access_codes` table
 - Generate at least one access code before deploying
 - All routes except `/login` are now behind the access-code gate
+
+## feat(ui-redesign-analytics): top navbar, redesigned styles, Umami analytics
+
+### Dev
+- No new dependencies or schema changes
+- Add to `.env.local` if you want to test Umami locally (leave empty to disable):
+  - `NEXT_PUBLIC_UMAMI_WEBSITE_ID=<uuid-from-umami-dashboard>`
+  - `NEXT_PUBLIC_DOMAIN=<your-domain>`
+- Run `npm run dev` — sidebar is gone, top navbar is in place
+
+### Prod
+- Add `NEXT_PUBLIC_UMAMI_WEBSITE_ID` env var (get from Umami dashboard → Website → Tracking code)
+- Add `NEXT_PUBLIC_DOMAIN` env var (e.g. `partnerships.example.com`) to restrict tracking to prod only

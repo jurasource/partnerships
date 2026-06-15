@@ -49,7 +49,7 @@ export function StalenessBadge({
         variant="outline"
         className={cn(
           "text-xs font-normal px-1.5 py-0.5 border",
-          "bg-amber-100 text-amber-700 border-amber-200",
+          "bg-slate-100 text-slate-500 border-slate-200",
         )}
       >
         Not researched
@@ -71,7 +71,7 @@ export function StalenessBadge({
               variant="outline"
               className={cn(
                 "text-xs font-normal px-1.5 py-0.5 border cursor-default",
-                "bg-amber-100 text-amber-700 border-amber-200",
+                "bg-orange-50 text-orange-600 border-orange-200",
               )}
             />
           }
@@ -93,7 +93,7 @@ export function StalenessBadge({
             variant="outline"
             className={cn(
               "text-xs font-normal px-1.5 py-0.5 border cursor-default",
-              "bg-green-50 text-green-600 border-green-100",
+              "bg-emerald-50 text-emerald-600 border-emerald-100",
             )}
           />
         }
