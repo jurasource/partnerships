@@ -120,6 +120,12 @@ export async function runResearchWorker(
           topic.id,
           "sourceUrl not in retrieved Tavily results — possible hallucination",
         );
+      } else {
+        // Filter supporting citations to only URLs actually retrieved (E4 extension)
+        finding = {
+          ...finding,
+          citations: (finding.citations ?? []).filter((c) => retrievedUrls.has(c.url)),
+        };
       }
     }
 
@@ -136,6 +142,7 @@ export async function runResearchWorker(
       sourceTitle: finding.sourceTitle,
       rawSnippet: finding.rawSnippet,
       sourceDate: finding.sourceDate ?? null,
+      citations: JSON.stringify(finding.citations ?? []),
     }).onConflictDoUpdate({
       target: [findings.firmId, findings.topicId],
       set: {
@@ -145,6 +152,7 @@ export async function runResearchWorker(
         sourceTitle: finding.sourceTitle,
         rawSnippet: finding.rawSnippet,
         sourceDate: finding.sourceDate ?? null,
+        citations: JSON.stringify(finding.citations ?? []),
         createdAt: new Date().toISOString(),
       },
     });
