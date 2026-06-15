@@ -1,6 +1,19 @@
 # Release Notes
 
 ## 2026-06-15
+- fix(03.1): updateGroup now calls revalidatePath("/groups/${id}", "page") in addition to revalidatePath("/groups") so the detail page cache is invalidated after a rename, preventing stale-page scenarios in cached deployments (WR-04)
+- fix(03.1): added UNIQUE constraint on groups.name (groups_name_unique index) to prevent duplicate group names at the DB level; createGroup and updateGroup now return a user-facing error "A group with that name already exists." on Postgres error code 23505 (WR-03)
+- fix(03.1): GroupFormDialog now calls router.refresh() after a successful create so the groups list updates immediately without requiring navigation away and back (WR-01)
+- fix(03.1): GroupRowActions now calls router.refresh() after a successful delete so the deleted row disappears immediately without requiring navigation away and back (WR-02)
+- feat(03.1-03): firms table now shows a Groups column of clickable amber pill badges (linking to /groups/[id]) after Capabilities; added FirmsFilterBar above the table with Groups multi-select (OR logic), Capabilities multi-select (OR logic), and Research status single-select (All / Researched / Not researched / Stale >30 days); in-memory filtering narrows rows before TanStack; Clear filters button shown when any filter active
+
+## 2026-06-15
+- feat(03.1-02): Groups management area — added "Groups" nav item (Layers icon, between Firms and Topics); `/groups` list page with firm counts, create-group dialog, and delete; `/groups/[id]` detail page with inline rename, add-firm select, and remove-firm buttons; all mutations route through Plan 01 server actions
+
+## 2026-06-15
+- feat(03.1-01): added `groups` and `firm_groups` tables to Drizzle schema with composite PK and cascade FK; exported `Group`/`FirmGroup` inferred types; created five group server actions (`createGroup`, `updateGroup`, `deleteGroup`, `addFirmToGroup`, `removeFirmFromGroup`) following the `{ ok, error? }` contract; 19 unit tests green
+
+## 2026-06-15
 - fix(redis): `getRedisConnection()` now parses `REDIS_URL` (with password extraction) when set, falling back to `REDIS_HOST`/`REDIS_PORT` — simplifies Railway deployment where the Redis addon provides a single connection URL
 - fix(research-worker): catch NoOutputGeneratedError alongside NoObjectGeneratedError — the AI SDK throws this from the result.output getter when the model produces no output at all, which previously re-threw and failed the whole job instead of writing a sentinel
 - fix(research-logging): worker now logs firm+topic count at start, search result count + generateText call per topic, finding outcome per topic, and full error type+stack before re-throw; runner logs full stack on job failure

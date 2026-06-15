@@ -1,5 +1,63 @@
 # Pending Release Steps
 
+## fix(03.1): WR-04 updateGroup now revalidates the specific group detail path
+
+### Dev
+- No steps required — server-side only change
+
+### Prod
+- No steps required — deploy new build
+
+## fix(03.1): WR-03 add UNIQUE constraint on groups.name
+
+### Dev
+- Run `npm run db:push` to apply the new unique index to the local Postgres database
+
+### Prod
+- Run `npm run db:push` (or equivalent migration) to add the unique index to the production database — existing rows are unaffected unless duplicates already exist
+
+## fix(03.1): WR-02 add router.refresh() to GroupsTable after delete
+
+### Dev
+- No steps required — client-side only change
+
+### Prod
+- No steps required — deploy new build
+
+## fix(03.1): WR-01 add router.refresh() to GroupFormDialog after create
+
+### Dev
+- No steps required — client-side only change
+
+### Prod
+- No steps required — deploy new build
+
+## feat(03.1-03): firms table Groups column + unified filter bar
+
+### Dev
+- No schema changes — groups and firm_groups tables were created in Plan 01 (03.1-01)
+- The firms page now shows a Groups column with amber pill links; a filter bar above the table allows filtering by Group, Capability, and Research status
+
+### Prod
+- No schema changes required; deploy new build
+
+## feat(03.1-02): Groups management area — list page, create dialog, detail page
+
+### Dev
+- No schema changes — tables were created in Plan 01 (03.1-01)
+- Navigate to `/groups` to see the new Groups section
+
+### Prod
+- No schema changes required; deploy new build
+
+## feat(03.1-01): groups + firmGroups data layer — schema, types, server actions
+
+### Dev
+- Run `npx drizzle-kit push` (or `npm run db:push`) to create the `groups` and `firm_groups` tables in Postgres
+
+### Prod
+- Run `npx drizzle-kit push` against the production database to create `groups` and `firm_groups` tables — no existing data is affected, these are new tables
+
 ## fix(redis): support REDIS_URL in addition to REDIS_HOST/REDIS_PORT
 
 ### Dev

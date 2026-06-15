@@ -7,6 +7,7 @@ import {
   BarChart3,
   BookOpen,
   Building2,
+  LayersIcon,
   LayoutDashboard,
   LogOut,
   Users,
@@ -25,6 +26,7 @@ type NavItem = {
 const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
   { label: "Firms", href: "/firms", icon: Building2 },
+  { label: "Groups", href: "/groups", icon: LayersIcon },
   { label: "Topics", href: "/topics", icon: BookOpen },
   { label: "Jobs", href: "/jobs", icon: Activity },
 ];

@@ -1,4 +1,4 @@
-import { pgTable, text, uniqueIndex, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, uniqueIndex, timestamp, boolean, primaryKey } from "drizzle-orm/pg-core";
 
 // --- firms ---------------------------------------------------------------
 export const firms = pgTable("firms", {
@@ -339,6 +339,39 @@ export const findings = pgTable(
    * prior finding via upsert rather than accumulating duplicate rows (CR-03).
    */
   (table) => [uniqueIndex("findings_firm_topic_unique").on(table.firmId, table.topicId)],
+);
+
+// --- groups --------------------------------------------------------------
+export const groups = pgTable(
+  "groups",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    name: text("name").notNull(),
+    createdAt: timestamp("created_at", { mode: "string" }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { mode: "string" }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex("groups_name_unique").on(table.name)],
+);
+
+// --- firmGroups ----------------------------------------------------------
+/**
+ * Many-to-many junction between firms and groups.
+ * Composite PK on (firm_id, group_id) — prevents duplicate memberships.
+ * Both FKs cascade on delete so removing a firm OR group cleans up junction rows.
+ */
+export const firmGroups = pgTable(
+  "firm_groups",
+  {
+    firmId: text("firm_id")
+      .notNull()
+      .references(() => firms.id, { onDelete: "cascade" }),
+    groupId: text("group_id")
+      .notNull()
+      .references(() => groups.id, { onDelete: "cascade" }),
+  },
+  (table) => [primaryKey({ columns: [table.firmId, table.groupId] })],
 );
 
 // --- accessCodes ---------------------------------------------------------
