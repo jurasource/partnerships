@@ -1,8 +1,28 @@
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, or } from "drizzle-orm";
 
 import { db } from "@/db/client";
-import { firms, topics, findings, procurementRecords } from "@/db/schema";
-import type { Firm, Topic, Finding, ProcurementRecord } from "@/lib/types";
+import {
+  firms,
+  topics,
+  findings,
+  procurementRecords,
+  ownershipRecords,
+  riskFlags,
+  collaborationRecords,
+  conflictPairs,
+  partnershipPairs,
+} from "@/db/schema";
+import type {
+  Firm,
+  Topic,
+  Finding,
+  ProcurementRecord,
+  OwnershipRecord,
+  RiskFlag,
+  CollaborationRecord,
+  ConflictPair,
+  PartnershipPair,
+} from "@/lib/types";
 
 /**
  * A single topic + associated finding for one firm.
@@ -25,21 +45,38 @@ export type FindingByTopic = {
 
 /**
  * The aggregated firm profile returned by getFirmProfile.
+ * Extended in Phase 4 to include cross-cutting analysis data.
  */
 export type FirmProfile = {
   firm: Firm;
   findingsByTopic: FindingByTopic[];
   contracts: ProcurementRecord[];
+  /** Ownership record for this firm, or null if never researched / no CH data. */
+  ownership: OwnershipRecord | null;
+  /** Risk flags for this firm, sorted by extraction order (caller sorts by severity). */
+  riskFlags: RiskFlag[];
+  /** Collaboration record for this firm, or null if never researched. */
+  collaboration: CollaborationRecord | null;
+  /** Conflict pairs where this firm is either firmA or firmB. */
+  conflicts: ConflictPair[];
+  /** Partnership pairs where this firm is either firmA or firmB. */
+  partnerships: PartnershipPair[];
 };
 
 /**
- * getFirmProfile — aggregates a firm's row, per-topic findings, and procurement records.
+ * getFirmProfile — aggregates a firm's row, per-topic findings, procurement records,
+ * and Phase 4 cross-cutting data (ownership, risk flags, collaboration, conflicts, partnerships).
  *
- * Performs four sequential reads:
+ * Performs one initial read (firm row), then eight parallel reads:
  * 1. Firm row (returns null if absent — T-03-01: parameterised lookup, 404 on unknown)
  * 2. All topics from the topics table (dynamic — never hard-coded)
  * 3. All findings for this firmId
  * 4. All procurement records for this firmId ordered by awardDate DESC
+ * 5. Ownership record (limit 1 — unique per firm)
+ * 6. Risk flags for this firmId
+ * 7. Collaboration record (limit 1 — unique per firm)
+ * 8. Conflict pairs where this firm is firmA or firmB
+ * 9. Partnership pairs where this firm is firmA or firmB
  *
  * Derives findingsByTopic: one entry per topic, joined on topicId.
  * sourceType derivation per plan spec:
@@ -62,9 +99,17 @@ export async function getFirmProfile(firmId: string): Promise<FirmProfile | null
     return null;
   }
 
-  // 2-4. Fetch topics, findings, and contracts in parallel to reduce latency
-  //      and narrow the TOCTOU window between topic and finding reads.
-  const [allTopics, firmFindings, contracts] = await Promise.all([
+  // 2-9. Fetch all dependent data in parallel to reduce latency.
+  const [
+    allTopics,
+    firmFindings,
+    contracts,
+    ownershipRows,
+    riskFlagRows,
+    collaborationRows,
+    firmConflicts,
+    firmPartnerships,
+  ] = await Promise.all([
     db.select().from(topics),
     db
       .select()
@@ -76,6 +121,29 @@ export async function getFirmProfile(firmId: string): Promise<FirmProfile | null
       .from(procurementRecords)
       .where(eq(procurementRecords.firmId, firmId))
       .orderBy(desc(procurementRecords.awardDate)),
+    db
+      .select()
+      .from(ownershipRecords)
+      .where(eq(ownershipRecords.firmId, firmId))
+      .limit(1),
+    db.select().from(riskFlags).where(eq(riskFlags.firmId, firmId)),
+    db
+      .select()
+      .from(collaborationRecords)
+      .where(eq(collaborationRecords.firmId, firmId))
+      .limit(1),
+    db
+      .select()
+      .from(conflictPairs)
+      .where(
+        or(eq(conflictPairs.firmAId, firmId), eq(conflictPairs.firmBId, firmId)),
+      ),
+    db
+      .select()
+      .from(partnershipPairs)
+      .where(
+        or(eq(partnershipPairs.firmAId, firmId), eq(partnershipPairs.firmBId, firmId)),
+      ),
   ]);
 
   // Build a lookup map: topicId → Finding
@@ -115,5 +183,10 @@ export async function getFirmProfile(firmId: string): Promise<FirmProfile | null
     firm,
     findingsByTopic,
     contracts,
+    ownership: ownershipRows[0] ?? null,
+    riskFlags: riskFlagRows,
+    collaboration: collaborationRows[0] ?? null,
+    conflicts: firmConflicts,
+    partnerships: firmPartnerships,
   };
 }
