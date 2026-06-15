@@ -1,6 +1,7 @@
 # Release Notes
 
 ## 2026-06-15
+- feat(multi-source-citations) Task 3: Citation panel now renders an "Also sourced from:" sub-list of supporting Tavily sources beneath the primary URL for AI-research findings; primary URL de-duplicated from the list; structured findings always show no sub-list
 - feat(multi-source-citations) Task 2: Extended system prompt with citations output rule; worker now filters supporting citations through E4 origin gate and persists them as JSON on insert and conflict-update
 - feat(multi-source-citations) Task 1: Added CitationSchema and citations array field to FindingSchema; added citations text column (JSON) to findings table with NOT NULL default "[]"; updated firm-profile test fixtures to include citations field
 - docs(plan): created quick-task plan 260615-dn8 for multi-source citations — extends FindingSchema with citations array, adds citations column to findings table, filters citation URLs through E4 gate, renders supporting sources in citation panel
