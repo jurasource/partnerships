@@ -1,5 +1,14 @@
 # Pending Release Steps
 
+## feat(03.1-02): Groups management area — list page, create dialog, detail page
+
+### Dev
+- No schema changes — tables were created in Plan 01 (03.1-01)
+- Navigate to `/groups` to see the new Groups section
+
+### Prod
+- No schema changes required; deploy new build
+
 ## feat(03.1-01): groups + firmGroups data layer — schema, types, server actions
 
 ### Dev

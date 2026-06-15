@@ -1,6 +1,9 @@
 # Release Notes
 
 ## 2026-06-15
+- feat(03.1-02): Groups management area — added "Groups" nav item (Layers icon, between Firms and Topics); `/groups` list page with firm counts, create-group dialog, and delete; `/groups/[id]` detail page with inline rename, add-firm select, and remove-firm buttons; all mutations route through Plan 01 server actions
+
+## 2026-06-15
 - feat(03.1-01): added `groups` and `firm_groups` tables to Drizzle schema with composite PK and cascade FK; exported `Group`/`FirmGroup` inferred types; created five group server actions (`createGroup`, `updateGroup`, `deleteGroup`, `addFirmToGroup`, `removeFirmFromGroup`) following the `{ ok, error? }` contract; 19 unit tests green
 
 ## 2026-06-15
