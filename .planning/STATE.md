@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 03.1 Plan 02 complete (Groups UI)
+stopped_at: Phase 03.1 Plan 03 complete — Firms table Groups column + filter bar
 last_updated: "2026-06-15T14:05:00.000Z"
-last_activity: 2026-06-15 -- Phase 03.1 Plan 02 complete (Groups UI)
+last_activity: 2026-06-15 -- Phase 03.1 Plan 03 complete (Firms filter bar)
 progress:
   total_phases: 6
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 12
-  completed_plans: 11
-  percent: 60
+  completed_plans: 12
+  percent: 67
 ---
 
 # Project State
@@ -26,8 +26,8 @@ See: .planning/PROJECT.md (updated 2026-06-13)
 ## Current Position
 
 Phase: 03.1 (firm-groups) — EXECUTING
-Plan: 2 of 3 complete
-Status: Executing Phase 03.1
+Plan: 3 of 3 complete
+Status: Ready to execute
 Last activity: 2026-06-15 -- Phase 03.1 Plan 02 complete (Groups UI)
 
 Progress: [██████████] 100%
@@ -56,6 +56,7 @@ Progress: [██████████] 100%
 | Phase 02-research-engine P03 | 12 | 2 tasks | 5 files |
 | Phase 03-dashboard-profiles P01 | 10 | 3 tasks | 8 files |
 | Phase 03-dashboard-profiles P02 | 4 | 3 tasks | 6 files |
+| Phase 03.1 P03 | 8 | 2 tasks | 5 files |
 | Phase 04 P02 | 9 min | 2 tasks | 12 files |
 
 ## Accumulated Context
@@ -89,6 +90,8 @@ Recent decisions affecting current work:
 - [Plan 03.1-02]: Base UI Select onValueChange typed explicitly as (value: string | null) => void — TypeScript infers Value={} when no explicit generic is passed
 - [Plan 03.1-02]: View link in GroupsTable uses styled Link not Button asChild — Base UI Button does not support the asChild render pattern
 - [Plan 03.1-02]: router.refresh() called after all mutations in GroupDetailClient to re-pull RSC-derived memberFirms/nonMemberFirms props
+- [Phase 03.1]: Stale filter threshold is 30 days per phase spec; this deliberately differs from StalenessBadge which uses 7 days for its visual indicator
+- [Phase 03.1]: filteredData computed with useMemo before useReactTable — TanStack sorting operates on already-filtered rows
 
 ### Pending Todos
 
@@ -127,6 +130,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-15T14:05:00.000Z
-Stopped at: Phase 03.1 Plan 02 complete — Groups UI built, Plan 03 next
+Last session: 2026-06-15T13:11:54.803Z
+Stopped at: Phase 03.1 Plan 03 complete — Firms table Groups column + filter bar
 Resume file: None
