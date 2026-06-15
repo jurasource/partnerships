@@ -41,12 +41,10 @@ import { FirmRowRefresh } from "@/components/firms/firm-row-refresh";
 import { FirmRowResearch } from "@/components/firms/firm-row-research";
 import { StalenessBadge } from "@/components/research/staleness-badge";
 import { FirmsFilterBar } from "@/components/firms/firms-filter-bar";
-import type { Firm, CapabilityTag } from "@/lib/types";
+import { useFirmFilters } from "@/hooks/use-firm-filters";
+import type { Firm, CapabilityTag, FirmWithGroups } from "@/lib/types";
 
-// ---------------------------------------------------------------------------
-// Extended row type with group membership
-// ---------------------------------------------------------------------------
-export type FirmWithGroups = Firm & { groups: Array<{ id: string; name: string }> };
+export type { FirmWithGroups };
 
 // ---------------------------------------------------------------------------
 // Badge styling per capability tag (UI-SPEC Color section)
@@ -264,67 +262,18 @@ type FirmsTableProps = {
 
 export function FirmsTable({ data }: FirmsTableProps) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [selectedGroupIds, setSelectedGroupIds] = React.useState<string[]>([]);
-  const [selectedCapabilities, setSelectedCapabilities] = React.useState<string[]>([]);
-  const [researchStatus, setResearchStatus] = React.useState<
-    "all" | "researched" | "not_researched" | "stale"
-  >("all");
-
   const columns = React.useMemo(() => buildColumns(), []);
 
-  // Derive unique groups across all firms for the filter bar
-  const allGroups = React.useMemo(() => {
-    const seen = new Map<string, string>();
-    for (const firm of data) {
-      for (const g of firm.groups) {
-        if (!seen.has(g.id)) seen.set(g.id, g.name);
-      }
-    }
-    return Array.from(seen.entries()).map(([id, name]) => ({ id, name }));
-  }, [data]);
-
-  // In-memory filtering applied BEFORE TanStack processes rows
-  const filteredData = React.useMemo(() => {
-    return data.filter((firm) => {
-      // Groups filter (OR logic — firm must belong to any of the selected groups)
-      if (selectedGroupIds.length > 0) {
-        const firmGroupIds = firm.groups.map((g) => g.id);
-        const matches = selectedGroupIds.some((id) => firmGroupIds.includes(id));
-        if (!matches) return false;
-      }
-
-      // Capabilities filter (OR logic)
-      if (selectedCapabilities.length > 0) {
-        let tags: string[] = [];
-        try {
-          tags = JSON.parse(firm.capabilityTags as string) as string[];
-        } catch {
-          tags = [];
-        }
-        const matches = selectedCapabilities.some((cap) => tags.includes(cap));
-        if (!matches) return false;
-      }
-
-      // Research status filter
-      if (researchStatus !== "all") {
-        const lastResearched = firm.lastResearchedAt;
-        if (researchStatus === "researched") {
-          if (lastResearched == null) return false;
-        } else if (researchStatus === "not_researched") {
-          if (lastResearched != null) return false;
-        } else if (researchStatus === "stale") {
-          // Stale = researched AND older than 30 days (phase spec; different from
-          // StalenessBadge which uses 7 days for its visual indicator)
-          if (lastResearched == null) return false;
-          const isStale =
-            Date.now() - new Date(lastResearched).getTime() > 30 * 24 * 60 * 60 * 1000;
-          if (!isStale) return false;
-        }
-      }
-
-      return true;
-    });
-  }, [data, selectedGroupIds, selectedCapabilities, researchStatus]);
+  const {
+    allGroups,
+    selectedGroupIds,
+    selectedCapabilities,
+    researchStatus,
+    filteredData,
+    onGroupsChange,
+    onCapabilitiesChange,
+    onResearchStatusChange,
+  } = useFirmFilters(data);
 
   const table = useReactTable({
     data: filteredData,
@@ -343,9 +292,9 @@ export function FirmsTable({ data }: FirmsTableProps) {
         selectedGroupIds={selectedGroupIds}
         selectedCapabilities={selectedCapabilities}
         researchStatus={researchStatus}
-        onGroupsChange={setSelectedGroupIds}
-        onCapabilitiesChange={setSelectedCapabilities}
-        onResearchStatusChange={setResearchStatus}
+        onGroupsChange={onGroupsChange}
+        onCapabilitiesChange={onCapabilitiesChange}
+        onResearchStatusChange={onResearchStatusChange}
       />
 
       <div className="rounded-md border border-neutral-200 bg-white overflow-hidden">

@@ -1,5 +1,16 @@
 # Pending Release Steps
 
+## feat: shared filter bar on analysis page, PSC ownership bug fix, batch job submission, db:migrate script
+
+### Dev
+- No schema changes
+- Run `npm run db:migrate` instead of `db:push` for future schema changes (new script added)
+- Re-run cross-cutting analysis on existing firms to pick up the PSC ownership fix ("Re-run Analysis" button on each firm profile)
+
+### Prod
+- Set Railway pre-deploy command to `npm run db:migrate` (safe, idempotent, non-interactive)
+- After deploying, use the Jobs page → "Submit batch jobs" → select all firms → "Analysis only" to re-derive ownership records with the corrected PSC logic
+
 ## feat: store unresolved JV leads and surface them on firm profiles
 
 ### Dev

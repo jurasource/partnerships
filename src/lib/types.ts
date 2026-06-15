@@ -37,3 +37,6 @@ export type CollaborationRecord = InferSelectModel<typeof collaborationRecords>;
 export type ConflictPair = InferSelectModel<typeof conflictPairs>;
 export type PartnershipPair = InferSelectModel<typeof partnershipPairs>;
 export type JvLead = InferSelectModel<typeof jvLeads>;
+
+// Firm extended with its group memberships — shared across firms table and analysis page
+export type FirmWithGroups = Firm & { groups: Array<{ id: string; name: string }> };

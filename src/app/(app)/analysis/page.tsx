@@ -1,13 +1,10 @@
-import { Separator } from "@/components/ui/separator";
 import { getAnalysisPageData } from "@/lib/queries/analysis-page";
-import { OwnershipRollup } from "@/components/analysis/ownership-rollup";
-import { ConflictMatrix } from "@/components/analysis/conflict-matrix";
-import { PartnershipTable } from "@/components/analysis/partnership-table";
+import { AnalysisPageClient } from "@/components/analysis/analysis-page-client";
 
 export const dynamic = "force-dynamic";
 
 export default async function AnalysisPage() {
-  const { allFirms, conflictPairs, partnershipPairs, ownershipRecords } =
+  const { firmsWithGroups, conflictPairs, partnershipPairs, ownershipRecords } =
     await getAnalysisPageData();
 
   return (
@@ -23,28 +20,12 @@ export default async function AnalysisPage() {
         </div>
       </header>
 
-      <div className="flex-1">
-        <section className="px-6 py-6" id="ownership">
-          <h2 className="text-xl font-semibold text-neutral-900 mb-4">Ownership</h2>
-          <OwnershipRollup allFirms={allFirms} ownershipRecords={ownershipRecords} />
-        </section>
-
-        <Separator />
-
-        <section className="px-6 py-6" id="conflicts">
-          <h2 className="text-xl font-semibold text-neutral-900 mb-4">
-            Conflicts of Interest
-          </h2>
-          <ConflictMatrix allFirms={allFirms} conflictPairs={conflictPairs} />
-        </section>
-
-        <Separator />
-
-        <section className="px-6 py-6" id="partnerships">
-          <h2 className="text-xl font-semibold text-neutral-900 mb-4">Partnerships</h2>
-          <PartnershipTable allFirms={allFirms} partnershipPairs={partnershipPairs} />
-        </section>
-      </div>
+      <AnalysisPageClient
+        firmsWithGroups={firmsWithGroups}
+        conflictPairs={conflictPairs}
+        partnershipPairs={partnershipPairs}
+        ownershipRecords={ownershipRecords}
+      />
     </main>
   );
 }

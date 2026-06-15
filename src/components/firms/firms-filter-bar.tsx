@@ -16,11 +16,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { ChevronDown } from "lucide-react";
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-type ResearchStatus = "all" | "researched" | "not_researched" | "stale";
+import { type ResearchStatus, RESEARCH_STATUS_LABELS } from "@/hooks/use-firm-filters";
 
 type FirmsFilterBarProps = {
   allGroups: Array<{ id: string; name: string }>;
@@ -39,13 +35,6 @@ type FirmsFilterBarProps = {
 function toggleItem<T>(arr: T[], item: T): T[] {
   return arr.includes(item) ? arr.filter((x) => x !== item) : [...arr, item];
 }
-
-const RESEARCH_STATUS_LABELS: Record<ResearchStatus, string> = {
-  all: "All",
-  researched: "Researched",
-  not_researched: "Not researched",
-  stale: "Stale (>30 days)",
-};
 
 // ---------------------------------------------------------------------------
 // FirmsFilterBar

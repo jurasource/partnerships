@@ -3,6 +3,7 @@ import { StalenessBadge } from "@/components/research/staleness-badge";
 import { FindingsByTopic } from "@/components/firms/findings-by-topic";
 import { CitationPanel } from "@/components/firms/citation-panel";
 import { FirmRefreshAction } from "@/components/firms/firm-refresh-action";
+import { FirmAnalysisRefresh } from "@/components/firms/firm-analysis-refresh";
 import { ContractHistoryTable } from "@/components/firms/contract-history-table";
 import { OwnershipSection } from "@/components/firms/ownership-section";
 import { RiskFlagsSection } from "@/components/firms/risk-flags-section";
@@ -98,9 +99,12 @@ export function FirmProfileLayout({ profile, allFirms }: FirmProfileLayoutProps)
           </div>
         </div>
 
-        {/* Right side: staleness badge + refresh action */}
+        {/* Right side: staleness badge + refresh actions */}
         <div className="flex items-center gap-3 shrink-0">
           <StalenessBadge lastResearchedAt={firm.lastResearchedAt} />
+          {isResearched && (
+            <FirmAnalysisRefresh firmId={firm.id} firmName={firm.canonicalName} />
+          )}
           <FirmRefreshAction firmId={firm.id} firmName={firm.canonicalName} />
         </div>
       </header>

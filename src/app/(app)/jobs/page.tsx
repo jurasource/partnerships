@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { JobStatusBadge } from "@/components/research/job-status-badge";
+import { BatchJobSubmit } from "@/components/jobs/batch-job-submit";
 
 type JobRow = {
   id: string;
@@ -34,6 +35,10 @@ function formatTime(iso: string | null): string {
 export default function JobsPage() {
   const [rows, setRows] = useState<JobRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pollTick, setPollTick] = useState(0);
+
+  // Expose a stable callback so BatchJobSubmit can trigger an immediate re-poll
+  const triggerPoll = useCallback(() => setPollTick((n) => n + 1), []);
 
   useEffect(() => {
     let cancelled = false;
@@ -61,7 +66,7 @@ export default function JobsPage() {
       cancelled = true;
       clearTimeout(timeout);
     };
-  }, []);
+  }, [pollTick]);
 
   const active = rows.filter(
     (j) => j.status === "pending" || j.status === "running",
@@ -89,6 +94,8 @@ export default function JobsPage() {
           </span>
         )}
       </div>
+
+      <BatchJobSubmit onJobsSubmitted={triggerPoll} />
 
       {loading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>

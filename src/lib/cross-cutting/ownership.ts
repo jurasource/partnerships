@@ -56,26 +56,33 @@ function isUkNaturalPerson(item: {
 
 /**
  * Check whether a corporate PSC is UK-registered.
+ *
+ * Corporate PSCs carry their jurisdiction in identification.country_of_registration,
+ * NOT in country_of_residence (that field is for natural persons only).
  */
 function isUkCorporatePsc(item: {
   kind?: string;
   country_of_residence?: string;
+  identification?: { country_of_registration?: string };
 }): boolean {
   if (!item.kind?.toLowerCase().includes("corporate-entity")) return false;
-  const country = (item.country_of_residence ?? "").toLowerCase();
+  // Prefer identification.country_of_registration; fall back to country_of_residence
+  const raw = item.identification?.country_of_registration ?? item.country_of_residence ?? "";
+  const country = raw.toLowerCase();
   if (!country) return false;
-  return UK_COUNTRY_TERMS.some((term) => country === term);
+  return UK_COUNTRY_TERMS.some((term) => country.includes(term));
 }
 
 /**
- * Derive a country code from a corporate PSC's country_of_residence.
+ * Derive a country code from a corporate PSC's jurisdiction.
  * Returns "UK" for UK entities, the country name for foreign ones (ISO mapping is
  * best-effort from the CH free text — the calling code handles nulls gracefully).
  */
 function deriveForeignCountry(item: {
   country_of_residence?: string;
+  identification?: { country_of_registration?: string };
 }): string | null {
-  const raw = item.country_of_residence;
+  const raw = item.identification?.country_of_registration ?? item.country_of_residence;
   if (!raw) return null;
   // Common ISO mappings from CH free text
   const ISO_MAP: Record<string, string> = {

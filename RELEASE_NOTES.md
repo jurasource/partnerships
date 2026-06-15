@@ -1,6 +1,13 @@
 # Release Notes
 
 ## 2026-06-15
+- fix(ownership): `isUkCorporatePsc` now reads `identification.country_of_registration` (the correct CH API field for corporate PSCs) instead of `country_of_residence` (which is only populated for natural persons); `identification` field added to `PscItemSchema`; fixes UK LLPs and subsidiaries being incorrectly classified as foreign-owned or unknown
+- feat: "Re-run Analysis" button added to firm profile header — enqueues a cross-cutting-only job without re-running AI research; shown only after a firm has been researched at least once
+- feat: Jobs page gains a "Submit batch jobs" collapsible panel — select any combination of firms, choose "Research + Analysis" or "Analysis only", submit all in one action; ineligible firms (no CH number / not yet researched) are skipped with a reason shown
+- refactor: shared `useFirmFilters` hook extracts filter state and filtering logic; `FirmWithGroups` type moved to `src/lib/types.ts`; `/analysis` page now uses the same filter bar as the firms table, filtering all three sections (ownership, conflicts, partnerships) simultaneously; `getAnalysisPageData` now returns firms with group memberships
+- feat: added `db:generate`, `db:migrate`, and `db:studio` npm scripts (all load `.env.local` via `--env-file`); use `npm run db:migrate` as the Railway pre-deploy command instead of `db:push`
+
+## 2026-06-15
 - feat: unresolved JV partner names are now stored in a new `jv_leads` table instead of being discarded; re-extraction clears stale leads so the list self-heals once a firm is added and research is re-run; firm profile Collaboration History section now shows a "Potential JV Partners" amber-highlighted list with evidence context and an "Add Firm" button (pre-filled with the mentioned name) so users can track JV opportunities; `FirmFormDialog` gains `defaultName` and `onSuccess` props to support pre-filled adds
 
 
