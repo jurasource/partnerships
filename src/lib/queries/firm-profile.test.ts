@@ -1,5 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { Firm, Topic, Finding, ProcurementRecord } from "@/lib/types";
+import type {
+  Firm,
+  Topic,
+  Finding,
+  ProcurementRecord,
+  OwnershipRecord,
+  RiskFlag,
+  CollaborationRecord,
+  ConflictPair,
+  PartnershipPair,
+} from "@/lib/types";
 
 // ---------------------------------------------------------------------------
 // Hoist mocks before any module imports that depend on them
@@ -20,11 +30,17 @@ vi.mock("@/db/schema", () => ({
   topics: {},
   findings: { firmId: "firm_id" },
   procurementRecords: { firmId: "firm_id", awardDate: "award_date" },
+  ownershipRecords: { firmId: "firm_id" },
+  riskFlags: { firmId: "firm_id" },
+  collaborationRecords: { firmId: "firm_id" },
+  conflictPairs: { firmAId: "firm_a_id", firmBId: "firm_b_id" },
+  partnershipPairs: { firmAId: "firm_a_id", firmBId: "firm_b_id" },
 }));
 
 vi.mock("drizzle-orm", () => ({
   eq: (col: unknown, val: unknown) => ({ col, val, op: "eq" }),
   desc: (col: unknown) => ({ col, op: "desc" }),
+  or: (...conditions: unknown[]) => ({ conditions, op: "or" }),
 }));
 
 // Import after mocks are set up
@@ -142,17 +158,27 @@ const CONTRACT_B: ProcurementRecord = {
 
 // ---------------------------------------------------------------------------
 // Helper: build a chainable mock for a single DB call sequence
-// The query module makes 4 sequential db.select() calls:
-//   call 1: firms → .where().limit()
-//   call 2: topics → directly awaitable (no where/limit)
-//   call 3: findings → .where().orderBy()
-//   call 4: procurementRecords → .where().orderBy()
+// getFirmProfile makes 1 initial select (firm row) + 8 parallel selects:
+//   call 1: firms → .from().where().limit()
+//   call 2: topics → .from() directly awaitable
+//   call 3: findings → .from().where().orderBy()
+//   call 4: procurementRecords → .from().where().orderBy()
+//   call 5: ownershipRecords → .from().where().limit()
+//   call 6: riskFlags → .from().where()
+//   call 7: collaborationRecords → .from().where().limit()
+//   call 8: conflictPairs → .from().where()
+//   call 9: partnershipPairs → .from().where()
 // ---------------------------------------------------------------------------
 function buildSelectMock(
   firmRow: Firm | null,
   topicsRows: Topic[],
   findingsRows: Finding[],
   contractsRows: ProcurementRecord[],
+  ownershipRows: OwnershipRecord[] = [],
+  riskFlagRows: RiskFlag[] = [],
+  collaborationRows: CollaborationRecord[] = [],
+  conflictRows: ConflictPair[] = [],
+  partnershipRows: PartnershipPair[] = [],
 ) {
   let call = 0;
   mockSelect.mockImplementation(() => {
@@ -187,12 +213,56 @@ function buildSelectMock(
         }),
       };
     }
-    // c === 4: procurementRecords — .from().where().orderBy()
+    if (c === 4) {
+      // procurementRecords — .from().where().orderBy()
+      return {
+        from: () => ({
+          where: () => ({
+            orderBy: () => Promise.resolve(contractsRows),
+          }),
+        }),
+      };
+    }
+    if (c === 5) {
+      // ownershipRecords — .from().where().limit()
+      return {
+        from: () => ({
+          where: () => ({
+            limit: () => Promise.resolve(ownershipRows),
+          }),
+        }),
+      };
+    }
+    if (c === 6) {
+      // riskFlags — .from().where()
+      return {
+        from: () => ({
+          where: () => Promise.resolve(riskFlagRows),
+        }),
+      };
+    }
+    if (c === 7) {
+      // collaborationRecords — .from().where().limit()
+      return {
+        from: () => ({
+          where: () => ({
+            limit: () => Promise.resolve(collaborationRows),
+          }),
+        }),
+      };
+    }
+    if (c === 8) {
+      // conflictPairs — .from().where()
+      return {
+        from: () => ({
+          where: () => Promise.resolve(conflictRows),
+        }),
+      };
+    }
+    // c === 9: partnershipPairs — .from().where()
     return {
       from: () => ({
-        where: () => ({
-          orderBy: () => Promise.resolve(contractsRows),
-        }),
+        where: () => Promise.resolve(partnershipRows),
       }),
     };
   });
@@ -279,5 +349,43 @@ describe("getFirmProfile", () => {
     // Second contract: older
     expect(result!.contracts[1].ocid).toBe("ocds-002");
     expect(result!.contracts[1].awardDate).toBe("2024-02-01");
+  });
+
+  it("Test 5: returns cross-cutting fields — ownership, riskFlags, collaboration, conflicts, partnerships", async () => {
+    const ownership: OwnershipRecord = {
+      id: "own-1",
+      firmId: "firm-1",
+      ukIncorporated: "yes",
+      ultimateParent: null,
+      countryOfOwnership: "UK",
+      pscNotTraceable: "no",
+      sourceType: "companies_house",
+      sourceUrl: "https://companies-house.gov.uk/company/01093549",
+      sourceTitle: "Companies House PSC",
+      rawSnippet: "PSC data",
+      createdAt: "2026-06-15",
+    };
+
+    buildSelectMock(
+      FIRM,
+      [TOPIC_A],
+      [],
+      [],
+      [ownership],
+      [], // no risk flags
+      [], // no collaboration
+      [], // no conflicts
+      [], // no partnerships
+    );
+
+    const result = await getFirmProfile("firm-1");
+    expect(result).not.toBeNull();
+    expect(result!.ownership).not.toBeNull();
+    expect(result!.ownership!.ukIncorporated).toBe("yes");
+    expect(result!.ownership!.countryOfOwnership).toBe("UK");
+    expect(result!.riskFlags).toHaveLength(0);
+    expect(result!.collaboration).toBeNull();
+    expect(result!.conflicts).toHaveLength(0);
+    expect(result!.partnerships).toHaveLength(0);
   });
 });

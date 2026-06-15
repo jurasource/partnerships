@@ -24,6 +24,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn, parseCapabilityTags } from "@/lib/utils";
 import { StalenessBadge } from "@/components/research/staleness-badge";
 import { FirmRefreshAction } from "@/components/dashboard/firm-refresh-action";
@@ -50,6 +55,29 @@ function CapabilityBadge({ tag }: { tag: string }) {
       className={cn("text-xs font-normal px-1.5 py-0.5 border", style)}
     >
       {tag}
+    </Badge>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// OwnershipBadge — green "UK", amber ISO code, neutral "—" (ANAL-03)
+// ---------------------------------------------------------------------------
+function OwnershipBadge({ country }: { country: string | null }) {
+  if (!country) {
+    return <span className="text-neutral-400 font-mono text-xs">—</span>;
+  }
+  const isUK = country.toUpperCase() === "UK";
+  return (
+    <Badge
+      variant="outline"
+      className={cn(
+        "text-xs font-mono px-1.5 py-0.5 border",
+        isUK
+          ? "bg-green-100 text-green-700 border-green-200"
+          : "bg-amber-100 text-amber-700 border-amber-200",
+      )}
+    >
+      {isUK ? "UK" : country.toUpperCase()}
     </Badge>
   );
 }
@@ -120,6 +148,27 @@ const columns: ColumnDef<ComparisonRow>[] = [
         {row.getValue("contractCount")}
       </span>
     ),
+  },
+  {
+    accessorKey: "ownershipCountry",
+    header: "Ownership",
+    cell: ({ row }) => {
+      const country = row.original.ownershipCountry;
+      // Tooltip shows source string per UI-SPEC §3
+      const tooltipLabel = country
+        ? country.toUpperCase() === "UK"
+          ? "Companies House PSC"
+          : `Country of ownership: ${country.toUpperCase()}`
+        : "Ownership not researched";
+      return (
+        <Tooltip>
+          <TooltipTrigger render={<span className="cursor-default" />}>
+            <OwnershipBadge country={country} />
+          </TooltipTrigger>
+          <TooltipContent>{tooltipLabel}</TooltipContent>
+        </Tooltip>
+      );
+    },
   },
   {
     accessorKey: "companiesHouseNumber",
