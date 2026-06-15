@@ -374,6 +374,40 @@ export const firmGroups = pgTable(
   (table) => [primaryKey({ columns: [table.firmId, table.groupId] })],
 );
 
+// --- jvLeads -------------------------------------------------------------
+/**
+ * Unresolved JV partner mentions extracted during collaboration analysis.
+ * Written when the AI identifies a JV partner by name but that firm is not
+ * yet tracked in the DB. Cleared and re-populated on each re-extraction so
+ * the list stays fresh — once the mentioned firm is added and research is
+ * re-run, the entry resolves into a partnership_pair and disappears here.
+ */
+export const jvLeads = pgTable(
+  "jv_leads",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    /** The firm whose research mentioned this JV partner. */
+    sourceFirmId: text("source_firm_id")
+      .notNull()
+      .references(() => firms.id, { onDelete: "cascade" }),
+    /** Firm name exactly as extracted by the AI — not normalised. */
+    mentionedFirmName: text("mentioned_firm_name").notNull(),
+    evidenceSummary: text("evidence_summary").notNull(),
+    sourceUrl: text("source_url").notNull(),
+    sourceTitle: text("source_title").notNull(),
+    evidenceDate: text("evidence_date"),
+    createdAt: timestamp("created_at", { mode: "string" }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("jv_leads_source_firm_name_unique").on(
+      table.sourceFirmId,
+      table.mentionedFirmName,
+    ),
+  ],
+);
+
 // --- accessCodes ---------------------------------------------------------
 export const accessCodes = pgTable("access_codes", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),

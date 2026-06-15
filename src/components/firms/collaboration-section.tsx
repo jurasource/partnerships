@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import type { CollaborationRecord, PartnershipPair, Firm } from "@/lib/types";
+import type { CollaborationRecord, PartnershipPair, Firm, JvLead } from "@/lib/types";
+import { JvLeadsList } from "@/components/firms/jv-leads-list";
 
 // ---------------------------------------------------------------------------
 // Partnership type badge
@@ -49,6 +50,8 @@ type CollaborationSectionProps = {
   allFirms: Firm[];
   firmId: string;
   isResearched: boolean;
+  /** JV partner names extracted by AI but not yet tracked in the DB */
+  jvLeads: JvLead[];
 };
 
 /**
@@ -67,6 +70,7 @@ export function CollaborationSection({
   allFirms,
   firmId,
   isResearched,
+  jvLeads,
 }: CollaborationSectionProps) {
   if (!isResearched) {
     return (
@@ -92,6 +96,7 @@ export function CollaborationSection({
 
   const hasData =
     resolvedPartnerships.length > 0 ||
+    jvLeads.length > 0 ||
     (collaboration?.cultureFitSummary && collaboration.cultureFitSummary.trim().length > 0);
 
   if (!hasData) {
@@ -112,6 +117,9 @@ export function CollaborationSection({
       <h2 className="text-xl font-semibold text-neutral-900 mb-4">
         Collaboration History
       </h2>
+
+      {/* Potential JV Partners — untracked firms mentioned in AI research */}
+      <JvLeadsList leads={jvLeads} />
 
       {/* Prior joint delivery */}
       {resolvedPartnerships.length > 0 && (

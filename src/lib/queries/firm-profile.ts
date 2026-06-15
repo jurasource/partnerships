@@ -11,6 +11,7 @@ import {
   collaborationRecords,
   conflictPairs,
   partnershipPairs,
+  jvLeads,
 } from "@/db/schema";
 import type {
   Firm,
@@ -22,6 +23,7 @@ import type {
   CollaborationRecord,
   ConflictPair,
   PartnershipPair,
+  JvLead,
 } from "@/lib/types";
 
 /**
@@ -66,6 +68,8 @@ export type FirmProfile = {
   conflicts: ConflictPair[];
   /** Partnership pairs where this firm is either firmA or firmB. */
   partnerships: PartnershipPair[];
+  /** JV partners mentioned in AI research but not yet tracked in the DB. */
+  jvLeads: JvLead[];
 };
 
 /**
@@ -82,6 +86,7 @@ export type FirmProfile = {
  * 7. Collaboration record (limit 1 — unique per firm)
  * 8. Conflict pairs where this firm is firmA or firmB
  * 9. Partnership pairs where this firm is firmA or firmB
+ * 10. JV leads for this firmId (untracked JV partner mentions)
  *
  * Derives findingsByTopic: one entry per topic, joined on topicId.
  * sourceType derivation per plan spec:
@@ -115,6 +120,7 @@ export async function getFirmProfile(firmId: string): Promise<FirmProfile | null
     collaborationRows,
     firmConflicts,
     firmPartnerships,
+    jvLeadRows,
   ] = await Promise.all([
     db.select().from(topics),
     db
@@ -150,6 +156,7 @@ export async function getFirmProfile(firmId: string): Promise<FirmProfile | null
       .where(
         or(eq(partnershipPairs.firmAId, firmId), eq(partnershipPairs.firmBId, firmId)),
       ),
+    db.select().from(jvLeads).where(eq(jvLeads.sourceFirmId, firmId)),
   ]);
 
   // Build a lookup map: topicId → Finding
@@ -199,5 +206,6 @@ export async function getFirmProfile(firmId: string): Promise<FirmProfile | null
     collaboration: collaborationRows[0] ?? null,
     conflicts: firmConflicts,
     partnerships: firmPartnerships,
+    jvLeads: jvLeadRows,
   };
 }

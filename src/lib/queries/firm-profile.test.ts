@@ -9,6 +9,7 @@ import type {
   CollaborationRecord,
   ConflictPair,
   PartnershipPair,
+  JvLead,
 } from "@/lib/types";
 
 // ---------------------------------------------------------------------------
@@ -35,6 +36,7 @@ vi.mock("@/db/schema", () => ({
   collaborationRecords: { firmId: "firm_id" },
   conflictPairs: { firmAId: "firm_a_id", firmBId: "firm_b_id" },
   partnershipPairs: { firmAId: "firm_a_id", firmBId: "firm_b_id" },
+  jvLeads: { sourceFirmId: "source_firm_id" },
 }));
 
 vi.mock("drizzle-orm", () => ({
@@ -172,7 +174,7 @@ const CONTRACT_B: ProcurementRecord = {
 
 // ---------------------------------------------------------------------------
 // Helper: build a chainable mock for a single DB call sequence
-// getFirmProfile makes 1 initial select (firm row) + 8 parallel selects:
+// getFirmProfile makes 1 initial select (firm row) + 9 parallel selects:
 //   call 1: firms → .from().where().limit()
 //   call 2: topics → .from() directly awaitable
 //   call 3: findings → .from().where().orderBy()
@@ -182,6 +184,7 @@ const CONTRACT_B: ProcurementRecord = {
 //   call 7: collaborationRecords → .from().where().limit()
 //   call 8: conflictPairs → .from().where()
 //   call 9: partnershipPairs → .from().where()
+//   call 10: jvLeads → .from().where()
 // ---------------------------------------------------------------------------
 function buildSelectMock(
   firmRow: Firm | null,
@@ -193,6 +196,7 @@ function buildSelectMock(
   collaborationRows: CollaborationRecord[] = [],
   conflictRows: ConflictPair[] = [],
   partnershipRows: PartnershipPair[] = [],
+  jvLeadRows: JvLead[] = [],
 ) {
   let call = 0;
   mockSelect.mockImplementation(() => {
@@ -273,10 +277,18 @@ function buildSelectMock(
         }),
       };
     }
-    // c === 9: partnershipPairs — .from().where()
+    if (c === 9) {
+      // partnershipPairs — .from().where()
+      return {
+        from: () => ({
+          where: () => Promise.resolve(partnershipRows),
+        }),
+      };
+    }
+    // c === 10: jvLeads — .from().where()
     return {
       from: () => ({
-        where: () => Promise.resolve(partnershipRows),
+        where: () => Promise.resolve(jvLeadRows),
       }),
     };
   });
@@ -421,5 +433,6 @@ describe("getFirmProfile", () => {
     expect(result!.collaboration).toBeNull();
     expect(result!.conflicts).toHaveLength(0);
     expect(result!.partnerships).toHaveLength(0);
+    expect(result!.jvLeads).toHaveLength(0);
   });
 });

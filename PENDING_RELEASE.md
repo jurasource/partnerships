@@ -1,5 +1,15 @@
 # Pending Release Steps
 
+## feat: store unresolved JV leads and surface them on firm profiles
+
+### Dev
+- Run `npm run db:push` to create the `jv_leads` table (requires Postgres running via `docker compose up -d db`)
+- Re-run cross-cutting analysis on any firm that previously logged "Discarding unresolvable JV partner" — the leads will be stored on the next extraction pass
+
+### Prod
+- Run `npm run db:push` (or apply migration) against the production database before deploying
+
+
 ## feat(04): Phase 4 Wave 4 — /analysis page, conflict matrix, partnership table, ownership roll-up
 
 ### Dev

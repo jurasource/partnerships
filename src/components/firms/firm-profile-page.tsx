@@ -64,6 +64,7 @@ export function FirmProfileLayout({ profile, allFirms }: FirmProfileLayoutProps)
     collaboration,
     conflicts,
     partnerships,
+    jvLeads,
   } = profile;
 
   // Parse capabilityTags JSON (raw from DB) — warns in development on invalid JSON
@@ -144,6 +145,7 @@ export function FirmProfileLayout({ profile, allFirms }: FirmProfileLayoutProps)
         allFirms={allFirms}
         firmId={firm.id}
         isResearched={isResearched}
+        jvLeads={jvLeads}
       />
 
       {/* Conflicts of Interest — ANAL-01 (firm perspective) */}

@@ -1,6 +1,10 @@
 # Release Notes
 
 ## 2026-06-15
+- feat: unresolved JV partner names are now stored in a new `jv_leads` table instead of being discarded; re-extraction clears stale leads so the list self-heals once a firm is added and research is re-run; firm profile Collaboration History section now shows a "Potential JV Partners" amber-highlighted list with evidence context and an "Add Firm" button (pre-filled with the mentioned name) so users can track JV opportunities; `FirmFormDialog` gains `defaultName` and `onSuccess` props to support pre-filled adds
+
+
+## 2026-06-15
 - feat(04): added /analysis page with three sections — ownership nationality roll-up (total/UK/foreign/unknown stat tiles), firm × firm conflict matrix (CSS grid, flagged pairs highlighted red, firm name headers link to profiles), and partnership evidence table (TanStack Table, sortable, OCDS/AI Research source badges); sidebar Analysis nav entry now active; /jobs page shows "Research" vs "Cross-Cutting Analysis" type label per row (D-12); getAnalysisPageData() query introduced for RSC data fetching
 
 

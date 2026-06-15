@@ -51,9 +51,13 @@ type FirmFormDialogProps = {
   firm?: Firm;
   /** Optional custom trigger element (defaults to the Add/Edit Firm button) */
   trigger?: React.ReactElement;
+  /** Pre-fill the firm name field in add mode (e.g. from a JV lead) */
+  defaultName?: string;
+  /** Called after a successful add (not called in edit mode) */
+  onSuccess?: () => void;
 };
 
-export function FirmFormDialog({ firm, trigger }: FirmFormDialogProps) {
+export function FirmFormDialog({ firm, trigger, defaultName, onSuccess }: FirmFormDialogProps) {
   const isEditMode = Boolean(firm);
 
   // Parse existing tags from JSON if editing
@@ -79,14 +83,14 @@ export function FirmFormDialog({ firm, trigger }: FirmFormDialogProps) {
   const [open, setOpen] = React.useState(false);
   const [pending, setPending] = React.useState(false);
 
-  // Form state — seeded from firm prop when in edit mode
-  const [canonicalName, setCanonicalName] = React.useState(firm?.canonicalName ?? "");
+  // Form state — seeded from firm prop when in edit mode, or defaultName in add mode
+  const [canonicalName, setCanonicalName] = React.useState(firm?.canonicalName ?? defaultName ?? "");
   const [aliasesRaw, setAliasesRaw] = React.useState(initialAliases);
   const [chNumber, setChNumber] = React.useState(firm?.companiesHouseNumber ?? "");
   const [selectedTags, setSelectedTags] = React.useState<CapabilityTag[]>(initialTags);
   const [errors, setErrors] = React.useState<FormErrors>({});
 
-  // When the dialog opens in edit mode, re-seed the form from current firm data
+  // When the dialog opens, re-seed the form from current firm data (edit) or defaultName (add)
   function handleOpenChange(next: boolean) {
     setOpen(next);
     if (next && isEditMode && firm) {
@@ -94,6 +98,9 @@ export function FirmFormDialog({ firm, trigger }: FirmFormDialogProps) {
       setAliasesRaw(initialAliases);
       setChNumber(firm.companiesHouseNumber ?? "");
       setSelectedTags(initialTags);
+      setErrors({});
+    } else if (next && !isEditMode) {
+      setCanonicalName(defaultName ?? "");
       setErrors({});
     } else if (!next) {
       resetForm();
@@ -172,6 +179,7 @@ export function FirmFormDialog({ firm, trigger }: FirmFormDialogProps) {
         toast.success("Firm added");
         setOpen(false);
         resetForm();
+        onSuccess?.();
       } else {
         setErrors({ form: result.error });
       }
