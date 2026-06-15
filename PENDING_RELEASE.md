@@ -1,5 +1,14 @@
 # Pending Release Steps
 
+## feat(04): Phase 4 Wave 4 — /analysis page, conflict matrix, partnership table, ownership roll-up
+
+### Dev
+- No steps required — DB tables (conflictPairs, partnershipPairs, ownershipRecords) already exist from earlier phases
+
+### Prod
+- No steps required — no schema changes; deploy new build
+
+
 ## fix(03.1): WR-04 updateGroup now revalidates the specific group detail path
 
 ### Dev

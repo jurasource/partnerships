@@ -1,6 +1,10 @@
 # Release Notes
 
 ## 2026-06-15
+- feat(04): added /analysis page with three sections — ownership nationality roll-up (total/UK/foreign/unknown stat tiles), firm × firm conflict matrix (CSS grid, flagged pairs highlighted red, firm name headers link to profiles), and partnership evidence table (TanStack Table, sortable, OCDS/AI Research source badges); sidebar Analysis nav entry now active; /jobs page shows "Research" vs "Cross-Cutting Analysis" type label per row (D-12); getAnalysisPageData() query introduced for RSC data fetching
+
+
+## 2026-06-15
 - fix(03.1): updateGroup now calls revalidatePath("/groups/${id}", "page") in addition to revalidatePath("/groups") so the detail page cache is invalidated after a rename, preventing stale-page scenarios in cached deployments (WR-04)
 - fix(03.1): added UNIQUE constraint on groups.name (groups_name_unique index) to prevent duplicate group names at the DB level; createGroup and updateGroup now return a user-facing error "A group with that name already exists." on Postgres error code 23505 (WR-03)
 - fix(03.1): GroupFormDialog now calls router.refresh() after a successful create so the groups list updates immediately without requiring navigation away and back (WR-01)

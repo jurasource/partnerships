@@ -9,6 +9,7 @@ type JobRow = {
   firmId: string;
   firmName: string | null;
   status: "pending" | "running" | "done" | "failed";
+  jobType: "research" | "cross-cutting-analysis";
   progressMessage: string | null;
   createdAt: string;
   startedAt: string | null;
@@ -123,6 +124,7 @@ function JobTable({ title, jobs }: { title: string; jobs: JobRow[] }) {
           <thead className="bg-muted/40">
             <tr>
               <th className="text-left px-4 py-2.5 font-medium text-muted-foreground w-48">Firm</th>
+              <th className="text-left px-4 py-2.5 font-medium text-muted-foreground w-40">Type</th>
               <th className="text-left px-4 py-2.5 font-medium text-muted-foreground w-28">Status</th>
               <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Details</th>
               <th className="text-left px-4 py-2.5 font-medium text-muted-foreground w-28">Started</th>
@@ -139,6 +141,9 @@ function JobTable({ title, jobs }: { title: string; jobs: JobRow[] }) {
                   >
                     {job.firmName ?? job.firmId}
                   </Link>
+                </td>
+                <td className="px-4 py-3 text-sm text-muted-foreground">
+                  {job.jobType === "cross-cutting-analysis" ? "Cross-Cutting Analysis" : "Research"}
                 </td>
                 <td className="px-4 py-3">
                   <JobStatusBadge status={job.status} />

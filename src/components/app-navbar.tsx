@@ -4,12 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Activity,
-  BarChart3,
   BookOpen,
   Building2,
   LayersIcon,
   LayoutDashboard,
   LogOut,
+  Network,
   Users,
 } from "lucide-react";
 
@@ -25,6 +25,7 @@ type NavItem = {
 
 const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
+  { label: "Analysis", href: "/analysis", icon: Network },
   { label: "Firms", href: "/firms", icon: Building2 },
   { label: "Groups", href: "/groups", icon: LayersIcon },
   { label: "Topics", href: "/topics", icon: BookOpen },
@@ -32,7 +33,6 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 const PLACEHOLDER_ITEMS: NavItem[] = [
-  { label: "Analysis", href: "#", icon: BarChart3, disabled: true },
   { label: "Consortium", href: "#", icon: Users, disabled: true },
 ];
 

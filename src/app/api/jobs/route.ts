@@ -13,6 +13,7 @@ export async function GET() {
       firmId: jobs.firmId,
       firmName: firms.canonicalName,
       status: jobs.status,
+      jobType: jobs.jobType,
       progressMessage: jobs.progressMessage,
       createdAt: jobs.createdAt,
       startedAt: jobs.startedAt,
