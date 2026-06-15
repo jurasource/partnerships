@@ -19,5 +19,8 @@
 - feat: add logout button to sidebar footer — clears iron-session cookie and redirects to /login
 
 ## 2026-06-15
+- fix(research-token-limit): raised default `maxOutputTokens` from 1024 → 2048; added retry at 4096 tokens when `finishReason=length` to prevent truncated JSON from silently producing a sentinel; split `RESEARCH_ERROR_SENTINEL` (`sourceUrl="research-error"`) from `NOT_FOUND_SENTINEL` (`sourceUrl="not-found"`) so technical failures show a distinct user-facing error message rather than "Nothing found for this topic"
+
+## 2026-06-15
 - feat(ui-redesign-analytics): replaced sidebar navigation with a fixed dark charcoal top navbar; site renamed to "Partnerships"; background shifted to warm grey; capability pills recoloured (rose/cyan/indigo); research status badges recoloured (slate/orange/emerald); login page renders with no navbar (blank, clean); Umami analytics component added via inline component — silently disabled in dev when NEXT_PUBLIC_UMAMI_WEBSITE_ID is unset
 - feat(ui-icons): added icons8-network icon to navbar (20×20, left of "Partnerships" wordmark); replaced generic favicon.ico with icons8-network-16.png

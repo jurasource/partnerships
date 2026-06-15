@@ -54,3 +54,11 @@
 
 ### Prod
 - No steps required
+
+## fix(research-token-limit): raise output token ceiling, retry on truncation, split error sentinel
+
+### Dev
+- No schema changes, no env changes required
+
+### Prod
+- No steps required — change is worker logic only

@@ -66,6 +66,15 @@ export function FindingsByTopic({ findingsByTopic }: FindingsByTopicProps) {
             <p className="text-sm text-neutral-400 italic">
               No findings yet — run Refresh Research to populate.
             </p>
+          ) : entry.isError ? (
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-neutral-600">
+                Research failed for this topic.
+              </p>
+              <p className="text-sm text-neutral-500">
+                Failed to process the AI response. Try refreshing research for this firm, or contact support if the issue persists.
+              </p>
+            </div>
           ) : entry.isNotFound ? (
             <div className="space-y-1">
               <p className="text-sm font-medium text-neutral-600">

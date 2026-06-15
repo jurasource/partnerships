@@ -8,7 +8,7 @@
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { WebSearchResult } from "@/lib/search/types";
-import { NOT_FOUND_SENTINEL, FindingSchema } from "./schemas";
+import { NOT_FOUND_SENTINEL, RESEARCH_ERROR_SENTINEL, FindingSchema } from "./schemas";
 
 // ---------------------------------------------------------------------------
 // Test fixtures
@@ -228,6 +228,17 @@ describe("NOT_FOUND_SENTINEL", () => {
   });
 });
 
+describe("RESEARCH_ERROR_SENTINEL", () => {
+  it("returns sourceUrl=research-error and summary starting with 'Research error:'", () => {
+    const sentinel = RESEARCH_ERROR_SENTINEL("topic-xyz", "token limit exceeded");
+    expect(sentinel.sourceUrl).toBe("research-error");
+    expect(sentinel.summary).toMatch(/^Research error:/);
+    expect(sentinel.confidence).toBe("HIGH");
+    expect(sentinel.sourceTitle).toBe("Research worker");
+    expect(sentinel.rawSnippet).toContain("topic-xyz");
+  });
+});
+
 // ---------------------------------------------------------------------------
 // Tests: runResearchWorker (imports worker after mocks are registered)
 // ---------------------------------------------------------------------------
@@ -256,7 +267,7 @@ describe("runResearchWorker invariants", () => {
     }
   });
 
-  it("E2 — explicit absence: NoObjectGeneratedError produces a not-found sentinel row", async () => {
+  it("E2 — technical failure: NoObjectGeneratedError produces a research-error sentinel row", async () => {
     const { runResearchWorker } = await import("./worker");
     const { NoObjectGeneratedError } = await import("ai");
 
@@ -297,10 +308,10 @@ describe("runResearchWorker invariants", () => {
 
     await runResearchWorker("firm-abc", "job-002", stubSearchClient);
 
-    // At least one sentinel row exists
-    const sentinelRows = insertedFindings.filter((f) => f.sourceUrl === "not-found");
-    expect(sentinelRows.length).toBeGreaterThan(0);
-    expect(sentinelRows[0].summary).toMatch(/^Not found:/);
+    // At least one error sentinel row exists (NoObjectGeneratedError → RESEARCH_ERROR_SENTINEL)
+    const errorRows = insertedFindings.filter((f) => f.sourceUrl === "research-error");
+    expect(errorRows.length).toBeGreaterThan(0);
+    expect(errorRows[0].summary).toMatch(/^Research error:/);
   });
 
   it("topic coverage: COUNT(DISTINCT topicId) equals number of seeded topics", async () => {
