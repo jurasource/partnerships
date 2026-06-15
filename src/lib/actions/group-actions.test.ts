@@ -52,6 +52,10 @@ describe("Group Actions", () => {
     });
 
     it("rejects empty/whitespace name with { ok: false, error }", async () => {
+      // Track whether insert was called
+      const mockInsert = vi.fn();
+      mockDb.insert = mockInsert;
+
       const result = await createGroup("   ");
 
       expect(result.ok).toBe(false);
@@ -59,7 +63,7 @@ describe("Group Actions", () => {
         expect(result.error).toBeTruthy();
       }
       // Should NOT have attempted a DB insert
-      expect(mockDb.insert).toBeUndefined();
+      expect(mockInsert).not.toHaveBeenCalled();
     });
 
     it("rejects empty string name", async () => {

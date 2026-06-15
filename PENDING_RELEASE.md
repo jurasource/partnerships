@@ -1,5 +1,13 @@
 # Pending Release Steps
 
+## feat(03.1-01): groups + firmGroups data layer — schema, types, server actions
+
+### Dev
+- Run `npx drizzle-kit push` (or `npm run db:push`) to create the `groups` and `firm_groups` tables in Postgres
+
+### Prod
+- Run `npx drizzle-kit push` against the production database to create `groups` and `firm_groups` tables — no existing data is affected, these are new tables
+
 ## fix(redis): support REDIS_URL in addition to REDIS_HOST/REDIS_PORT
 
 ### Dev
