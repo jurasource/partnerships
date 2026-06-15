@@ -50,6 +50,14 @@ const RegisteredOfficeAddress = z
   })
   .passthrough();
 
+const PreviousCompanyNameSchema = z
+  .object({
+    name: z.string(),
+    effective_from: z.string().optional(),
+    ceased_on: z.string().optional(),
+  })
+  .passthrough();
+
 const CompanyProfileSchema = z
   .object({
     company_number: z.string(),
@@ -59,6 +67,7 @@ const CompanyProfileSchema = z
     date_of_creation: z.string().optional(),
     jurisdiction: z.string().optional(),
     registered_office_address: RegisteredOfficeAddress.optional(),
+    previous_company_names: z.array(PreviousCompanyNameSchema).optional().default([]),
   })
   .passthrough();
 
@@ -116,6 +125,7 @@ export type OfficersRecord = z.infer<typeof OfficersSchema>;
 
 const SearchResultSchema = z
   .object({
+    total_results: z.number().optional(),
     items: z
       .array(
         z
@@ -168,16 +178,24 @@ export async function getOfficers(number: string): Promise<OfficersRecord | null
   return OfficersSchema.parse(data);
 }
 
-export async function searchCompanies(q: string): Promise<CompanySearchResult[]> {
+export type CompanySearchResponse = {
+  results: CompanySearchResult[];
+  totalResults: number;
+};
+
+export async function searchCompanies(q: string): Promise<CompanySearchResponse> {
   const query = q.trim();
-  if (!query) return [];
+  if (!query) return { results: [], totalResults: 0 };
   const data = await chGet(`/search/companies?q=${encodeURIComponent(query)}&items_per_page=10`);
-  if (data === null) return [];
+  if (data === null) return { results: [], totalResults: 0 };
   const parsed = SearchResultSchema.parse(data);
-  return parsed.items.map((item) => ({
-    companyNumber: item.company_number,
-    title: item.title,
-    status: item.company_status,
-    address: item.address_snippet,
-  }));
+  return {
+    results: parsed.items.map((item) => ({
+      companyNumber: item.company_number,
+      title: item.title,
+      status: item.company_status,
+      address: item.address_snippet,
+    })),
+    totalResults: parsed.total_results ?? parsed.items.length,
+  };
 }

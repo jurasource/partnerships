@@ -1,5 +1,16 @@
 # Pending Release Steps
 
+## feat: 2-step Add/Edit Firm wizard with Companies House search-first UX
+
+### Dev
+- No migrations required (`aliases` column already exists as JSON text)
+- Ensure `COMPANIES_HOUSE_API_KEY` and `ANTHROPIC_API_KEY` are set in `.env.local`
+- The `generateAliasesAction` uses `claude-opus-4-8` — verify Anthropic API key has access
+
+### Prod
+- Same env vars required: `COMPANIES_HOUSE_API_KEY`, `ANTHROPIC_API_KEY`
+- No DB migrations needed
+
 ## refactor: CH refresh as dedicated BullMQ job
 
 ### Dev
