@@ -119,3 +119,175 @@ export const RiskFlagsExtractionSchema = z.object({
 });
 
 export type RiskFlagsExtraction = z.infer<typeof RiskFlagsExtractionSchema>;
+
+// ---------------------------------------------------------------------------
+// Conflict pair extraction (topics: "Partnerships and JVs", "Reputation and
+//                                    controversy")
+// ---------------------------------------------------------------------------
+
+export const ConflictPairExtractionSchema = z.object({
+  otherFirmName: z
+    .string()
+    .min(1)
+    .describe(
+      "Exact name of the other firm as mentioned in the finding text. " +
+        "Use the name as written — do not normalise or abbreviate. " +
+        "This name will be resolved against the known firms database; " +
+        "if it cannot be resolved, it will be discarded.",
+    ),
+  conflictType: z
+    .enum(["audit", "competitor"])
+    .describe(
+      "'audit' = one firm audits or has audited the other (conflict of interest for joint delivery). " +
+        "'competitor' = the two firms directly compete for the same contracts or market segments. " +
+        "Output only one of these two values.",
+    ),
+  evidenceSummary: z
+    .string()
+    .min(10)
+    .describe(
+      "Concise (1-2 sentence) summary of the conflict evidence. " +
+        "Ground this in the provided finding text only — do not infer.",
+    ),
+  sourceUrl: z
+    .string()
+    .min(1)
+    .describe(
+      "URL of the source that evidences this conflict relationship. " +
+        "Copy from the finding's sourceUrl field. Must be present in the finding.",
+    ),
+  sourceTitle: z
+    .string()
+    .min(1)
+    .describe("Human-readable title of the source document."),
+  rawSnippet: z
+    .string()
+    .min(1)
+    .describe(
+      "Verbatim excerpt from the source that evidences this conflict. " +
+        "Do not paraphrase; copy the relevant text.",
+    ),
+});
+
+export type ConflictPairExtraction = z.infer<typeof ConflictPairExtractionSchema>;
+
+/**
+ * Wrapper schema for LLM extraction of conflict pairs from a single finding.
+ * Extract ONLY named pairs with explicit evidence in the finding text.
+ * Output an empty array if no explicit conflict evidence exists.
+ */
+export const ConflictsExtractionSchema = z.object({
+  conflicts: z
+    .array(ConflictPairExtractionSchema)
+    .describe(
+      "Array of conflict pairs extracted from the provided finding text. " +
+        "Each entry must name another firm and the type of conflict with cited evidence. " +
+        "Output an empty array if no explicit conflict evidence is present in the text. " +
+        "Do NOT infer, extrapolate, or fabricate conflicts — only extract what is explicitly stated.",
+    ),
+});
+
+export type ConflictsExtraction = z.infer<typeof ConflictsExtractionSchema>;
+
+// ---------------------------------------------------------------------------
+// JV partnership extraction (topic: "Partnerships and JVs")
+// ---------------------------------------------------------------------------
+
+export const JVPartnershipItemSchema = z.object({
+  otherFirmName: z
+    .string()
+    .min(1)
+    .describe(
+      "Name of the other firm in the JV or announced partnership, as written in the finding text. " +
+        "Use the name exactly as it appears — it will be resolved against the known firms database.",
+    ),
+  evidenceSummary: z
+    .string()
+    .min(10)
+    .describe(
+      "Concise (1-2 sentence) summary of the joint venture or partnership evidence. " +
+        "Only include explicitly announced or documented JVs; do not infer from co-bid history.",
+    ),
+  sourceUrl: z
+    .string()
+    .min(1)
+    .describe("URL of the source that evidences this JV or partnership."),
+  sourceTitle: z
+    .string()
+    .min(1)
+    .describe("Human-readable title of the source document."),
+  evidenceDate: z
+    .string()
+    .nullable()
+    .describe(
+      "Date the JV/partnership was announced or documented (ISO format e.g. '2024-03-15'). " +
+        "Null if the date is not stated in the finding.",
+    ),
+  rawSnippet: z
+    .string()
+    .min(1)
+    .describe(
+      "Verbatim excerpt from the source that evidences this JV or partnership. " +
+        "Do not paraphrase.",
+    ),
+});
+
+export type JVPartnershipItem = z.infer<typeof JVPartnershipItemSchema>;
+
+/**
+ * Wrapper schema for LLM extraction of explicitly announced JVs from a finding.
+ * Output an empty array if no announced JVs are explicitly stated.
+ */
+export const JVPartnershipsExtractionSchema = z.object({
+  partnerships: z
+    .array(JVPartnershipItemSchema)
+    .describe(
+      "Array of explicitly announced joint ventures or formal partnerships extracted from the finding text. " +
+        "Only include items where a JV or formal partnership is explicitly named or announced. " +
+        "Do not include informal collaborations, co-bidding, or subcontracting relationships. " +
+        "Output an empty array if no explicit JV/partnership evidence is present.",
+    ),
+});
+
+export type JVPartnershipsExtraction = z.infer<typeof JVPartnershipsExtractionSchema>;
+
+// ---------------------------------------------------------------------------
+// Collaboration extraction (topic: "Partnerships and JVs")
+// ---------------------------------------------------------------------------
+
+/**
+ * Schema for extracting the culture-fit summary from the "Partnerships and JVs" finding.
+ * This produces a single collaboration_records row per firm.
+ */
+export const CollaborationExtractionSchema = z.object({
+  cultureFitSummary: z
+    .string()
+    .nullable()
+    .describe(
+      "Summary of the firm's collaborative culture, joint delivery track record, and partnering style " +
+        "as evidenced in the finding text. " +
+        "2-4 sentences describing how the firm works with others, their approach to partnerships, " +
+        "and any notable joint delivery history mentioned. " +
+        "Null only if the finding text contains no relevant information about collaboration or culture.",
+    ),
+  sourceUrl: z
+    .string()
+    .min(1)
+    .describe(
+      "URL of the primary source that provides collaboration/culture-fit evidence. " +
+        "Copy from the finding's sourceUrl field.",
+    ),
+  sourceTitle: z
+    .string()
+    .min(1)
+    .describe("Human-readable title of the source document."),
+  rawSnippet: z
+    .string()
+    .min(1)
+    .describe(
+      "Verbatim excerpt from the source that evidences the collaboration/culture-fit. " +
+        "Do not paraphrase.",
+    ),
+});
+
+export type CollaborationExtraction = z.infer<typeof CollaborationExtractionSchema>;
