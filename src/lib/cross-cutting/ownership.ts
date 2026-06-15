@@ -14,8 +14,8 @@
 import { eq } from "drizzle-orm";
 
 import { db } from "@/db/client";
-import { firms, ownershipRecords } from "@/db/schema";
-import { getCompanyProfile, getPSC } from "@/lib/clients/companies-house";
+import { firms, ownershipRecords, chSnapshots } from "@/db/schema";
+import { getCompanyProfile, getPSC, getOfficers } from "@/lib/clients/companies-house";
 import { findFindingByTopicName, TOPIC_NAMES } from "./topic-lookup";
 
 // ---------------------------------------------------------------------------
@@ -181,13 +181,38 @@ export async function extractOwnership(firmId: string): Promise<void> {
   // Attempt CH data fetch if a company number is available
   let profile = null;
   let psc = null;
+  let officers = null;
 
   if (chNumber) {
     try {
-      [profile, psc] = await Promise.all([
+      [profile, psc, officers] = await Promise.all([
         getCompanyProfile(chNumber).catch(() => null),
         getPSC(chNumber).catch(() => null),
+        getOfficers(chNumber).catch(() => null),
       ]);
+
+      // Cache raw CH responses so the firm profile page reads from DB, not CH API
+      if (profile !== null || psc !== null || officers !== null) {
+        const now = new Date().toISOString();
+        await db
+          .insert(chSnapshots)
+          .values({
+            firmId,
+            profileJson: profile ? JSON.stringify(profile) : null,
+            pscJson: psc ? JSON.stringify(psc) : null,
+            officersJson: officers ? JSON.stringify(officers) : null,
+            fetchedAt: now,
+          })
+          .onConflictDoUpdate({
+            target: [chSnapshots.firmId],
+            set: {
+              profileJson: profile ? JSON.stringify(profile) : null,
+              pscJson: psc ? JSON.stringify(psc) : null,
+              officersJson: officers ? JSON.stringify(officers) : null,
+              fetchedAt: now,
+            },
+          });
+      }
     } catch {
       // CH API failure — fall through to AI research fallback
     }

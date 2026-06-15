@@ -408,6 +408,31 @@ export const jvLeads = pgTable(
   ],
 );
 
+// --- chSnapshots ---------------------------------------------------------
+/**
+ * Cached raw Companies House API responses for each firm.
+ * Written (upserted) during cross-cutting analysis whenever CH data is fetched.
+ * Read on the firm profile page so the UI never calls the CH API directly.
+ * JSON columns are nullable — a field is null when the CH fetch failed or the
+ * firm has no CH number.
+ */
+export const chSnapshots = pgTable(
+  "ch_snapshots",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    firmId: text("firm_id")
+      .notNull()
+      .references(() => firms.id),
+    profileJson: text("profile_json"),
+    pscJson: text("psc_json"),
+    officersJson: text("officers_json"),
+    fetchedAt: timestamp("fetched_at", { mode: "string" }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex("ch_snapshots_firm_unique").on(table.firmId)],
+);
+
 // --- accessCodes ---------------------------------------------------------
 export const accessCodes = pgTable("access_codes", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),

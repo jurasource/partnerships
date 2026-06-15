@@ -151,6 +151,7 @@ export function CompaniesHousePanel({ chData }: Props) {
 
       {/* Company details */}
       <dl className="flex flex-col gap-3">
+        <Row label="Registered Name">{profile.company_name}</Row>
         {profile.company_status && (
           <Row label="Status">
             <StatusBadge status={profile.company_status} />

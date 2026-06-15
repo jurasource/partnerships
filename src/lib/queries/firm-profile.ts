@@ -12,6 +12,7 @@ import {
   conflictPairs,
   partnershipPairs,
   jvLeads,
+  chSnapshots,
 } from "@/db/schema";
 import type {
   Firm,
@@ -24,6 +25,7 @@ import type {
   ConflictPair,
   PartnershipPair,
   JvLead,
+  CHSnapshot,
 } from "@/lib/types";
 
 /**
@@ -70,6 +72,8 @@ export type FirmProfile = {
   partnerships: PartnershipPair[];
   /** JV partners mentioned in AI research but not yet tracked in the DB. */
   jvLeads: JvLead[];
+  /** Cached raw Companies House API data, or null if never fetched. */
+  chSnapshot: CHSnapshot | null;
 };
 
 /**
@@ -110,7 +114,7 @@ export async function getFirmProfile(firmId: string): Promise<FirmProfile | null
     return null;
   }
 
-  // 2-9. Fetch all dependent data in parallel to reduce latency.
+  // 2-10. Fetch all dependent data in parallel to reduce latency.
   const [
     allTopics,
     firmFindings,
@@ -121,6 +125,7 @@ export async function getFirmProfile(firmId: string): Promise<FirmProfile | null
     firmConflicts,
     firmPartnerships,
     jvLeadRows,
+    chSnapshotRows,
   ] = await Promise.all([
     db.select().from(topics),
     db
@@ -157,6 +162,11 @@ export async function getFirmProfile(firmId: string): Promise<FirmProfile | null
         or(eq(partnershipPairs.firmAId, firmId), eq(partnershipPairs.firmBId, firmId)),
       ),
     db.select().from(jvLeads).where(eq(jvLeads.sourceFirmId, firmId)),
+    db
+      .select()
+      .from(chSnapshots)
+      .where(eq(chSnapshots.firmId, firmId))
+      .limit(1),
   ]);
 
   // Build a lookup map: topicId → Finding
@@ -207,5 +217,6 @@ export async function getFirmProfile(firmId: string): Promise<FirmProfile | null
     conflicts: firmConflicts,
     partnerships: firmPartnerships,
     jvLeads: jvLeadRows,
+    chSnapshot: chSnapshotRows[0] ?? null,
   };
 }

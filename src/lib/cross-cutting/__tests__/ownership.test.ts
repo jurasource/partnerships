@@ -119,7 +119,10 @@ vi.mock("@/db/client", () => ({
     })),
     insert: vi.fn(() => ({
       values: vi.fn((row: InsertedOwnershipRow) => {
-        capturedOwnershipInserts.push({ ...row });
+        // Only capture ownership record inserts (not ch_snapshots inserts)
+        if ("ukIncorporated" in row) {
+          capturedOwnershipInserts.push({ ...row });
+        }
         return {
           onConflictDoUpdate: vi.fn(() => {
             capturedUpsertCalls++;
@@ -140,6 +143,9 @@ vi.mock("@/db/schema", () => ({
     id: "firms.id",
     canonicalName: "firms.canonical_name",
     companiesHouseNumber: "firms.companies_house_number",
+  },
+  chSnapshots: {
+    firmId: "ch_snapshots.firm_id",
   },
   ownershipRecords: {
     firmId: "ownership_records.firm_id",
@@ -177,10 +183,12 @@ vi.mock("drizzle-orm", () => ({
 
 const mockGetCompanyProfile = vi.fn();
 const mockGetPSC = vi.fn();
+const mockGetOfficers = vi.fn();
 
 vi.mock("@/lib/clients/companies-house", () => ({
   getCompanyProfile: mockGetCompanyProfile,
   getPSC: mockGetPSC,
+  getOfficers: mockGetOfficers,
 }));
 
 // ---------------------------------------------------------------------------
@@ -212,6 +220,7 @@ beforeEach(() => {
   mockFindFindingByTopicName.mockResolvedValue(null); // default: no finding
   mockGetCompanyProfile.mockResolvedValue(null);
   mockGetPSC.mockResolvedValue(null);
+  mockGetOfficers.mockResolvedValue(null);
 });
 
 // ---------------------------------------------------------------------------

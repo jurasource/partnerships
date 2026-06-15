@@ -1,5 +1,15 @@
 # Pending Release Steps
 
+## feat: cache Companies House data in DB; show CH name on firm profile
+
+### Dev
+- Run `npm run db:migrate` to apply the new `ch_snapshots` migration
+- Re-run cross-cutting analysis on existing firms to populate the CH snapshot ("Re-run Analysis" on each profile)
+
+### Prod
+- Run `npm run db:migrate` before deploying
+- Re-run cross-cutting analysis for all firms after deploying
+
 ## feat: Companies House data panel on firm profile page
 
 ### Dev

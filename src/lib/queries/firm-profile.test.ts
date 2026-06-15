@@ -37,6 +37,7 @@ vi.mock("@/db/schema", () => ({
   conflictPairs: { firmAId: "firm_a_id", firmBId: "firm_b_id" },
   partnershipPairs: { firmAId: "firm_a_id", firmBId: "firm_b_id" },
   jvLeads: { sourceFirmId: "source_firm_id" },
+  chSnapshots: { firmId: "firm_id" },
 }));
 
 vi.mock("drizzle-orm", () => ({
@@ -174,17 +175,18 @@ const CONTRACT_B: ProcurementRecord = {
 
 // ---------------------------------------------------------------------------
 // Helper: build a chainable mock for a single DB call sequence
-// getFirmProfile makes 1 initial select (firm row) + 9 parallel selects:
-//   call 1: firms → .from().where().limit()
-//   call 2: topics → .from() directly awaitable
-//   call 3: findings → .from().where().orderBy()
-//   call 4: procurementRecords → .from().where().orderBy()
-//   call 5: ownershipRecords → .from().where().limit()
-//   call 6: riskFlags → .from().where()
-//   call 7: collaborationRecords → .from().where().limit()
-//   call 8: conflictPairs → .from().where()
-//   call 9: partnershipPairs → .from().where()
+// getFirmProfile makes 1 initial select (firm row) + 10 parallel selects:
+//   call 1:  firms → .from().where().limit()
+//   call 2:  topics → .from() directly awaitable
+//   call 3:  findings → .from().where().orderBy()
+//   call 4:  procurementRecords → .from().where().orderBy()
+//   call 5:  ownershipRecords → .from().where().limit()
+//   call 6:  riskFlags → .from().where()
+//   call 7:  collaborationRecords → .from().where().limit()
+//   call 8:  conflictPairs → .from().where()
+//   call 9:  partnershipPairs → .from().where()
 //   call 10: jvLeads → .from().where()
+//   call 11: chSnapshots → .from().where().limit()
 // ---------------------------------------------------------------------------
 function buildSelectMock(
   firmRow: Firm | null,
@@ -285,10 +287,20 @@ function buildSelectMock(
         }),
       };
     }
-    // c === 10: jvLeads — .from().where()
+    if (c === 10) {
+      // jvLeads — .from().where()
+      return {
+        from: () => ({
+          where: () => Promise.resolve(jvLeadRows),
+        }),
+      };
+    }
+    // c === 11: chSnapshots — .from().where().limit()
     return {
       from: () => ({
-        where: () => Promise.resolve(jvLeadRows),
+        where: () => ({
+          limit: () => Promise.resolve([]),
+        }),
       }),
     };
   });

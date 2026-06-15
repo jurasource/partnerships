@@ -13,6 +13,7 @@ import type {
   groups,
   firmGroups,
   jvLeads,
+  chSnapshots,
 } from "@/db/schema";
 
 /**
@@ -37,6 +38,7 @@ export type CollaborationRecord = InferSelectModel<typeof collaborationRecords>;
 export type ConflictPair = InferSelectModel<typeof conflictPairs>;
 export type PartnershipPair = InferSelectModel<typeof partnershipPairs>;
 export type JvLead = InferSelectModel<typeof jvLeads>;
+export type CHSnapshot = InferSelectModel<typeof chSnapshots>;
 
 // Firm extended with its group memberships — shared across firms table and analysis page
 export type FirmWithGroups = Firm & { groups: Array<{ id: string; name: string }> };
