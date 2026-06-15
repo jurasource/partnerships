@@ -1,6 +1,7 @@
 # Release Notes
 
 ## 2026-06-15
+- fix(railway): add railway.toml — pins builder to Nixpacks (avoids Railpack auto-detection), sets buildCommand to `npm ci` without --production so devDependencies (tsx) are installed, sets worker startCommand explicitly
 - fix(redis): `getRedisConnection()` now parses `REDIS_URL` (with password extraction) when set, falling back to `REDIS_HOST`/`REDIS_PORT` — simplifies Railway deployment where the Redis addon provides a single connection URL
 - fix(research-worker): catch NoOutputGeneratedError alongside NoObjectGeneratedError — the AI SDK throws this from the result.output getter when the model produces no output at all, which previously re-threw and failed the whole job instead of writing a sentinel
 - fix(research-logging): worker now logs firm+topic count at start, search result count + generateText call per topic, finding outcome per topic, and full error type+stack before re-throw; runner logs full stack on job failure

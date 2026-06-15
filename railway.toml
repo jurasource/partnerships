@@ -1,0 +1,8 @@
+[build]
+builder = "NIXPACKS"
+buildCommand = "npm ci"
+
+[deploy]
+startCommand = "npx tsx src/scripts/worker-process.ts"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
