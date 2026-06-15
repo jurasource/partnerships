@@ -89,13 +89,6 @@ crossCuttingWorker.on("error", (err) => {
   console.error("[worker] Cross-cutting worker error:", err.message);
 });
 
-console.log(
-  `[worker] Listening on ${connection.host}:${connection.port} queue="${RESEARCH_QUEUE_NAME}" concurrency=${CONCURRENCY}`,
-);
-console.log(
-  `[worker] Listening on ${connection.host}:${connection.port} queue="${CROSS_CUTTING_QUEUE_NAME}" concurrency=${CONCURRENCY}`,
-);
-
 // ---------------------------------------------------------------------------
 // CH refresh worker — fetch CH snapshot + derive ownership fields
 // ---------------------------------------------------------------------------
@@ -125,6 +118,12 @@ chRefreshWorker.on("error", (err) => {
   console.error("[worker] CH refresh worker error:", err.message);
 });
 
+console.log(
+  `[worker] Listening on ${connection.host}:${connection.port} queue="${RESEARCH_QUEUE_NAME}" concurrency=${CONCURRENCY}`,
+);
+console.log(
+  `[worker] Listening on ${connection.host}:${connection.port} queue="${CROSS_CUTTING_QUEUE_NAME}" concurrency=${CONCURRENCY}`,
+);
 console.log(
   `[worker] Listening on ${connection.host}:${connection.port} queue="${CH_REFRESH_QUEUE_NAME}" concurrency=${CONCURRENCY}`,
 );
