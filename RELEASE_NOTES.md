@@ -1,6 +1,9 @@
 # Release Notes
 
 ## 2026-06-15
+- feat(03.1-03): firms table now shows a Groups column of clickable amber pill badges (linking to /groups/[id]) after Capabilities; added FirmsFilterBar above the table with Groups multi-select (OR logic), Capabilities multi-select (OR logic), and Research status single-select (All / Researched / Not researched / Stale >30 days); in-memory filtering narrows rows before TanStack; Clear filters button shown when any filter active
+
+## 2026-06-15
 - feat(03.1-02): Groups management area — added "Groups" nav item (Layers icon, between Firms and Topics); `/groups` list page with firm counts, create-group dialog, and delete; `/groups/[id]` detail page with inline rename, add-firm select, and remove-firm buttons; all mutations route through Plan 01 server actions
 
 ## 2026-06-15

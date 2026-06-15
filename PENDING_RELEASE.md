@@ -1,5 +1,14 @@
 # Pending Release Steps
 
+## feat(03.1-03): firms table Groups column + unified filter bar
+
+### Dev
+- No schema changes — groups and firm_groups tables were created in Plan 01 (03.1-01)
+- The firms page now shows a Groups column with amber pill links; a filter bar above the table allows filtering by Group, Capability, and Research status
+
+### Prod
+- No schema changes required; deploy new build
+
 ## feat(03.1-02): Groups management area — list page, create dialog, detail page
 
 ### Dev

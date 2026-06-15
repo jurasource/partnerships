@@ -40,7 +40,13 @@ import { FirmFormDialog } from "@/components/firms/firm-form-dialog";
 import { FirmRowRefresh } from "@/components/firms/firm-row-refresh";
 import { FirmRowResearch } from "@/components/firms/firm-row-research";
 import { StalenessBadge } from "@/components/research/staleness-badge";
+import { FirmsFilterBar } from "@/components/firms/firms-filter-bar";
 import type { Firm, CapabilityTag } from "@/lib/types";
+
+// ---------------------------------------------------------------------------
+// Extended row type with group membership
+// ---------------------------------------------------------------------------
+export type FirmWithGroups = Firm & { groups: Array<{ id: string; name: string }> };
 
 // ---------------------------------------------------------------------------
 // Badge styling per capability tag (UI-SPEC Color section)
@@ -130,7 +136,7 @@ function FirmRowActions({ firm }: { firm: Firm }) {
 // ---------------------------------------------------------------------------
 // Column definitions
 // ---------------------------------------------------------------------------
-function buildColumns(): ColumnDef<Firm>[] {
+function buildColumns(): ColumnDef<FirmWithGroups>[] {
   return [
     {
       accessorKey: "canonicalName",
@@ -170,6 +176,36 @@ function buildColumns(): ColumnDef<Firm>[] {
         );
       },
       enableSorting: false,
+    },
+    {
+      id: "groups",
+      header: "Groups",
+      enableSorting: false,
+      cell: ({ row }) => {
+        const firmGroups = row.original.groups;
+        if (!firmGroups.length) {
+          return (
+            <span className="text-sm text-neutral-400 italic">None</span>
+          );
+        }
+        return (
+          <div className="flex flex-wrap gap-1">
+            {firmGroups.map((g) => (
+              <Link key={g.id} href={`/groups/${g.id}`}>
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    "text-xs font-normal px-1.5 py-0.5 border cursor-pointer",
+                    "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
+                  )}
+                >
+                  {g.name}
+                </Badge>
+              </Link>
+            ))}
+          </div>
+        );
+      },
     },
     {
       id: "research",
@@ -215,19 +251,83 @@ function buildColumns(): ColumnDef<Firm>[] {
 }
 
 // ---------------------------------------------------------------------------
+// Known capability tags (data-driven per Pitfall 10; these are the seed values)
+// ---------------------------------------------------------------------------
+const ALL_CAPABILITIES: string[] = ["Nuclear", "Infrastructure", "Consultancy"];
+
+// ---------------------------------------------------------------------------
 // FirmsTable component
 // ---------------------------------------------------------------------------
 type FirmsTableProps = {
-  data: Firm[];
+  data: FirmWithGroups[];
 };
 
 export function FirmsTable({ data }: FirmsTableProps) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [selectedGroupIds, setSelectedGroupIds] = React.useState<string[]>([]);
+  const [selectedCapabilities, setSelectedCapabilities] = React.useState<string[]>([]);
+  const [researchStatus, setResearchStatus] = React.useState<
+    "all" | "researched" | "not_researched" | "stale"
+  >("all");
 
   const columns = React.useMemo(() => buildColumns(), []);
 
+  // Derive unique groups across all firms for the filter bar
+  const allGroups = React.useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const firm of data) {
+      for (const g of firm.groups) {
+        if (!seen.has(g.id)) seen.set(g.id, g.name);
+      }
+    }
+    return Array.from(seen.entries()).map(([id, name]) => ({ id, name }));
+  }, [data]);
+
+  // In-memory filtering applied BEFORE TanStack processes rows
+  const filteredData = React.useMemo(() => {
+    return data.filter((firm) => {
+      // Groups filter (OR logic — firm must belong to any of the selected groups)
+      if (selectedGroupIds.length > 0) {
+        const firmGroupIds = firm.groups.map((g) => g.id);
+        const matches = selectedGroupIds.some((id) => firmGroupIds.includes(id));
+        if (!matches) return false;
+      }
+
+      // Capabilities filter (OR logic)
+      if (selectedCapabilities.length > 0) {
+        let tags: string[] = [];
+        try {
+          tags = JSON.parse(firm.capabilityTags as string) as string[];
+        } catch {
+          tags = [];
+        }
+        const matches = selectedCapabilities.some((cap) => tags.includes(cap));
+        if (!matches) return false;
+      }
+
+      // Research status filter
+      if (researchStatus !== "all") {
+        const lastResearched = firm.lastResearchedAt;
+        if (researchStatus === "researched") {
+          if (lastResearched == null) return false;
+        } else if (researchStatus === "not_researched") {
+          if (lastResearched != null) return false;
+        } else if (researchStatus === "stale") {
+          // Stale = researched AND older than 30 days (phase spec; different from
+          // StalenessBadge which uses 7 days for its visual indicator)
+          if (lastResearched == null) return false;
+          const isStale =
+            Date.now() - new Date(lastResearched).getTime() > 30 * 24 * 60 * 60 * 1000;
+          if (!isStale) return false;
+        }
+      }
+
+      return true;
+    });
+  }, [data, selectedGroupIds, selectedCapabilities, researchStatus]);
+
   const table = useReactTable({
-    data,
+    data: filteredData,
     columns,
     state: { sorting },
     onSortingChange: setSorting,
@@ -236,61 +336,85 @@ export function FirmsTable({ data }: FirmsTableProps) {
   });
 
   return (
-    <div className="rounded-md border border-neutral-200 bg-white overflow-hidden">
-      <Table>
-        <TableHeader className="bg-neutral-50">
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id} className="border-neutral-200">
-              {headerGroup.headers.map((header) => {
-                const canSort = header.column.getCanSort();
-                const sorted = header.column.getIsSorted();
-                return (
-                  <TableHead
-                    key={header.id}
-                    className={cn(
-                      "text-xs font-semibold text-neutral-500 uppercase tracking-wide py-3",
-                      canSort && "cursor-pointer select-none hover:text-neutral-700"
-                    )}
-                    onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
-                  >
-                    <span className="inline-flex items-center gap-1">
-                      {flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
+    <div className="flex flex-col gap-4">
+      <FirmsFilterBar
+        allGroups={allGroups}
+        allCapabilities={ALL_CAPABILITIES}
+        selectedGroupIds={selectedGroupIds}
+        selectedCapabilities={selectedCapabilities}
+        researchStatus={researchStatus}
+        onGroupsChange={setSelectedGroupIds}
+        onCapabilitiesChange={setSelectedCapabilities}
+        onResearchStatusChange={setResearchStatus}
+      />
+
+      <div className="rounded-md border border-neutral-200 bg-white overflow-hidden">
+        <Table>
+          <TableHeader className="bg-neutral-50">
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id} className="border-neutral-200">
+                {headerGroup.headers.map((header) => {
+                  const canSort = header.column.getCanSort();
+                  const sorted = header.column.getIsSorted();
+                  return (
+                    <TableHead
+                      key={header.id}
+                      className={cn(
+                        "text-xs font-semibold text-neutral-500 uppercase tracking-wide py-3",
+                        canSort && "cursor-pointer select-none hover:text-neutral-700"
                       )}
-                      {canSort && (
-                        <span className="text-neutral-400">
-                          {sorted === "asc" ? (
-                            <ChevronUp className="h-3 w-3" />
-                          ) : sorted === "desc" ? (
-                            <ChevronDown className="h-3 w-3" />
-                          ) : (
-                            <ChevronsUpDown className="h-3 w-3" />
-                          )}
-                        </span>
-                      )}
-                    </span>
-                  </TableHead>
-                );
-              })}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody>
-          {table.getRowModel().rows.map((row) => (
-            <TableRow
-              key={row.id}
-              className="border-neutral-100 hover:bg-neutral-50 transition-colors"
-            >
-              {row.getVisibleCells().map((cell) => (
-                <TableCell key={cell.id} className="py-3 text-sm">
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
+                    >
+                      <span className="inline-flex items-center gap-1">
+                        {flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                        {canSort && (
+                          <span className="text-neutral-400">
+                            {sorted === "asc" ? (
+                              <ChevronUp className="h-3 w-3" />
+                            ) : sorted === "desc" ? (
+                              <ChevronDown className="h-3 w-3" />
+                            ) : (
+                              <ChevronsUpDown className="h-3 w-3" />
+                            )}
+                          </span>
+                        )}
+                      </span>
+                    </TableHead>
+                  );
+                })}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  className="py-12 text-center text-sm text-neutral-400 italic"
+                >
+                  No firms match the current filters.
                 </TableCell>
-              ))}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+              </TableRow>
+            ) : (
+              table.getRowModel().rows.map((row) => (
+                <TableRow
+                  key={row.id}
+                  className="border-neutral-100 hover:bg-neutral-50 transition-colors"
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id} className="py-3 text-sm">
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }

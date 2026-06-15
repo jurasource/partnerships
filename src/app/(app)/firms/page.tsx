@@ -1,5 +1,6 @@
 import { db } from "@/db/client";
-import { firms } from "@/db/schema";
+import { firms, firmGroups, groups } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import { FirmsTable } from "@/components/firms/firms-table";
 import { FirmFormDialog } from "@/components/firms/firm-form-dialog";
 import { Building2 } from "lucide-react";
@@ -7,8 +8,32 @@ import { Building2 } from "lucide-react";
 export const dynamic = "force-dynamic";
 
 export default async function FirmsPage() {
-  // RSC: read directly from the local SQLite cache (ARCHITECTURE boundary rule)
+  // RSC: read directly from the local Postgres cache (ARCHITECTURE boundary rule)
   const allFirms = await db.select().from(firms).orderBy(firms.canonicalName);
+
+  // Fetch all group memberships and join with group names
+  const memberships = await db
+    .select({
+      firmId: firmGroups.firmId,
+      groupId: groups.id,
+      groupName: groups.name,
+    })
+    .from(firmGroups)
+    .innerJoin(groups, eq(firmGroups.groupId, groups.id));
+
+  // Build a map keyed by firmId for O(1) lookup
+  const membershipMap = new Map<string, Array<{ id: string; name: string }>>();
+  for (const row of memberships) {
+    const existing = membershipMap.get(row.firmId) ?? [];
+    existing.push({ id: row.groupId, name: row.groupName });
+    membershipMap.set(row.firmId, existing);
+  }
+
+  // Extend each firm with its group membership array
+  const firmsWithGroups = allFirms.map((firm) => ({
+    ...firm,
+    groups: membershipMap.get(firm.id) ?? [],
+  }));
 
   return (
     <main className="flex flex-col min-h-full">
@@ -38,7 +63,7 @@ export default async function FirmsPage() {
             <FirmFormDialog />
           </div>
         ) : (
-          <FirmsTable data={allFirms} />
+          <FirmsTable data={firmsWithGroups} />
         )}
       </div>
     </main>
