@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -74,10 +75,9 @@ export function ConflictMatrix({ allFirms, conflictPairs }: Props) {
 
         {/* Rows */}
         {allFirms.map((rowFirm) => (
-          <>
+          <React.Fragment key={`row-${rowFirm.id}`}>
             {/* Row header */}
             <div
-              key={`row-${rowFirm.id}`}
               className="min-w-10 min-h-10 bg-neutral-50 flex items-center px-2 py-1"
             >
               <Tooltip>
@@ -135,7 +135,7 @@ export function ConflictMatrix({ allFirms, conflictPairs }: Props) {
                 />
               );
             })}
-          </>
+          </React.Fragment>
         ))}
       </div>
     </div>
