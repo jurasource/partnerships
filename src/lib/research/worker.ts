@@ -72,6 +72,13 @@ export async function runResearchWorker(
         `${searchResults.length} search results, calling generateText`,
     );
 
+    // Held outside try so the catch block can log finishReason/tokens/rawText
+    // even when the error is thrown by the result.output getter (not generateText itself)
+    let genFinishReason: string | undefined;
+    let genInputTokens: number | undefined;
+    let genOutputTokens: number | undefined;
+    let genRawText: string | undefined;
+
     try {
       const result = await generateText({
         model: anthropic("claude-sonnet-4-6"),
@@ -82,6 +89,17 @@ export async function runResearchWorker(
         temperature: 0.1,     // near-deterministic for factual extraction
         maxRetries: 2,        // SDK-level retry on transient provider errors
       });
+
+      // Capture diagnostics before accessing result.output, which can throw
+      genFinishReason = result.finishReason;
+      genInputTokens = result.usage?.inputTokens;
+      genOutputTokens = result.usage?.outputTokens;
+      genRawText = result.text;
+
+      console.log(
+        `[research] generateText: finishReason=${result.finishReason}, ` +
+          `tokens in=${result.usage?.inputTokens} out=${result.usage?.outputTokens}`,
+      );
 
       if (!result.output) {
         // Schema validation passed but output is unexpectedly undefined
@@ -100,9 +118,14 @@ export async function runResearchWorker(
         // NoObjectGeneratedError: model produced output but it failed schema validation after retries
         // NoOutputGeneratedError: model produced no output at all (result.output getter throws)
         // Both are safe to sentinel — the topic will show "not found" rather than aborting the job
+        const rawText = err instanceof NoObjectGeneratedError
+          ? err.text?.slice(0, 500)
+          : genRawText?.slice(0, 500);
         console.error(
-          `[research] ${err.constructor.name} for ${firmId}/${topic.id} "${topic.name}":`,
-          err instanceof NoObjectGeneratedError ? err.text?.slice(0, 500) : err.message,
+          `[research] ${err.constructor.name} for "${topic.name}" — ` +
+            `finishReason=${genFinishReason ?? "unknown"}, ` +
+            `tokens in=${genInputTokens ?? "?"} out=${genOutputTokens ?? "?"}, ` +
+            `rawText="${rawText ?? "(none)"}"`,
         );
         finding = NOT_FOUND_SENTINEL(
           topic.id,
