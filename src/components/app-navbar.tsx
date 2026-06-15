@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -45,7 +44,8 @@ export function AppNavbar() {
         href="/"
         className="flex items-center gap-2 text-white font-semibold text-sm tracking-tight shrink-0 mr-2"
       >
-        <Image
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
           src="/icons8-network-64.png"
           alt=""
           width={20}
