@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 03.1 wave 1 complete
-last_updated: "2026-06-15T13:17:05.486Z"
-last_activity: 2026-06-15 -- Phase 03.1 execution started
+stopped_at: Phase 03.1 Plan 02 complete (Groups UI)
+last_updated: "2026-06-15T14:05:00.000Z"
+last_activity: 2026-06-15 -- Phase 03.1 Plan 02 complete (Groups UI)
 progress:
   total_phases: 6
   completed_phases: 3
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-06-13)
 ## Current Position
 
 Phase: 03.1 (firm-groups) — EXECUTING
-Plan: 1 of 3
+Plan: 2 of 3 complete
 Status: Executing Phase 03.1
-Last activity: 2026-06-15 -- Phase 03.1 execution started
+Last activity: 2026-06-15 -- Phase 03.1 Plan 02 complete (Groups UI)
 
 Progress: [██████████] 100%
 
@@ -86,6 +86,9 @@ Recent decisions affecting current work:
 - [Phase ?]: [04-02] Two-query merge for co-supplier detection: select firm ocids, then all records for those ocids, group in JS
 - [Phase ?]: [04-02] extractConflicts reads both Partnerships+JVs AND Reputation+controversy findings — no conflicts-between-firms topic exists in seed
 - [Phase ?]: [04-02] collaboration.ts always writes collaboration_records even when no finding exists (explicit empty-state — Pitfall 4)
+- [Plan 03.1-02]: Base UI Select onValueChange typed explicitly as (value: string | null) => void — TypeScript infers Value={} when no explicit generic is passed
+- [Plan 03.1-02]: View link in GroupsTable uses styled Link not Button asChild — Base UI Button does not support the asChild render pattern
+- [Plan 03.1-02]: router.refresh() called after all mutations in GroupDetailClient to re-pull RSC-derived memberFirms/nonMemberFirms props
 
 ### Pending Todos
 
@@ -124,6 +127,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-15T13:17:05.481Z
-Stopped at: Phase 4 UI-SPEC approved
-Resume file: .planning/phases/04-cross-cutting-analysis/04-UI-SPEC.md
+Last session: 2026-06-15T14:05:00.000Z
+Stopped at: Phase 03.1 Plan 02 complete — Groups UI built, Plan 03 next
+Resume file: None

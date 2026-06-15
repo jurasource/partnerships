@@ -99,7 +99,7 @@ Plans:
 **Requirements**: GRP-01, GRP-02, GRP-03, GRP-04, GRP-05
 **Depends on:** Phase 3
 **Mode:** mvp
-**Plans:** 1/3 plans executed
+**Plans:** 2/3 plans executed
 
 Plans:
 
@@ -109,7 +109,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1; both run in parallel — no file overlap)*
 
-- [ ] 03.1-02-PLAN.md — Groups management UI: Groups nav item, /groups list + create/delete, /groups/[id] inline rename + add/remove member firms (GRP-01/02/04)
+- [x] 03.1-02-PLAN.md — Groups management UI: Groups nav item, /groups list + create/delete, /groups/[id] inline rename + add/remove member firms (GRP-01/02/04) — COMPLETE 2026-06-15
 - [ ] 03.1-03-PLAN.md — Firms table groups pills + unified filter bar (groups/capabilities/research status), firms RSC query extension (GRP-04/05)
 
 **UI hint**: yes
@@ -175,6 +175,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5
 | 1. Data Foundation | 3/3 | Complete | 2026-06-14 |
 | 2. Research Engine | 3/3 | Complete   | 2026-06-14 |
 | 3. Dashboard & Profiles | 2/2 | Complete   | 2026-06-14 |
-| 3.1 Firm Groups | 1/3 | In Progress|  |
+| 3.1 Firm Groups | 2/3 | In Progress|  |
 | 4. Cross-Cutting Analysis | 3/4 | In Progress|  |
 | 5. Consortium Recommender + Initial Report | 0/TBD | Not started | - |
