@@ -15,7 +15,7 @@
  * NO "server-only" import — must be importable by the standalone worker process.
  */
 
-import { generateText, Output, NoObjectGeneratedError } from "ai";
+import { generateText, Output, NoObjectGeneratedError, NoOutputGeneratedError } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { eq } from "drizzle-orm";
 
@@ -135,12 +135,14 @@ export async function extractConflicts(firmId: string): Promise<void> {
   );
 
   if (findingsToProcess.length === 0) {
-    // No findings with real evidence — nothing to extract
+    console.log(`[conflicts] ${firmId} — no real findings to process`);
     return;
   }
 
   // Run LLM extraction for each relevant finding
   for (const finding of findingsToProcess) {
+    console.log(`[conflicts] ${firmId}/${finding.topicId} — calling generateText`);
+
     let extraction: { conflicts: Array<{
       otherFirmName: string;
       conflictType: "audit" | "competitor";
@@ -149,6 +151,11 @@ export async function extractConflicts(firmId: string): Promise<void> {
       sourceTitle: string;
       rawSnippet: string;
     }> } | null = null;
+
+    let genFinishReason: string | undefined;
+    let genInputTokens: number | undefined;
+    let genOutputTokens: number | undefined;
+    let genRawText: string | undefined;
 
     try {
       const result = await generateText({
@@ -164,17 +171,32 @@ Raw Snippet: ${finding.rawSnippet}
 
 Return conflicts as a JSON object with a "conflicts" array.`,
         output: Output.object({ schema: ConflictsExtractionSchema }),
-        maxOutputTokens: 512,
+        maxOutputTokens: 1024,
         temperature: 0.1,
         maxRetries: 2,
       });
 
+      genFinishReason = result.finishReason;
+      genInputTokens = result.usage?.inputTokens;
+      genOutputTokens = result.usage?.outputTokens;
+      genRawText = result.text;
+
+      console.log(
+        `[conflicts] ${firmId}/${finding.topicId} — finishReason=${genFinishReason}, ` +
+          `tokens in=${genInputTokens} out=${genOutputTokens}`,
+      );
+
       extraction = result.output ?? null;
     } catch (err) {
-      if (err instanceof NoObjectGeneratedError) {
-        // Model failed to produce schema-conforming output — skip this finding
-        console.warn(
-          `[conflicts] NoObjectGeneratedError for firmId=${firmId} topicId=${finding.topicId}`,
+      if (err instanceof NoObjectGeneratedError || err instanceof NoOutputGeneratedError) {
+        const rawText = err instanceof NoObjectGeneratedError
+          ? err.text?.slice(0, 500)
+          : genRawText?.slice(0, 500);
+        console.error(
+          `[conflicts] ${err.constructor.name} for ${firmId}/${finding.topicId} — ` +
+            `finishReason=${genFinishReason ?? "unknown"}, ` +
+            `tokens in=${genInputTokens ?? "?"} out=${genOutputTokens ?? "?"}, ` +
+            `rawText="${rawText ?? "(none)"}"`,
         );
         continue;
       }
@@ -182,8 +204,13 @@ Return conflicts as a JSON object with a "conflicts" array.`,
     }
 
     if (!extraction || extraction.conflicts.length === 0) {
+      console.log(`[conflicts] ${firmId}/${finding.topicId} — no conflicts found`);
       continue;
     }
+
+    console.log(
+      `[conflicts] ${firmId}/${finding.topicId} — ${extraction.conflicts.length} candidate(s) to resolve`,
+    );
 
     // Process each extracted conflict
     for (const conflict of extraction.conflicts) {

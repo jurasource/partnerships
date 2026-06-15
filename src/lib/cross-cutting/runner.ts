@@ -17,6 +17,9 @@
  * NO "server-only" import — must be importable by the standalone worker process.
  */
 
+import { eq } from "drizzle-orm";
+import { db } from "@/db/client";
+import { firms } from "@/db/schema";
 import { getJob, updateJobProgress, updateJobStatus } from "@/lib/jobs/queue";
 import { extractOwnership } from "./ownership";
 import { extractRiskFlags } from "./risk-flags";
@@ -50,32 +53,50 @@ export async function executeCrossCuttingJob(
   if (!job) throw new Error(`Cross-cutting job not found: ${jobId}`);
   if (job.firmId !== firmId) throw new Error("Job/firm mismatch");
 
+  const [firm] = await db.select({ canonicalName: firms.canonicalName })
+    .from(firms).where(eq(firms.id, firmId)).limit(1);
+  const firmName = firm?.canonicalName ?? firmId;
+
+  console.log(
+    `[cross-cutting] Starting job ${jobId} for firm "${firmName}" (${firmId})`,
+  );
+
   await updateJobStatus(jobId, "running", { startedAt: nowIso() });
 
   try {
-    // Step 1: Ownership extraction
+    console.log(`[cross-cutting] Step 1/5: extractOwnership — firm "${firmName}"`);
     await updateJobProgress(jobId, "Step 1/5: Extracting ownership record");
     await extractOwnership(firmId);
+    console.log(`[cross-cutting] Step 1/5 complete`);
 
-    // Step 2: Risk flag extraction
+    console.log(`[cross-cutting] Step 2/5: extractRiskFlags — firm "${firmName}"`);
     await updateJobProgress(jobId, "Step 2/5: Extracting risk flags");
     await extractRiskFlags(firmId);
+    console.log(`[cross-cutting] Step 2/5 complete`);
 
-    // Step 3: Co-supplier detection (SQL)
+    console.log(`[cross-cutting] Step 3/5: detectCoSuppliers — firm "${firmName}"`);
     await updateJobProgress(jobId, "Step 3/5: Detecting co-supplier partnerships");
     await detectCoSuppliers(firmId);
+    console.log(`[cross-cutting] Step 3/5 complete`);
 
-    // Step 4: Conflict pair extraction (LLM)
+    console.log(`[cross-cutting] Step 4/5: extractConflicts — firm "${firmName}"`);
     await updateJobProgress(jobId, "Step 4/5: Extracting conflict pairs");
     await extractConflicts(firmId);
+    console.log(`[cross-cutting] Step 4/5 complete`);
 
-    // Step 5: Collaboration extraction (LLM)
+    console.log(`[cross-cutting] Step 5/5: extractCollaboration — firm "${firmName}"`);
     await updateJobProgress(jobId, "Step 5/5: Extracting collaboration record");
     await extractCollaboration(firmId);
+    console.log(`[cross-cutting] Step 5/5 complete`);
 
     await updateJobStatus(jobId, "done", { completedAt: nowIso() });
+    console.log(`[cross-cutting] Job ${jobId} done for firm "${firmName}"`);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
+    console.error(
+      `[cross-cutting] Job ${jobId} failed for firm "${firmName}": ${message}`,
+      err instanceof Error ? err.stack : err,
+    );
     await updateJobStatus(jobId, "failed", {
       completedAt: nowIso(),
       errorMessage: message,

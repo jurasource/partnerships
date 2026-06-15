@@ -17,7 +17,7 @@
  * NO "server-only" import — must be importable by the standalone worker process.
  */
 
-import { generateText, Output, NoObjectGeneratedError } from "ai";
+import { generateText, Output, NoObjectGeneratedError, NoOutputGeneratedError } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { eq } from "drizzle-orm";
 
@@ -108,8 +108,17 @@ export async function extractRiskFlags(firmId: string): Promise<void> {
 
     // Skip topic if no finding exists or if it's a "not found" sentinel
     if (!finding || finding.sourceUrl === "not-found") {
+      console.log(`[risk-flags] ${firmId}/${topicName} — no finding, skipping`);
       continue;
     }
+
+    console.log(`[risk-flags] ${firmId}/${topicName} — calling generateText`);
+
+    // Capture diagnostics before accessing result.output (which can throw NoOutputGeneratedError)
+    let genFinishReason: string | undefined;
+    let genInputTokens: number | undefined;
+    let genOutputTokens: number | undefined;
+    let genRawText: string | undefined;
 
     try {
       const result = await generateText({
@@ -117,10 +126,20 @@ export async function extractRiskFlags(firmId: string): Promise<void> {
         system: RISK_EXTRACTION_SYSTEM_PROMPT,
         prompt: buildRiskExtractionPrompt(finding, topicName),
         output: Output.object({ schema: RiskFlagsExtractionSchema }),
-        maxOutputTokens: 512,
+        maxOutputTokens: 1024,
         temperature: 0.1,
         maxRetries: 2,
       });
+
+      genFinishReason = result.finishReason;
+      genInputTokens = result.usage?.inputTokens;
+      genOutputTokens = result.usage?.outputTokens;
+      genRawText = result.text;
+
+      console.log(
+        `[risk-flags] ${firmId}/${topicName} — finishReason=${genFinishReason}, ` +
+          `tokens in=${genInputTokens} out=${genOutputTokens}`,
+      );
 
       if (!result.output) {
         console.warn(
@@ -141,16 +160,21 @@ export async function extractRiskFlags(firmId: string): Promise<void> {
         rawSnippet: flag.rawSnippet,
       }));
 
+      console.log(
+        `[risk-flags] ${firmId}/${topicName} — extracted ${topicFlags.length} flag(s)`,
+      );
       allFlags.push(...topicFlags);
     } catch (err) {
-      if (err instanceof NoObjectGeneratedError) {
-        // Log but do not abort other topics (per plan spec)
+      if (err instanceof NoObjectGeneratedError || err instanceof NoOutputGeneratedError) {
+        const rawText = err instanceof NoObjectGeneratedError
+          ? err.text?.slice(0, 500)
+          : genRawText?.slice(0, 500);
         console.error(
-          `[risk-flags] NoObjectGeneratedError for ${firmId}/${topicName}:`,
-          (err as NoObjectGeneratedError).text?.slice(0, 500),
-          String((err as NoObjectGeneratedError).cause),
+          `[risk-flags] ${err.constructor.name} for ${firmId}/${topicName} — ` +
+            `finishReason=${genFinishReason ?? "unknown"}, ` +
+            `tokens in=${genInputTokens ?? "?"} out=${genOutputTokens ?? "?"}, ` +
+            `rawText="${rawText ?? "(none)"}"`,
         );
-        // Continue to next topic
         continue;
       }
       // Non-schema errors (network, auth, rate-limit) — re-throw

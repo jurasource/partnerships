@@ -17,7 +17,7 @@
  * NO "server-only" import — must be importable by the standalone worker process.
  */
 
-import { generateText, Output, NoObjectGeneratedError } from "ai";
+import { generateText, Output, NoObjectGeneratedError, NoOutputGeneratedError } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 
 import { db } from "@/db/client";
@@ -124,6 +124,13 @@ export async function extractCollaboration(firmId: string): Promise<void> {
     rawSnippet: finding.rawSnippet,
   };
 
+  console.log(`[collaboration] ${firmId} — Pass 1: culture-fit extraction`);
+
+  let genFinishReason: string | undefined;
+  let genInputTokens: number | undefined;
+  let genOutputTokens: number | undefined;
+  let genRawText: string | undefined;
+
   try {
     const result = await generateText({
       model: anthropic("claude-sonnet-4-6"),
@@ -137,18 +144,34 @@ Raw Snippet: ${finding.rawSnippet}
 
 Return a JSON object with cultureFitSummary, sourceUrl, sourceTitle, rawSnippet.`,
       output: Output.object({ schema: CollaborationExtractionSchema }),
-      maxOutputTokens: 512,
+      maxOutputTokens: 1024,
       temperature: 0.1,
       maxRetries: 2,
     });
+
+    genFinishReason = result.finishReason;
+    genInputTokens = result.usage?.inputTokens;
+    genOutputTokens = result.usage?.outputTokens;
+    genRawText = result.text;
+
+    console.log(
+      `[collaboration] ${firmId} Pass 1 — finishReason=${genFinishReason}, ` +
+        `tokens in=${genInputTokens} out=${genOutputTokens}`,
+    );
 
     if (result.output) {
       collaborationData = result.output;
     }
   } catch (err) {
-    if (err instanceof NoObjectGeneratedError) {
-      console.warn(
-        `[collaboration] NoObjectGeneratedError on culture-fit extraction for firmId=${firmId}`,
+    if (err instanceof NoObjectGeneratedError || err instanceof NoOutputGeneratedError) {
+      const rawText = err instanceof NoObjectGeneratedError
+        ? err.text?.slice(0, 500)
+        : genRawText?.slice(0, 500);
+      console.error(
+        `[collaboration] ${err.constructor.name} on culture-fit for ${firmId} — ` +
+          `finishReason=${genFinishReason ?? "unknown"}, ` +
+          `tokens in=${genInputTokens ?? "?"} out=${genOutputTokens ?? "?"}, ` +
+          `rawText="${rawText ?? "(none)"}"`,
       );
       // Fall through — use the default (finding metadata as fallback)
     } else {
@@ -180,6 +203,8 @@ Return a JSON object with cultureFitSummary, sourceUrl, sourceTitle, rawSnippet.
   // Pass 2: Extract announced JV partnerships
   // ---------------------------------------------------------------------------
 
+  console.log(`[collaboration] ${firmId} — Pass 2: JV partnership extraction`);
+
   let jvPartnerships: Array<{
     otherFirmName: string;
     evidenceSummary: string;
@@ -188,6 +213,11 @@ Return a JSON object with cultureFitSummary, sourceUrl, sourceTitle, rawSnippet.
     evidenceDate: string | null;
     rawSnippet: string;
   }> = [];
+
+  let jvFinishReason: string | undefined;
+  let jvInputTokens: number | undefined;
+  let jvOutputTokens: number | undefined;
+  let jvRawText: string | undefined;
 
   try {
     const jvResult = await generateText({
@@ -202,22 +232,42 @@ Raw Snippet: ${finding.rawSnippet}
 
 Return a JSON object with a "partnerships" array.`,
       output: Output.object({ schema: JVPartnershipsExtractionSchema }),
-      maxOutputTokens: 512,
+      maxOutputTokens: 1024,
       temperature: 0.1,
       maxRetries: 2,
     });
 
+    jvFinishReason = jvResult.finishReason;
+    jvInputTokens = jvResult.usage?.inputTokens;
+    jvOutputTokens = jvResult.usage?.outputTokens;
+    jvRawText = jvResult.text;
+
+    console.log(
+      `[collaboration] ${firmId} Pass 2 — finishReason=${jvFinishReason}, ` +
+        `tokens in=${jvInputTokens} out=${jvOutputTokens}`,
+    );
+
     jvPartnerships = jvResult.output?.partnerships ?? [];
   } catch (err) {
-    if (err instanceof NoObjectGeneratedError) {
-      console.warn(
-        `[collaboration] NoObjectGeneratedError on JV extraction for firmId=${firmId}`,
+    if (err instanceof NoObjectGeneratedError || err instanceof NoOutputGeneratedError) {
+      const rawText = err instanceof NoObjectGeneratedError
+        ? err.text?.slice(0, 500)
+        : jvRawText?.slice(0, 500);
+      console.error(
+        `[collaboration] ${err.constructor.name} on JV extraction for ${firmId} — ` +
+          `finishReason=${jvFinishReason ?? "unknown"}, ` +
+          `tokens in=${jvInputTokens ?? "?"} out=${jvOutputTokens ?? "?"}, ` +
+          `rawText="${rawText ?? "(none)"}"`,
       );
       // No JV pairs to store — continue
     } else {
       throw err;
     }
   }
+
+  console.log(
+    `[collaboration] ${firmId} — ${jvPartnerships.length} JV candidate(s) to resolve`,
+  );
 
   // ---------------------------------------------------------------------------
   // Persist JV partnership pairs
