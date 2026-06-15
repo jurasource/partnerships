@@ -18,6 +18,7 @@ vi.mock("@/db/client", () => ({
 vi.mock("@/db/schema", () => ({
   firms: { id: "id" },
   procurementRecords: { firmId: "firm_id" },
+  ownershipRecords: { firmId: "firm_id", countryOfOwnership: "country_of_ownership" },
 }));
 
 vi.mock("drizzle-orm", () => ({
@@ -70,14 +71,17 @@ const FIRM_C: Firm = {
 // ---------------------------------------------------------------------------
 // Helper: build a chainable mock for the DB query chain
 // getComparisonRows selects all firms, then selects procurementRecords grouped
-// by firmId to compute contract counts, and merges in JS.
-// The implementation makes 2 db.select() calls:
+// by firmId to compute contract counts, then selects ownershipRecords for
+// country of ownership — all merged in JS.
+// The implementation makes 3 db.select() calls:
 //   call 1: all firms → .from() → Promise<Firm[]>
-//   call 2: contractCounts → .from().groupBy() or similar
+//   call 2: contractCounts → .from().groupBy()
+//   call 3: ownershipRows → .from() → Promise<ownershipRow[]>
 // ---------------------------------------------------------------------------
 function buildSelectMock(
   firmsRows: Firm[],
   contractCountRows: Array<{ firmId: string; contractCount: number }>,
+  ownershipRows: Array<{ firmId: string; countryOfOwnership: string | null }>,
 ) {
   let call = 0;
   mockSelect.mockImplementation(() => {
@@ -89,11 +93,17 @@ function buildSelectMock(
         from: () => Promise.resolve(firmsRows),
       };
     }
-    // c === 2: contract counts — .from().groupBy() (no leftJoin in current implementation)
+    if (c === 2) {
+      // contract counts — .from().groupBy()
+      return {
+        from: () => ({
+          groupBy: () => Promise.resolve(contractCountRows),
+        }),
+      };
+    }
+    // c === 3: ownership rows — .from() directly awaitable
     return {
-      from: () => ({
-        groupBy: () => Promise.resolve(contractCountRows),
-      }),
+      from: () => Promise.resolve(ownershipRows),
     };
   });
 }
@@ -114,6 +124,7 @@ describe("getComparisonRows", () => {
         { firmId: "firm-1", contractCount: 3 },
         { firmId: "firm-2", contractCount: 1 },
       ],
+      [],
     );
 
     const rows = await getComparisonRows();
@@ -135,6 +146,7 @@ describe("getComparisonRows", () => {
         { firmId: "firm-1", contractCount: 5 },
         // firm-2 has no matching rows
       ],
+      [],
     );
 
     const rows = await getComparisonRows();
@@ -149,6 +161,7 @@ describe("getComparisonRows", () => {
     buildSelectMock(
       [FIRM_A, FIRM_B, FIRM_C],
       [], // zero procurement records
+      [],
     );
 
     const rows = await getComparisonRows();
@@ -157,5 +170,29 @@ describe("getComparisonRows", () => {
     for (const row of rows) {
       expect(row.contractCount).toBe(0);
     }
+  });
+
+  it("Test 4: ownershipCountry is 'FR' for a firm with an ownership record", async () => {
+    buildSelectMock(
+      [FIRM_A, FIRM_B],
+      [{ firmId: "firm-1", contractCount: 2 }],
+      [{ firmId: "firm-1", countryOfOwnership: "FR" }],
+    );
+
+    const rows = await getComparisonRows();
+    const rowA = rows.find((r) => r.id === "firm-1");
+    expect(rowA!.ownershipCountry).toBe("FR");
+  });
+
+  it("Test 5: ownershipCountry is null for a firm with no ownership record", async () => {
+    buildSelectMock(
+      [FIRM_A, FIRM_B],
+      [{ firmId: "firm-1", contractCount: 2 }],
+      [{ firmId: "firm-1", countryOfOwnership: "FR" }], // only firm-1 has an ownership record
+    );
+
+    const rows = await getComparisonRows();
+    const rowB = rows.find((r) => r.id === "firm-2");
+    expect(rowB!.ownershipCountry).toBeNull();
   });
 });
