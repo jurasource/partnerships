@@ -1,13 +1,5 @@
 # Pending Release Steps
 
-## fix(railway): explicit Nixpacks builder and worker start command
-
-### Dev
-- No steps required
-
-### Prod
-- No steps required — `railway.toml` is picked up automatically on next Railway deploy
-
 ## fix(redis): support REDIS_URL in addition to REDIS_HOST/REDIS_PORT
 
 ### Dev
