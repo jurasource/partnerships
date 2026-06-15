@@ -182,7 +182,7 @@ describe("detectCoSuppliers — shared ocid detection", () => {
   it("does not produce pairs when the target firm has no shared ocids", async () => {
     // Override select to return empty for both queries
     const { db } = await import("@/db/client");
-    const dbMock = db as { select: ReturnType<typeof vi.fn> };
+    const dbMock = db as unknown as { select: ReturnType<typeof vi.fn> };
     dbMock.select.mockReturnValue({
       from: vi.fn(() => ({
         where: vi.fn(() => Promise.resolve([])), // no records at all
@@ -202,7 +202,7 @@ describe("detectCoSuppliers — canonical ordering", () => {
     selectCallCount = 0;
     // On first select call, return PROC_RECORD_FIRM_B; second call returns both
     const { db } = await import("@/db/client");
-    const dbMock = db as { select: ReturnType<typeof vi.fn> };
+    const dbMock = db as unknown as { select: ReturnType<typeof vi.fn> };
     let callCount = 0;
     dbMock.select.mockReturnValue({
       from: vi.fn(() => ({

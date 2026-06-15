@@ -231,7 +231,7 @@ describe("extractConflicts — real firm stored, fabricated firm discarded", () 
   it("stores the real conflict pair and discards the fabricated firm name", async () => {
     // Set up the select mock for resolveFirmName: returns all firms
     const { db } = await import("@/db/client");
-    const dbMock = db as { select: ReturnType<typeof vi.fn> };
+    const dbMock = db as unknown as { select: ReturnType<typeof vi.fn> };
     dbMock.select.mockReturnValue({
       from: vi.fn(() => Promise.resolve(MOCK_FIRMS)),
     });
@@ -255,7 +255,7 @@ describe("extractConflicts — real firm stored, fabricated firm discarded", () 
 
   it("stores conflict pair with canonical ordering (firmAId < firmBId)", async () => {
     const { db } = await import("@/db/client");
-    const dbMock = db as { select: ReturnType<typeof vi.fn> };
+    const dbMock = db as unknown as { select: ReturnType<typeof vi.fn> };
     dbMock.select.mockReturnValue({
       from: vi.fn(() => Promise.resolve(MOCK_FIRMS)),
     });
@@ -278,7 +278,7 @@ describe("extractConflicts — real firm stored, fabricated firm discarded", () 
 
   it("uses onConflictDoUpdate for upsert on conflict_pairs unique index", async () => {
     const { db } = await import("@/db/client");
-    const dbMock = db as { select: ReturnType<typeof vi.fn> };
+    const dbMock = db as unknown as { select: ReturnType<typeof vi.fn> };
     dbMock.select.mockReturnValue({
       from: vi.fn(() => Promise.resolve(MOCK_FIRMS)),
     });
@@ -299,7 +299,7 @@ describe("extractConflicts — real firm stored, fabricated firm discarded", () 
 describe("extractConflicts — empty extraction stores nothing", () => {
   it("does not insert any rows when LLM returns empty conflicts array", async () => {
     const { db } = await import("@/db/client");
-    const dbMock = db as { select: ReturnType<typeof vi.fn> };
+    const dbMock = db as unknown as { select: ReturnType<typeof vi.fn> };
     dbMock.select.mockReturnValue({
       from: vi.fn(() => Promise.resolve(MOCK_FIRMS)),
     });
@@ -318,7 +318,7 @@ describe("extractConflicts — empty extraction stores nothing", () => {
 
   it("does not throw when both findings are absent", async () => {
     const { db } = await import("@/db/client");
-    const dbMock = db as { select: ReturnType<typeof vi.fn> };
+    const dbMock = db as unknown as { select: ReturnType<typeof vi.fn> };
     dbMock.select.mockReturnValue({
       from: vi.fn(() => Promise.resolve(MOCK_FIRMS)),
     });
@@ -339,7 +339,7 @@ describe("extractConflicts — empty extraction stores nothing", () => {
 describe("extractConflicts — alias resolution", () => {
   it("resolves firm by alias (not just canonicalName)", async () => {
     const { db } = await import("@/db/client");
-    const dbMock = db as { select: ReturnType<typeof vi.fn> };
+    const dbMock = db as unknown as { select: ReturnType<typeof vi.fn> };
     dbMock.select.mockReturnValue({
       from: vi.fn(() => Promise.resolve(MOCK_FIRMS)),
     });
