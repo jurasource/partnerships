@@ -1,6 +1,7 @@
 # Release Notes
 
 ## 2026-06-15
+- fix(03.1): GroupFormDialog now calls router.refresh() after a successful create so the groups list updates immediately without requiring navigation away and back (WR-01)
 - feat(03.1-03): firms table now shows a Groups column of clickable amber pill badges (linking to /groups/[id]) after Capabilities; added FirmsFilterBar above the table with Groups multi-select (OR logic), Capabilities multi-select (OR logic), and Research status single-select (All / Researched / Not researched / Stale >30 days); in-memory filtering narrows rows before TanStack; Clear filters button shown when any filter active
 
 ## 2026-06-15

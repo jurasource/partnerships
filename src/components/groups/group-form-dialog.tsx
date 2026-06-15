@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ type GroupFormDialogProps = {
 };
 
 export function GroupFormDialog({ trigger }: GroupFormDialogProps) {
+  const router = useRouter();
   const [open, setOpen] = React.useState(false);
   const [pending, setPending] = React.useState(false);
   const [name, setName] = React.useState("");
@@ -59,6 +61,7 @@ export function GroupFormDialog({ trigger }: GroupFormDialogProps) {
       toast.success("Group created");
       setOpen(false);
       resetForm();
+      router.refresh();
     } else {
       setError(result.error ?? "Failed to create group.");
     }

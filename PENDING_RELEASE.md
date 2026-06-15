@@ -1,5 +1,13 @@
 # Pending Release Steps
 
+## fix(03.1): WR-01 add router.refresh() to GroupFormDialog after create
+
+### Dev
+- No steps required — client-side only change
+
+### Prod
+- No steps required — deploy new build
+
 ## feat(03.1-03): firms table Groups column + unified filter bar
 
 ### Dev
