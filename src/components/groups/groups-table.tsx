@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import {
@@ -43,6 +44,7 @@ function FirmCountLabel({ count }: { count: number }) {
 }
 
 function GroupRowActions({ group }: { group: GroupRow }) {
+  const router = useRouter();
   const [deleteOpen, setDeleteOpen] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
 
@@ -53,6 +55,7 @@ function GroupRowActions({ group }: { group: GroupRow }) {
     setDeleteOpen(false);
     if (result.ok) {
       toast.success(`"${group.name}" deleted`);
+      router.refresh();
     } else {
       toast.error(result.error ?? "Failed to delete group");
     }

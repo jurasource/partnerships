@@ -1,5 +1,13 @@
 # Pending Release Steps
 
+## fix(03.1): WR-02 add router.refresh() to GroupsTable after delete
+
+### Dev
+- No steps required — client-side only change
+
+### Prod
+- No steps required — deploy new build
+
 ## fix(03.1): WR-01 add router.refresh() to GroupFormDialog after create
 
 ### Dev
