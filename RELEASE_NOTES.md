@@ -1,6 +1,13 @@
 # Release Notes
 
 ## 2026-06-15
+- fix(research-worker): catch NoOutputGeneratedError alongside NoObjectGeneratedError — the AI SDK throws this from the result.output getter when the model produces no output at all, which previously re-threw and failed the whole job instead of writing a sentinel
+- fix(research-logging): worker now logs firm+topic count at start, search result count + generateText call per topic, finding outcome per topic, and full error type+stack before re-throw; runner logs full stack on job failure
+- fix(jobs-page): firm name now links to firm detail page; failed jobs always show error message in a "Details" column (previously the column was hidden for completed jobs)
+- feat(multi-source-citations) Task 3: Citation panel now renders an "Also sourced from:" sub-list of supporting Tavily sources beneath the primary URL for AI-research findings; primary URL de-duplicated from the list; structured findings always show no sub-list
+- feat(multi-source-citations) Task 2: Extended system prompt with citations output rule; worker now filters supporting citations through E4 origin gate and persists them as JSON on insert and conflict-update
+- feat(multi-source-citations) Task 1: Added CitationSchema and citations array field to FindingSchema; added citations text column (JSON) to findings table with NOT NULL default "[]"; updated firm-profile test fixtures to include citations field
+- docs(plan): created quick-task plan 260615-dn8 for multi-source citations — extends FindingSchema with citations array, adds citations column to findings table, filters citation URLs through E4 gate, renders supporting sources in citation panel
 - Added mandatory commit and release workflow rules to CLAUDE.md: run tests before committing, update PENDING_RELEASE.md and RELEASE_NOTES.md after each commit, and always branch/PR rather than pushing directly to main
 - feat(auth-gate) Task 1: Installed iron-session@8.0.4; added `access_codes` table to schema (scrypt-hashed code store with active/expiry fields); created `src/lib/auth/hash.ts` (hashCode/verifyCode with timingSafeEqual) and `src/lib/auth/session.ts` (getSession/setSession/clearSession using HttpOnly signed cookie)
 - feat(auth-gate) Task 2: Created `src/scripts/generate-access-code.ts` (one-shot CLI to insert hashed codes); `src/app/login/actions.ts` (verifyAccessCode server action with scrypt verification, expiry check, setSession on success); `src/app/login/page.tsx` + `src/app/login/login-form.tsx` (login UI using React 19 useActionState); 4 passing vitest tests

@@ -132,6 +132,11 @@ export const findings = pgTable(
      */
     sourceDate: text("source_date"),
     /**
+     * JSON array of supporting Tavily citation objects for MEDIUM-confidence findings.
+     * Each entry: { url, title, snippet, date? }. Empty array for HIGH/sentinel rows.
+     */
+    citations: text("citations").notNull().default("[]"),
+    /**
      * Confidence level (D-11):
      *   HIGH   = from structured UK API (CH / CF / FTS)
      *   MEDIUM = AI-derived with a cited source

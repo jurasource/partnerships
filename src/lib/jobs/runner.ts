@@ -42,6 +42,10 @@ export async function executeResearchJob(firmId: string, jobId: string): Promise
       .where(eq(firms.id, firmId));
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
+    console.error(
+      `[runner] Job ${jobId} for firm ${firmId} failed: ${message}`,
+      err instanceof Error ? err.stack : err,
+    );
     await updateJobStatus(jobId, "failed", {
       completedAt: nowIso(),
       errorMessage: message,

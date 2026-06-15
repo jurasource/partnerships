@@ -12,12 +12,20 @@ type CitationPanelProps = {
   findingsByTopic: FindingByTopic[];
 };
 
+type SupportingCitation = {
+  url: string;
+  title: string;
+  snippet: string;
+  date?: string | null;
+};
+
 type CitationEntry = {
   sourceUrl: string;
   sourceTitle: string;
   sourceType: "structured" | "ai";
   topicName: string;
   sourceDate: string | null;
+  citations: SupportingCitation[];
 };
 
 function formatSourceDate(dateStr: string): string {
@@ -80,13 +88,21 @@ export function CitationPanel({ findingsByTopic }: CitationPanelProps) {
         !entry.isNotFound &&
         entry.sourceType !== null,
     )
-    .map((entry) => ({
-      sourceUrl: entry.finding.sourceUrl,
-      sourceTitle: entry.finding.sourceTitle,
-      sourceType: entry.sourceType,
-      topicName: entry.topic.name,
-      sourceDate: entry.finding.sourceDate ?? null,
-    }));
+    .map((entry) => {
+      let citations: SupportingCitation[] = [];
+      if (entry.sourceType === "ai") {
+        const parsed = JSON.parse(entry.finding.citations || "[]") as SupportingCitation[];
+        citations = parsed.filter((c) => c.url !== entry.finding.sourceUrl);
+      }
+      return {
+        sourceUrl: entry.finding.sourceUrl,
+        sourceTitle: entry.finding.sourceTitle,
+        sourceType: entry.sourceType,
+        topicName: entry.topic.name,
+        sourceDate: entry.finding.sourceDate ?? null,
+        citations,
+      };
+    });
 
   // Group: structured first, ai second (PROF-02)
   const structuredEntries = entries.filter(e => e.sourceType === "structured");
@@ -122,11 +138,40 @@ export function CitationPanel({ findingsByTopic }: CitationPanelProps) {
   );
 }
 
-function CitationEntry({ entry }: { entry: CitationEntry }) {
-  const displayUrl = truncateUrl(entry.sourceUrl);
-  const isLong = entry.sourceUrl.length > 40;
-  const safeUrl = isSafeUrl(entry.sourceUrl);
+function UrlLink({ url, className }: { url: string; className?: string }) {
+  const displayUrl = truncateUrl(url);
+  const isLong = url.length > 40;
+  const safeUrl = isSafeUrl(url);
+  if (!safeUrl) return null;
+  return isLong ? (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cn("block text-xs text-blue-600 underline truncate max-w-full", className)}
+          />
+        }
+      >
+        {displayUrl}
+      </TooltipTrigger>
+      <TooltipContent className="max-w-xs break-all">{url}</TooltipContent>
+    </Tooltip>
+  ) : (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={cn("block text-xs text-blue-600 underline truncate", className)}
+    >
+      {displayUrl}
+    </a>
+  );
+}
 
+function CitationEntry({ entry }: { entry: CitationEntry }) {
   return (
     <div className="space-y-1">
       <div className="flex items-start gap-1.5 flex-wrap">
@@ -139,34 +184,16 @@ function CitationEntry({ entry }: { entry: CitationEntry }) {
         )}
       </div>
 
-      {safeUrl && (isLong ? (
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <a
-                href={entry.sourceUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block text-xs text-blue-600 underline truncate max-w-full"
-              />
-            }
-          >
-            {displayUrl}
-          </TooltipTrigger>
-          <TooltipContent className="max-w-xs break-all">
-            {entry.sourceUrl}
-          </TooltipContent>
-        </Tooltip>
-      ) : (
-        <a
-          href={entry.sourceUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block text-xs text-blue-600 underline truncate"
-        >
-          {displayUrl}
-        </a>
-      ))}
+      <UrlLink url={entry.sourceUrl} />
+
+      {entry.citations.length > 0 && (
+        <div className="pl-2 border-l border-neutral-200 space-y-0.5 mt-1">
+          <span className="text-xs text-neutral-400">Also sourced from:</span>
+          {entry.citations.map((c) => (
+            <UrlLink key={c.url} url={c.url} className="text-neutral-400" />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

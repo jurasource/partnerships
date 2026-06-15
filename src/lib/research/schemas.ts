@@ -14,6 +14,15 @@
 
 import { z } from "zod";
 
+export const CitationSchema = z.object({
+  url: z.string().min(1),
+  title: z.string().min(1),
+  snippet: z.string().min(1),
+  date: z.string().nullable().optional(),
+});
+
+export type Citation = z.infer<typeof CitationSchema>;
+
 export const FindingSchema = z.object({
   summary: z
     .string()
@@ -47,6 +56,14 @@ export const FindingSchema = z.object({
         "Copy from the 'Published:' field shown in the search results for MEDIUM confidence findings. " +
         "Omit or set null if the source has no date, or for HIGH confidence structured data.",
     ),
+  citations: z
+    .array(CitationSchema)
+    .optional()
+    .default([])
+    .describe(
+      "All Tavily result URLs used to synthesise this MEDIUM-confidence finding. " +
+        "May overlap with sourceUrl. Empty array for HIGH-confidence structured data or not-found sentinels.",
+    ),
 });
 
 export type SynthesisedFinding = z.infer<typeof FindingSchema>;
@@ -70,5 +87,6 @@ export function NOT_FOUND_SENTINEL(topicId: string, reason: string): Synthesised
     sourceUrl: "not-found",
     sourceTitle: "Research worker",
     rawSnippet: `No verifiable source found for topic "${topicId}". Reason: ${reason}`,
+    citations: [],
   };
 }

@@ -42,6 +42,7 @@ type InsertedFinding = {
   sourceTitle: string;
   rawSnippet: string;
   sourceDate?: string | null;
+  citations?: string;
 };
 
 const insertedFindings: InsertedFinding[] = [];

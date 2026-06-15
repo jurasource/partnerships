@@ -26,6 +26,7 @@ Output rules (enforced by schema — do not deviate):
 - Never fabricate sourceUrl, sourceTitle, or rawSnippet. If you cannot attribute a finding to a provided source, emit the not-found sentinel pattern described in the user prompt.
 - rawSnippet must be a verbatim excerpt from the source, not a paraphrase.
 - Never emit LOW confidence — use the not-found sentinel pattern instead.
+- citations: populate with all Tavily result URLs you used to synthesise this finding (may overlap with sourceUrl). Set citations to an empty array for HIGH-confidence structured data or the not-found sentinel.
 `.trim();
 
 /**

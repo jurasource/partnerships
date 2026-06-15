@@ -1,5 +1,13 @@
 # Pending Release Steps
 
+## feat(multi-source-citations): support multiple source citations per research finding
+
+### Dev
+- Run `npm run db:push` after executing this plan (adds `citations` column to `findings` table)
+
+### Prod
+- Run `npm run db:push` (or equivalent migration) to add `citations` column to `findings` table — existing rows get the column default (`[]`), no data loss
+
 ## feat(auth-gate): complete access-code auth gate
 
 ### Dev

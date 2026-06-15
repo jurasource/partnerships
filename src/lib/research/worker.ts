@@ -1,4 +1,4 @@
-import { generateText, Output, NoObjectGeneratedError } from "ai";
+import { generateText, Output, NoObjectGeneratedError, NoOutputGeneratedError } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { eq, sql } from "drizzle-orm";
 
@@ -50,6 +50,11 @@ export async function runResearchWorker(
   // (topics live in the DB, seeded by src/db/seed.ts, 7 entries)
   const allTopics = await db.select().from(topics);
 
+  console.log(
+    `[research] Starting worker for firm "${firm.canonicalName}" (${firmId}), ` +
+      `job ${jobId}, ${allTopics.length} topics`,
+  );
+
   // Sequential topic loop — intentionally NOT Promise.all (AI-SPEC §4b async design,
   // Anthropic rate limits, and partial-failure handling require sequential execution)
   for (let i = 0; i < allTopics.length; i++) {
@@ -62,16 +67,39 @@ export async function runResearchWorker(
       buildSearchQuery(firm.canonicalName, topic),
     );
 
+    console.log(
+      `[research] Topic ${i + 1}/${allTopics.length} "${topic.name}" — ` +
+        `${searchResults.length} search results, calling generateText`,
+    );
+
+    // Held outside try so the catch block can log finishReason/tokens/rawText
+    // even when the error is thrown by the result.output getter (not generateText itself)
+    let genFinishReason: string | undefined;
+    let genInputTokens: number | undefined;
+    let genOutputTokens: number | undefined;
+    let genRawText: string | undefined;
+
     try {
       const result = await generateText({
         model: anthropic("claude-sonnet-4-6"),
         system: RESEARCH_SYSTEM_PROMPT,
         prompt: buildTopicPrompt(topic, groundingContext, searchResults),
         output: Output.object({ schema: FindingSchema }),
-        maxOutputTokens: 512, // structured extraction — 512 is sufficient (AI-SPEC §4)
+        maxOutputTokens: 1024, // 512 proved too tight when rawSnippet is verbose (observed 504/512)
         temperature: 0.1,     // near-deterministic for factual extraction
         maxRetries: 2,        // SDK-level retry on transient provider errors
       });
+
+      // Capture diagnostics before accessing result.output, which can throw
+      genFinishReason = result.finishReason;
+      genInputTokens = result.usage?.inputTokens;
+      genOutputTokens = result.usage?.outputTokens;
+      genRawText = result.text;
+
+      console.log(
+        `[research] generateText: finishReason=${result.finishReason}, ` +
+          `tokens in=${result.usage?.inputTokens} out=${result.usage?.outputTokens}`,
+      );
 
       if (!result.output) {
         // Schema validation passed but output is unexpectedly undefined
@@ -86,14 +114,18 @@ export async function runResearchWorker(
         finding = result.output;
       }
     } catch (err) {
-      if (err instanceof NoObjectGeneratedError) {
-        // Model failed to produce schema-conforming output after maxRetries
-        // Log raw output for debugging hallucination patterns; write sentinel so
-        // topic is never silently absent (E2)
+      if (err instanceof NoObjectGeneratedError || err instanceof NoOutputGeneratedError) {
+        // NoObjectGeneratedError: model produced output but it failed schema validation after retries
+        // NoOutputGeneratedError: model produced no output at all (result.output getter throws)
+        // Both are safe to sentinel — the topic will show "not found" rather than aborting the job
+        const rawText = err instanceof NoObjectGeneratedError
+          ? err.text?.slice(0, 500)
+          : genRawText?.slice(0, 500);
         console.error(
-          `[research] NoObjectGeneratedError for ${firmId}/${topic.id}:`,
-          (err as NoObjectGeneratedError).text?.slice(0, 500),
-          String((err as NoObjectGeneratedError).cause),
+          `[research] ${err.constructor.name} for "${topic.name}" — ` +
+            `finishReason=${genFinishReason ?? "unknown"}, ` +
+            `tokens in=${genInputTokens ?? "?"} out=${genOutputTokens ?? "?"}, ` +
+            `rawText="${rawText ?? "(none)"}"`,
         );
         finding = NOT_FOUND_SENTINEL(
           topic.id,
@@ -102,6 +134,11 @@ export async function runResearchWorker(
       } else {
         // Non-schema errors (network, auth, rate-limit) — re-throw so the Wave 2
         // route handler marks the job failed (D-05); partial findings are retained
+        console.error(
+          `[research] Fatal error on topic "${topic.name}" (${firmId}/${topic.id}): ` +
+            `${(err as Error).constructor?.name ?? "Error"}: ${(err as Error).message}`,
+          err instanceof Error ? err.stack : err,
+        );
         throw err;
       }
     }
@@ -120,8 +157,19 @@ export async function runResearchWorker(
           topic.id,
           "sourceUrl not in retrieved Tavily results — possible hallucination",
         );
+      } else {
+        // Filter supporting citations to only URLs actually retrieved (E4 extension)
+        finding = {
+          ...finding,
+          citations: (finding.citations ?? []).filter((c) => retrievedUrls.has(c.url)),
+        };
       }
     }
+
+    console.log(
+      `[research] Topic "${topic.name}" → confidence=${finding.confidence} ` +
+        `sourceUrl=${finding.sourceUrl.slice(0, 60)}`,
+    );
 
     // Persist the finding — upsert so re-runs replace stale rows rather than
     // accumulating duplicates (CR-03). The unique constraint on (firmId, topicId)
@@ -136,6 +184,7 @@ export async function runResearchWorker(
       sourceTitle: finding.sourceTitle,
       rawSnippet: finding.rawSnippet,
       sourceDate: finding.sourceDate ?? null,
+      citations: JSON.stringify(finding.citations ?? []),
     }).onConflictDoUpdate({
       target: [findings.firmId, findings.topicId],
       set: {
@@ -145,6 +194,7 @@ export async function runResearchWorker(
         sourceTitle: finding.sourceTitle,
         rawSnippet: finding.rawSnippet,
         sourceDate: finding.sourceDate ?? null,
+        citations: JSON.stringify(finding.citations ?? []),
         createdAt: new Date().toISOString(),
       },
     });

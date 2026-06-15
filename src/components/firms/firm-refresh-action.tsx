@@ -3,7 +3,6 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { RefreshCw } from "lucide-react";
-import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -49,20 +48,9 @@ export function FirmRefreshAction({
     if (running) return;
     setRunning(true);
 
-    const toastId = toast.loading(`Starting research for ${firmName}…`, {
-      description:
-        "This takes around 20 seconds. Progress updates as topics complete.",
-    });
-
     const result = await runResearch(firmId);
 
     if (!result.ok || !result.jobId) {
-      toast.error(`Research failed for ${firmName}. Try again.`, {
-        id: toastId,
-        description:
-          result.error ??
-          "The research worker stopped unexpectedly. Try again, or check the app logs.",
-      });
       setRunning(false);
       return;
     }
@@ -81,7 +69,6 @@ export function FirmRefreshAction({
           if (pollCount >= MAX_POLLS) {
             clearInterval(intervalRef.current!);
             intervalRef.current = null;
-            toast.error(`Research timed out for ${firmName}. Try again.`, { id: toastId });
             setRunning(false);
           }
           return;
@@ -98,9 +85,6 @@ export function FirmRefreshAction({
             clearInterval(intervalRef.current);
             intervalRef.current = null;
           }
-          toast.success(`${firmName} research updated`, {
-            id: toastId,
-          });
           router.refresh();
           setRunning(false);
         } else if (job.status === "failed") {
@@ -108,17 +92,10 @@ export function FirmRefreshAction({
             clearInterval(intervalRef.current);
             intervalRef.current = null;
           }
-          toast.error(`Research failed for ${firmName}. Try again.`, {
-            id: toastId,
-            description:
-              job.errorMessage ??
-              "The research worker stopped unexpectedly. Try again, or check the app logs.",
-          });
           setRunning(false);
         } else if (pollCount >= MAX_POLLS) {
           clearInterval(intervalRef.current!);
           intervalRef.current = null;
-          toast.error(`Research timed out for ${firmName}. Try again.`, { id: toastId });
           setRunning(false);
         }
       } catch {
@@ -126,7 +103,6 @@ export function FirmRefreshAction({
         if (pollCount >= MAX_POLLS) {
           clearInterval(intervalRef.current!);
           intervalRef.current = null;
-          toast.error(`Research failed for ${firmName}. Try again.`, { id: toastId });
           setRunning(false);
         }
       }
