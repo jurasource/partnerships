@@ -3,7 +3,6 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { FlaskConical } from "lucide-react";
-import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -68,20 +67,9 @@ export function FirmRowResearch({
     setJobStatus("pending");
     setTopicsComplete(0);
 
-    const toastId = toast.loading(`Starting research for ${firmName}…`, {
-      description:
-        "This takes around 20 seconds. Progress updates as topics complete.",
-    });
-
     const result = await runResearch(firmId);
 
     if (!result.ok || !result.jobId) {
-      toast.error(`Research failed for ${firmName}`, {
-        id: toastId,
-        description:
-          result.error ??
-          "The research worker stopped unexpectedly. Try again, or check the app logs.",
-      });
       setRunning(false);
       setJobStatus("failed");
       return;
@@ -113,11 +101,6 @@ export function FirmRowResearch({
             clearInterval(intervalRef.current);
             intervalRef.current = null;
           }
-          const count = typeof job.topicsComplete === "number" ? job.topicsComplete : topicsComplete;
-          toast.success("Research complete", {
-            id: toastId,
-            description: `${count} findings written for ${firmName}.`,
-          });
           router.refresh();
           setRunning(false);
         } else if (job.status === "failed") {
@@ -125,12 +108,6 @@ export function FirmRowResearch({
             clearInterval(intervalRef.current);
             intervalRef.current = null;
           }
-          toast.error(`Research failed for ${firmName}`, {
-            id: toastId,
-            description:
-              job.errorMessage ??
-              "The research worker stopped unexpectedly. Try again, or check the app logs.",
-          });
           setRunning(false);
         }
       } catch {
