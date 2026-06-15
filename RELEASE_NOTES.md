@@ -1,6 +1,7 @@
 # Release Notes
 
 ## 2026-06-15
+- fix(ownership): `extractOwnership` now derives `ukIncorporated` from the Companies House company-profile `jurisdiction` field (the authoritative incorporation signal) rather than solely from the PSC register; firms with an empty PSC register — normal for LLPs such as Baringa Partners LLP (OC303471) — are now correctly marked UK-incorporated instead of falling through to the AI fallback and being recorded as `unknown`; PSC data continues to drive ownership/control fields (countryOfOwnership, pscNotTraceable, ultimateParent) while incorporation is now cleanly separated; added `UK_JURISDICTION_TERMS` / `isUkJurisdiction()` helper and an empty-PSC LLP branch, with new regression tests
 - fix(ownership): `isUkCorporatePsc` now reads `identification.country_of_registration` (the correct CH API field for corporate PSCs) instead of `country_of_residence` (which is only populated for natural persons); `identification` field added to `PscItemSchema`; fixes UK LLPs and subsidiaries being incorrectly classified as foreign-owned or unknown
 - feat: "Re-run Analysis" button added to firm profile header — enqueues a cross-cutting-only job without re-running AI research; shown only after a firm has been researched at least once
 - feat: Jobs page gains a "Submit batch jobs" collapsible panel — select any combination of firms, choose "Research + Analysis" or "Analysis only", submit all in one action; ineligible firms (no CH number / not yet researched) are skipped with a reason shown

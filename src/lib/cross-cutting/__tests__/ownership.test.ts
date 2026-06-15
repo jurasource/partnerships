@@ -249,9 +249,33 @@ describe("extractOwnership — UK firm", () => {
 });
 
 describe("extractOwnership — foreign corporate PSC", () => {
-  it("writes pscNotTraceable 'yes' and ukIncorporated 'no' for foreign corporate PSC", async () => {
+  it("writes pscNotTraceable 'yes' and foreign countryOfOwnership for a foreign corporate PSC, but keeps ukIncorporated 'yes' when the firm is UK-registered", async () => {
+    // Incorporation status (where the firm is REGISTERED) is distinct from
+    // beneficial ownership (who CONTROLS it). A UK-registered firm owned by a
+    // foreign parent is still UK-incorporated; the foreign control surfaces via
+    // pscNotTraceable + countryOfOwnership, NOT via ukIncorporated.
     firmToReturn = MOCK_FOREIGN_FIRM;
-    mockGetCompanyProfile.mockResolvedValue(FOREIGN_CH_PROFILE);
+    mockGetCompanyProfile.mockResolvedValue(FOREIGN_CH_PROFILE); // jurisdiction: england-wales
+    mockGetPSC.mockResolvedValue(FOREIGN_PSC_RECORD);
+
+    const { extractOwnership } = await import("../ownership");
+    await extractOwnership("firm-foreign");
+
+    expect(capturedOwnershipInserts.length).toBe(1);
+    const row = capturedOwnershipInserts[0];
+    expect(row.ukIncorporated).toBe("yes"); // UK-registered jurisdiction
+    expect(row.pscNotTraceable).toBe("yes"); // foreign corporate PSC
+    // Country of ownership should be derived from foreign PSC, not "UK"
+    expect(row.countryOfOwnership).not.toBe("UK");
+    expect(row.countryOfOwnership).not.toBeNull();
+  });
+
+  it("writes ukIncorporated 'no' when the CH profile jurisdiction is non-UK", async () => {
+    firmToReturn = MOCK_FOREIGN_FIRM;
+    mockGetCompanyProfile.mockResolvedValue({
+      ...FOREIGN_CH_PROFILE,
+      jurisdiction: "france",
+    });
     mockGetPSC.mockResolvedValue(FOREIGN_PSC_RECORD);
 
     const { extractOwnership } = await import("../ownership");
@@ -260,10 +284,31 @@ describe("extractOwnership — foreign corporate PSC", () => {
     expect(capturedOwnershipInserts.length).toBe(1);
     const row = capturedOwnershipInserts[0];
     expect(row.ukIncorporated).toBe("no");
-    expect(row.pscNotTraceable).toBe("yes");
-    // Country of ownership should be derived from foreign PSC, not "UK"
-    expect(row.countryOfOwnership).not.toBe("UK");
-    expect(row.countryOfOwnership).not.toBeNull();
+  });
+});
+
+describe("extractOwnership — UK firm with empty PSC register (LLP regression)", () => {
+  it("writes ukIncorporated 'yes' from CH profile jurisdiction when the PSC register is empty (e.g. an LLP)", async () => {
+    // Regression for baringa-uk-incorporated-missing: LLPs frequently have an
+    // empty PSC register. The firm is still UK-incorporated per its CH
+    // jurisdiction and must NOT fall through to the 'unknown' AI fallback.
+    firmToReturn = MOCK_UK_FIRM;
+    mockGetCompanyProfile.mockResolvedValue({
+      ...UK_CH_PROFILE,
+      type: "llp",
+      jurisdiction: "england-wales",
+    });
+    mockGetPSC.mockResolvedValue({ active_count: 0, items: [] });
+    mockFindFindingByTopicName.mockResolvedValue(null);
+
+    const { extractOwnership } = await import("../ownership");
+    await extractOwnership("firm-uk");
+
+    expect(capturedOwnershipInserts.length).toBe(1);
+    const row = capturedOwnershipInserts[0];
+    expect(row.ukIncorporated).toBe("yes");
+    expect(row.sourceType).toBe("companies_house");
+    expect(row.countryOfOwnership).toBe("UK");
   });
 });
 

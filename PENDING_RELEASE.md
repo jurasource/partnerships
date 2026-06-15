@@ -150,3 +150,13 @@
 
 ### Prod
 - No steps required — change is worker logic only
+
+## fix(ownership): derive ukIncorporated from CH profile.jurisdiction so empty-PSC LLPs are recognised as UK-incorporated
+
+### Dev
+- No schema changes, no env changes required
+- Existing firms with empty PSC registers (LLPs) that were previously marked `unknown` will be corrected on next analysis run; the affected live row (Baringa OC303471) was already re-run during the fix
+
+### Prod
+- No steps required — change is analysis/worker logic only
+- Optional: re-run analysis for LLP firms to refresh any previously `unknown` ukIncorporated values

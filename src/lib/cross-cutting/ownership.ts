@@ -41,6 +41,36 @@ const UK_COUNTRY_TERMS = [
 ];
 
 /**
+ * UK jurisdiction tokens returned by the Companies House company profile
+ * `jurisdiction` field (e.g. "england-wales", "scotland", "northern-ireland").
+ * A firm registered under any of these IS UK-incorporated, regardless of
+ * whether its PSC register is populated (LLPs frequently have an empty PSC
+ * register but are unambiguously UK-incorporated).
+ */
+const UK_JURISDICTION_TERMS = [
+  "england",
+  "wales",
+  "scotland",
+  "northern-ireland",
+  "northern ireland",
+  "united-kingdom",
+  "united kingdom",
+  "uk",
+];
+
+/**
+ * Determine whether a Companies House profile.jurisdiction value is UK.
+ * Returns true for UK jurisdictions, false for known non-UK, and null when
+ * the jurisdiction is absent/unrecognised (caller decides the fallback).
+ */
+function isUkJurisdiction(jurisdiction?: string): boolean | null {
+  if (!jurisdiction) return null;
+  const j = jurisdiction.toLowerCase().trim();
+  if (UK_JURISDICTION_TERMS.some((term) => j.includes(term))) return true;
+  return false;
+}
+
+/**
  * Check whether a PSC item represents a UK natural person.
  */
 function isUkNaturalPerson(item: {
@@ -185,7 +215,20 @@ export async function extractOwnership(firmId: string): Promise<void> {
     );
 
     const hasForeignCorporatePsc = foreignCorporatePscs.length > 0;
-    const ukIncorporated: "yes" | "no" | "unknown" = allUk ? "yes" : "no";
+
+    // Incorporation is determined by the company's own registration jurisdiction
+    // (authoritative), NOT by who controls it. A UK-registered firm with a
+    // foreign corporate PSC is still UK-incorporated. Fall back to PSC-derived
+    // nationality only when the profile jurisdiction is absent/unrecognised.
+    const jurisdictionIsUk = isUkJurisdiction(profile?.jurisdiction);
+    const ukIncorporated: "yes" | "no" | "unknown" =
+      jurisdictionIsUk === true
+        ? "yes"
+        : jurisdictionIsUk === false
+          ? "no"
+          : allUk
+            ? "yes"
+            : "no";
     const pscNotTraceable: "yes" | "no" = hasForeignCorporatePsc ? "yes" : "no";
 
     // Derive country of ownership — foreign corporate PSC's country takes precedence
@@ -236,6 +279,57 @@ export async function extractOwnership(firmId: string): Promise<void> {
       });
 
     return;
+  }
+
+  // ---------------------------------------------------------------------------
+  // CH profile available but PSC register empty (common for LLPs).
+  // The PSC register being empty does NOT mean incorporation is unknown — the
+  // company profile's jurisdiction is the authoritative incorporation signal.
+  // Use it directly so UK-registered firms with no PSC entries (e.g. Baringa
+  // Partners LLP, OC303471) are correctly marked UK-incorporated.
+  // ---------------------------------------------------------------------------
+
+  if (chNumber && profile) {
+    const jurisdictionIsUk = isUkJurisdiction(profile.jurisdiction);
+
+    if (jurisdictionIsUk !== null) {
+      const ukIncorporated: "yes" | "no" = jurisdictionIsUk ? "yes" : "no";
+      const countryOfOwnership = jurisdictionIsUk ? "UK" : null;
+      const sourceUrl = `https://find-and-update.company-information.service.gov.uk/company/${chNumber}`;
+      const rawSnippet =
+        `Companies House profile: jurisdiction "${profile.jurisdiction}"` +
+        `${profile.type ? ` (type: ${profile.type})` : ""}; ` +
+        `PSC register empty (no persons with significant control listed).`;
+
+      await db
+        .insert(ownershipRecords)
+        .values({
+          firmId,
+          ukIncorporated,
+          ultimateParent: null,
+          countryOfOwnership,
+          pscNotTraceable: "no",
+          sourceType: "companies_house",
+          sourceUrl,
+          sourceTitle: "Companies House — Company Profile",
+          rawSnippet,
+        })
+        .onConflictDoUpdate({
+          target: [ownershipRecords.firmId],
+          set: {
+            ukIncorporated,
+            ultimateParent: null,
+            countryOfOwnership,
+            pscNotTraceable: "no",
+            sourceType: "companies_house",
+            sourceUrl,
+            sourceTitle: "Companies House — Company Profile",
+            rawSnippet,
+          },
+        });
+
+      return;
+    }
   }
 
   // ---------------------------------------------------------------------------
