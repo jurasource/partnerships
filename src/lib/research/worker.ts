@@ -50,6 +50,11 @@ export async function runResearchWorker(
   // (topics live in the DB, seeded by src/db/seed.ts, 7 entries)
   const allTopics = await db.select().from(topics);
 
+  console.log(
+    `[research] Starting worker for firm "${firm.canonicalName}" (${firmId}), ` +
+      `job ${jobId}, ${allTopics.length} topics`,
+  );
+
   // Sequential topic loop — intentionally NOT Promise.all (AI-SPEC §4b async design,
   // Anthropic rate limits, and partial-failure handling require sequential execution)
   for (let i = 0; i < allTopics.length; i++) {
@@ -60,6 +65,11 @@ export async function runResearchWorker(
     // D-10: 1-2 Tavily searches per topic
     const searchResults = await searchClient.search(
       buildSearchQuery(firm.canonicalName, topic),
+    );
+
+    console.log(
+      `[research] Topic ${i + 1}/${allTopics.length} "${topic.name}" — ` +
+        `${searchResults.length} search results, calling generateText`,
     );
 
     try {
@@ -102,6 +112,11 @@ export async function runResearchWorker(
       } else {
         // Non-schema errors (network, auth, rate-limit) — re-throw so the Wave 2
         // route handler marks the job failed (D-05); partial findings are retained
+        console.error(
+          `[research] Fatal error on topic "${topic.name}" (${firmId}/${topic.id}): ` +
+            `${(err as Error).constructor?.name ?? "Error"}: ${(err as Error).message}`,
+          err instanceof Error ? err.stack : err,
+        );
         throw err;
       }
     }
@@ -128,6 +143,11 @@ export async function runResearchWorker(
         };
       }
     }
+
+    console.log(
+      `[research] Topic "${topic.name}" → confidence=${finding.confidence} ` +
+        `sourceUrl=${finding.sourceUrl.slice(0, 60)}`,
+    );
 
     // Persist the finding — upsert so re-runs replace stale rows rather than
     // accumulating duplicates (CR-03). The unique constraint on (firmId, topicId)
