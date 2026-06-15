@@ -1,5 +1,13 @@
 # Pending Release Steps
 
+## fix(analysis): group/capability filter freeze on prod — set modal={false}
+
+### Dev
+- No steps required — UI change only
+
+### Prod
+- Deploy new build; no schema or env changes needed
+
 ## feat: 2-step Add/Edit Firm wizard with Companies House search-first UX
 
 ### Dev

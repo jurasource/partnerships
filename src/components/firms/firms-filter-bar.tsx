@@ -63,7 +63,7 @@ export function FirmsFilterBar({
   return (
     <div className="flex flex-wrap items-center gap-2">
       {/* Groups multi-select */}
-      <DropdownMenu>
+      <DropdownMenu modal={false}>
         <DropdownMenuTrigger
           render={
             <Button
@@ -103,7 +103,7 @@ export function FirmsFilterBar({
       </DropdownMenu>
 
       {/* Capabilities multi-select */}
-      <DropdownMenu>
+      <DropdownMenu modal={false}>
         <DropdownMenuTrigger
           render={
             <Button
