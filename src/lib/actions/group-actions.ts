@@ -46,6 +46,10 @@ export async function createGroup(name: string): Promise<CreateGroupResult> {
     revalidatePath("/groups");
     return { ok: true, id: inserted.id };
   } catch (err) {
+    // Postgres unique-constraint violation: error code 23505
+    if (err instanceof Error && (err as { code?: string }).code === "23505") {
+      return { ok: false, error: "A group with that name already exists." };
+    }
     const message = err instanceof Error ? err.message : "Unknown database error";
     console.error("[createGroup] DB error:", message);
     return { ok: false, error: "Failed to save group. Please try again." };
@@ -78,6 +82,10 @@ export async function updateGroup(id: string, name: string): Promise<ActionResul
     revalidatePath("/groups");
     return { ok: true };
   } catch (err) {
+    // Postgres unique-constraint violation: error code 23505
+    if (err instanceof Error && (err as { code?: string }).code === "23505") {
+      return { ok: false, error: "A group with that name already exists." };
+    }
     const message = err instanceof Error ? err.message : "Unknown database error";
     console.error("[updateGroup] DB error:", message);
     return { ok: false, error: "Failed to update group. Please try again." };

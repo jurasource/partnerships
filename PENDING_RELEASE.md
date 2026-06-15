@@ -1,5 +1,13 @@
 # Pending Release Steps
 
+## fix(03.1): WR-03 add UNIQUE constraint on groups.name
+
+### Dev
+- Run `npm run db:push` to apply the new unique index to the local Postgres database
+
+### Prod
+- Run `npm run db:push` (or equivalent migration) to add the unique index to the production database — existing rows are unaffected unless duplicates already exist
+
 ## fix(03.1): WR-02 add router.refresh() to GroupsTable after delete
 
 ### Dev

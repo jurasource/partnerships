@@ -342,14 +342,18 @@ export const findings = pgTable(
 );
 
 // --- groups --------------------------------------------------------------
-export const groups = pgTable("groups", {
-  id: text("id")
-    .primaryKey()
-    .$defaultFn(() => crypto.randomUUID()),
-  name: text("name").notNull(),
-  createdAt: timestamp("created_at", { mode: "string" }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { mode: "string" }).notNull().defaultNow(),
-});
+export const groups = pgTable(
+  "groups",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    name: text("name").notNull(),
+    createdAt: timestamp("created_at", { mode: "string" }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { mode: "string" }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex("groups_name_unique").on(table.name)],
+);
 
 // --- firmGroups ----------------------------------------------------------
 /**
