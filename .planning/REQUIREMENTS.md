@@ -37,8 +37,8 @@
 - [x] **PROF-01**: Each firm has a profile page aggregating all research findings by topic
 - [x] **PROF-02**: Profile shows a source/citation panel clearly distinguishing structured API data from AI findings
 - [x] **PROF-03**: Profile shows UK contract history (titles, dates, values, sources) from procurement APIs
-- [ ] **PROF-04**: Profile shows ownership structure: UK-incorporated status, ultimate parent company, country of ownership, and source
-- [ ] **PROF-05**: Profile shows risk flags (financial, reputational, regulatory) with severity level and dated sources
+- [x] **PROF-04**: Profile shows ownership structure: UK-incorporated status, ultimate parent company, country of ownership, and source
+- [x] **PROF-05**: Profile shows risk flags (financial, reputational, regulatory) with severity level and dated sources
 - [x] **PROF-06**: Profile shows capability tags (Nuc/Infra/Cons)
 - [ ] **PROF-07**: Profile shows collaboration history and cultural fit indicators: prior joint delivery evidence (shared contracts/JVs) and org culture signals (size, public-sector focus, partnership vs competitive stance)
 
@@ -53,7 +53,7 @@
 
 - [ ] **ANAL-01**: System detects and flags conflicts of interest between pairs of firms — audit relationships and direct competitor relationships — with sourced evidence (not auto-asserted conclusions)
 - [ ] **ANAL-02**: System identifies which firms currently work or have worked together, based on co-supplier awards and announced JVs
-- [ ] **ANAL-03**: Ownership nationality (and foreign ultimate parent chain where detectable) is surfaced prominently on firm profiles and in the comparison table
+- [x] **ANAL-03**: Ownership nationality (and foreign ultimate parent chain where detectable) is surfaced prominently on firm profiles and in the comparison table
 - [ ] **ANAL-04**: Cross-cutting analysis results are recomputed when any firm is refreshed
 
 ### Consortium Recommendation
@@ -125,12 +125,12 @@ Updated during roadmap creation.
 | DASH-02 | Phase 3 | Complete |
 | DASH-03 | Phase 3 | Complete |
 | DASH-04 | Phase 3 | Complete |
-| PROF-04 | Phase 4 | Pending |
-| PROF-05 | Phase 4 | Pending |
+| PROF-04 | Phase 4 | Complete |
+| PROF-05 | Phase 4 | Complete |
 | PROF-07 | Phase 4 | Pending |
 | ANAL-01 | Phase 4 | Pending |
 | ANAL-02 | Phase 4 | Pending |
-| ANAL-03 | Phase 4 | Pending |
+| ANAL-03 | Phase 4 | Complete |
 | ANAL-04 | Phase 4 | Pending |
 | CONS-01 | Phase 5 | Pending |
 | CONS-02 | Phase 5 | Pending |
