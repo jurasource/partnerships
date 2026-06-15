@@ -1,4 +1,4 @@
-import { generateText, Output, NoObjectGeneratedError } from "ai";
+import { generateText, Output, NoObjectGeneratedError, NoOutputGeneratedError } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { eq, sql } from "drizzle-orm";
 
@@ -96,14 +96,13 @@ export async function runResearchWorker(
         finding = result.output;
       }
     } catch (err) {
-      if (err instanceof NoObjectGeneratedError) {
-        // Model failed to produce schema-conforming output after maxRetries
-        // Log raw output for debugging hallucination patterns; write sentinel so
-        // topic is never silently absent (E2)
+      if (err instanceof NoObjectGeneratedError || err instanceof NoOutputGeneratedError) {
+        // NoObjectGeneratedError: model produced output but it failed schema validation after retries
+        // NoOutputGeneratedError: model produced no output at all (result.output getter throws)
+        // Both are safe to sentinel — the topic will show "not found" rather than aborting the job
         console.error(
-          `[research] NoObjectGeneratedError for ${firmId}/${topic.id}:`,
-          (err as NoObjectGeneratedError).text?.slice(0, 500),
-          String((err as NoObjectGeneratedError).cause),
+          `[research] ${err.constructor.name} for ${firmId}/${topic.id} "${topic.name}":`,
+          err instanceof NoObjectGeneratedError ? err.text?.slice(0, 500) : err.message,
         );
         finding = NOT_FOUND_SENTINEL(
           topic.id,
