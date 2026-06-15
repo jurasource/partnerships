@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -42,8 +43,15 @@ export function AppNavbar() {
       {/* Wordmark */}
       <Link
         href="/"
-        className="text-white font-semibold text-sm tracking-tight shrink-0 mr-2"
+        className="flex items-center gap-2 text-white font-semibold text-sm tracking-tight shrink-0 mr-2"
       >
+        <Image
+          src="/icons8-network-64.png"
+          alt=""
+          width={20}
+          height={20}
+          className="shrink-0"
+        />
         Partnerships
       </Link>
 

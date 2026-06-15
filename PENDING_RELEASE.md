@@ -29,3 +29,11 @@
 ### Prod
 - Add `NEXT_PUBLIC_UMAMI_WEBSITE_ID` env var (get from Umami dashboard → Website → Tracking code)
 - Add `NEXT_PUBLIC_DOMAIN` env var (e.g. `partnerships.example.com`) to restrict tracking to prod only
+
+## feat(ui-icons): network icon in navbar and favicon
+
+### Dev
+- No steps required — icons are static files already in /public
+
+### Prod
+- No steps required
