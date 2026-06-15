@@ -85,7 +85,7 @@ export async function runResearchWorker(
         system: RESEARCH_SYSTEM_PROMPT,
         prompt: buildTopicPrompt(topic, groundingContext, searchResults),
         output: Output.object({ schema: FindingSchema }),
-        maxOutputTokens: 512, // structured extraction — 512 is sufficient (AI-SPEC §4)
+        maxOutputTokens: 1024, // 512 proved too tight when rawSnippet is verbose (observed 504/512)
         temperature: 0.1,     // near-deterministic for factual extraction
         maxRetries: 2,        // SDK-level retry on transient provider errors
       });
