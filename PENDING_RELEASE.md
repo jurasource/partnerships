@@ -1,5 +1,13 @@
 # Pending Release Steps
 
+## fix(CH panel): distinguish "no CH number" from "no snapshot yet"
+
+### Dev
+- Re-run cross-cutting analysis for each firm (the "Re-run Analysis" button on each profile) to populate `ch_snapshots` and update `ukIncorporated`
+
+### Prod
+- Same: run analysis per firm after deploying
+
 ## feat: cache Companies House data in DB; show CH name on firm profile
 
 ### Dev

@@ -141,7 +141,7 @@ export function FirmProfileLayout({ profile, allFirms, chData }: FirmProfileLayo
           />
         </div>
         <div className="flex-1 border-l border-neutral-200">
-          <CompaniesHousePanel chData={chData} />
+          <CompaniesHousePanel chData={chData} hasChNumber={!!firm.companiesHouseNumber} />
         </div>
       </div>
 

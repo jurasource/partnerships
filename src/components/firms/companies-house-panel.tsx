@@ -119,20 +119,24 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
   );
 }
 
-type Props = { chData: CHData | null };
+type Props = { chData: CHData | null; hasChNumber: boolean };
 
-export function CompaniesHousePanel({ chData }: Props) {
+export function CompaniesHousePanel({ chData, hasChNumber }: Props) {
   if (!chData || !chData.profile) {
+    let message: string;
+    if (!hasChNumber) {
+      message = "No Companies House number recorded.";
+    } else if (!chData) {
+      message = "No snapshot yet — run the analysis to fetch Companies House data.";
+    } else {
+      message = "Data unavailable from Companies House.";
+    }
     return (
       <section className="px-6 py-6 border-t border-neutral-200">
         <h2 className="text-xl font-semibold text-neutral-900 mb-4">
           Companies House
         </h2>
-        <p className="text-sm text-neutral-500">
-          {!chData
-            ? "No Companies House number recorded."
-            : "Data unavailable from Companies House."}
-        </p>
+        <p className="text-sm text-neutral-500">{message}</p>
       </section>
     );
   }
