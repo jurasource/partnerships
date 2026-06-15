@@ -1,6 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function formatDate(d: string): string {
+  const date = new Date(d);
+  if (isNaN(date.getTime())) return d;
+  return `${date.getUTCDate()} ${MONTHS[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
+}
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FirmFormDialog } from "@/components/firms/firm-form-dialog";
@@ -41,11 +48,7 @@ export function JvLeadsList({ leads }: Props) {
               )}
               {lead.evidenceDate && (
                 <p className="text-xs text-neutral-400 mt-0.5 font-mono">
-                  {new Date(lead.evidenceDate).toLocaleDateString("en-GB", {
-                    day: "numeric",
-                    month: "short",
-                    year: "numeric",
-                  })}
+                  {formatDate(lead.evidenceDate)}
                 </p>
               )}
             </div>

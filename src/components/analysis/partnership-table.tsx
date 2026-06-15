@@ -40,11 +40,13 @@ function truncate(str: string, maxLen: number): string {
   return str.slice(0, maxLen) + "…";
 }
 
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
 function formatDateGB(iso: string | null): string {
   if (!iso) return "—";
   const d = new Date(iso);
   if (isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
 }
 
 export function PartnershipTable({ allFirms, partnershipPairs }: Props) {

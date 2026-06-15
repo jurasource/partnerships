@@ -43,12 +43,12 @@ function formatJurisdiction(j: string): string {
   );
 }
 
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
 function formatDate(d: string): string {
-  return new Date(d).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  const date = new Date(d);
+  if (isNaN(date.getTime())) return d;
+  return `${date.getUTCDate()} ${MONTHS[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
 }
 
 function formatAddress(addr: CompanyProfile["registered_office_address"]): string | null {

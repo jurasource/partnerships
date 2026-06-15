@@ -40,16 +40,14 @@ export type ContractRow = {
  * Format an ISO date string (or partial date) as "14 Jun 2026" (en-GB).
  * Mirrors the formatAbsoluteDate pattern from staleness-badge.tsx.
  */
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return "—";
   try {
     const d = new Date(dateStr);
     if (isNaN(d.getTime())) return "—";
-    return d.toLocaleDateString("en-GB", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
+    return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
   } catch {
     return "—";
   }
