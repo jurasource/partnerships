@@ -1,4 +1,4 @@
-import { pgTable, text, uniqueIndex, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, uniqueIndex, timestamp, boolean } from "drizzle-orm/pg-core";
 
 // --- firms ---------------------------------------------------------------
 export const firms = pgTable("firms", {
@@ -148,3 +148,14 @@ export const findings = pgTable(
    */
   (table) => [uniqueIndex("findings_firm_topic_unique").on(table.firmId, table.topicId)],
 );
+
+// --- accessCodes ---------------------------------------------------------
+export const accessCodes = pgTable("access_codes", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  codeHash: text("code_hash").notNull(),
+  label: text("label").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+  active: boolean("active").default(true).notNull(),
+});
