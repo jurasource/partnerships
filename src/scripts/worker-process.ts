@@ -13,11 +13,10 @@
 import { Worker } from "bullmq";
 
 import { executeResearchJob } from "@/lib/jobs/runner";
-import { RESEARCH_QUEUE_NAME, type ResearchJobPayload } from "@/lib/jobs/bull";
+import { RESEARCH_QUEUE_NAME, type ResearchJobPayload, getRedisConnection } from "@/lib/jobs/bull";
 
-const REDIS_HOST = process.env.REDIS_HOST ?? "localhost";
-const REDIS_PORT = Number(process.env.REDIS_PORT ?? "6379");
 const CONCURRENCY = Number(process.env.WORKER_CONCURRENCY ?? "2");
+const connection = getRedisConnection();
 
 const worker = new Worker<ResearchJobPayload>(
   RESEARCH_QUEUE_NAME,
@@ -27,7 +26,7 @@ const worker = new Worker<ResearchJobPayload>(
     await executeResearchJob(firmId, jobId);
   },
   {
-    connection: { host: REDIS_HOST, port: REDIS_PORT },
+    connection,
     concurrency: CONCURRENCY,
   },
 );
@@ -45,7 +44,7 @@ worker.on("error", (err) => {
 });
 
 console.log(
-  `[worker] Listening on ${REDIS_HOST}:${REDIS_PORT} queue="${RESEARCH_QUEUE_NAME}" concurrency=${CONCURRENCY}`,
+  `[worker] Listening on ${connection.host}:${connection.port} queue="${RESEARCH_QUEUE_NAME}" concurrency=${CONCURRENCY}`,
 );
 
 async function shutdown() {
