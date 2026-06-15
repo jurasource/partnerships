@@ -4,13 +4,13 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 4 UI-SPEC approved
-last_updated: "2026-06-15T12:51:52.828Z"
+last_updated: "2026-06-15T13:04:51.434Z"
 last_activity: 2026-06-15 -- Phase 04 execution started
 progress:
   total_phases: 5
   completed_phases: 3
   total_plans: 12
-  completed_plans: 9
+  completed_plans: 10
   percent: 60
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-06-13)
 ## Current Position
 
 Phase: 04 (cross-cutting-analysis) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 Last activity: 2026-06-15 -- Phase 04 execution started
 
@@ -56,6 +56,7 @@ Progress: [██████████] 100%
 | Phase 02-research-engine P03 | 12 | 2 tasks | 5 files |
 | Phase 03-dashboard-profiles P01 | 10 | 3 tasks | 8 files |
 | Phase 03-dashboard-profiles P02 | 4 | 3 tasks | 6 files |
+| Phase 04 P02 | 9 min | 2 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -82,6 +83,9 @@ Recent decisions affecting current work:
 - [Plan 03-02]: Two-query merge for contractCount: select all firms + grouped count by firmId joined in JS — avoids LEFT JOIN complexity in Drizzle SQLite and keeps queries individually testable
 - [Plan 03-02]: capabilityTagFilterFn.autoRemove ensures zero active tags removes the filter entirely (all firms shown) — DASH-02 all-when-empty spec
 - [Phase 03 verification]: capabilityTags column has enableSorting: false (sorting a JSON array column not meaningful) — acceptable; all other non-Actions columns are sortable
+- [Phase ?]: [04-02] Two-query merge for co-supplier detection: select firm ocids, then all records for those ocids, group in JS
+- [Phase ?]: [04-02] extractConflicts reads both Partnerships+JVs AND Reputation+controversy findings — no conflicts-between-firms topic exists in seed
+- [Phase ?]: [04-02] collaboration.ts always writes collaboration_records even when no finding exists (explicit empty-state — Pitfall 4)
 
 ### Pending Todos
 
@@ -120,6 +124,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-15T12:51:52.823Z
+Last session: 2026-06-15T13:04:51.429Z
 Stopped at: Phase 4 UI-SPEC approved
 Resume file: .planning/phases/04-cross-cutting-analysis/04-UI-SPEC.md

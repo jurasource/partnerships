@@ -115,7 +115,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1)*
 
-- [ ] 04-02-PLAN.md — Conflict/partnership/collaboration extraction + co-supplier SQL + cross-cutting BullMQ job chaining (ANAL-01/02/04, PROF-07)
+- [x] 04-02-PLAN.md — Conflict/partnership/collaboration extraction + co-supplier SQL + cross-cutting BullMQ job chaining (ANAL-01/02/04, PROF-07)
 
 **Wave 3** *(blocked on Wave 2)*
 
@@ -154,5 +154,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 1. Data Foundation | 3/3 | Complete | 2026-06-14 |
 | 2. Research Engine | 3/3 | Complete   | 2026-06-14 |
 | 3. Dashboard & Profiles | 2/2 | Complete   | 2026-06-14 |
-| 4. Cross-Cutting Analysis | 1/4 | In Progress|  |
+| 4. Cross-Cutting Analysis | 2/4 | In Progress|  |
 | 5. Consortium Recommender + Initial Report | 0/TBD | Not started | - |
