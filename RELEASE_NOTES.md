@@ -9,3 +9,7 @@
 - fix: wrap generate-access-code.ts top-level await in async IIFE — CJS output format does not support top-level await
 
 - feat: add logout button to sidebar footer — clears iron-session cookie and redirects to /login
+
+## 2026-06-15
+- feat(ui-redesign-analytics): replaced sidebar navigation with a fixed dark charcoal top navbar; site renamed to "Partnerships"; background shifted to warm grey; capability pills recoloured (rose/cyan/indigo); research status badges recoloured (slate/orange/emerald); login page renders with no navbar (blank, clean); Umami analytics component added via inline component — silently disabled in dev when NEXT_PUBLIC_UMAMI_WEBSITE_ID is unset
+- feat(ui-icons): added icons8-network icon to navbar (20×20, left of "Partnerships" wordmark); replaced generic favicon.ico with icons8-network-16.png

@@ -46,9 +46,9 @@ import type { Firm, CapabilityTag } from "@/lib/types";
 // Badge styling per capability tag (UI-SPEC Color section)
 // ---------------------------------------------------------------------------
 const TAG_STYLES: Record<CapabilityTag, string> = {
-  Nuclear: "bg-amber-100 text-amber-700 border-amber-200",
-  Infrastructure: "bg-sky-100 text-sky-700 border-sky-200",
-  Consultancy: "bg-violet-100 text-violet-700 border-violet-200",
+  Nuclear: "bg-rose-50 text-rose-700 border-rose-200",
+  Infrastructure: "bg-cyan-50 text-cyan-700 border-cyan-200",
+  Consultancy: "bg-indigo-50 text-indigo-700 border-indigo-200",
 };
 
 function CapabilityBadge({ tag }: { tag: string }) {
