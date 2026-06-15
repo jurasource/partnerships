@@ -1,5 +1,14 @@
 # Pending Release Steps
 
+## fix(redis): support REDIS_URL in addition to REDIS_HOST/REDIS_PORT
+
+### Dev
+- No steps required — existing `REDIS_HOST`/`REDIS_PORT` in `.env.local` continues to work
+
+### Prod (Railway)
+- Set `REDIS_URL` env var on both the web and worker services (Railway Redis addon provides this automatically)
+- `REDIS_HOST`/`REDIS_PORT` can be removed once `REDIS_URL` is set
+
 ## feat(multi-source-citations): support multiple source citations per research finding
 
 ### Dev
