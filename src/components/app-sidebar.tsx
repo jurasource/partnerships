@@ -11,9 +11,12 @@ import {
   Users,
 } from "lucide-react";
 
+import { LogOut } from "lucide-react";
+
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -22,6 +25,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { logout } from "@/lib/auth/actions";
 
 type NavItem = {
   label: string;
@@ -116,6 +120,24 @@ export function AppSidebar() {
           ))}
         </SidebarMenu>
       </SidebarContent>
+
+      <SidebarFooter className="px-2 pb-3">
+        <Separator className="mb-2" />
+        <form action={logout}>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                type="submit"
+                tooltip="Log out"
+                className="text-sidebar-foreground/60 hover:text-sidebar-foreground"
+              >
+                <LogOut className="h-4 w-4 shrink-0" />
+                <span className="text-sm">Log out</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </form>
+      </SidebarFooter>
     </Sidebar>
   );
 }

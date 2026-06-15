@@ -7,3 +7,5 @@
 - feat(auth-gate) Task 3: Created `src/lib/auth/constants.ts` (shared SESSION_OPTIONS to prevent drift); `src/middleware.ts` guards all routes except /login, /_next, and static assets; session verified on every request via iron-session; all 98 tests pass
 
 - fix: wrap generate-access-code.ts top-level await in async IIFE — CJS output format does not support top-level await
+
+- feat: add logout button to sidebar footer — clears iron-session cookie and redirects to /login
