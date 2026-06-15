@@ -19,9 +19,10 @@ import { setSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 
 const mockDb = db as any;
-const mockVerifyCode = verifyCode as ReturnType<typeof vi.fn>;
-const mockSetSession = setSession as ReturnType<typeof vi.fn>;
-const mockRedirect = redirect as ReturnType<typeof vi.fn>;
+const mockVerifyCode = vi.mocked(verifyCode);
+const mockSetSession = vi.mocked(setSession);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const mockRedirect = redirect as unknown as ReturnType<typeof vi.fn>;
 
 describe("verifyAccessCode server action", () => {
   beforeEach(() => {
