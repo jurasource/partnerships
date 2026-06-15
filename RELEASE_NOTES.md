@@ -1,6 +1,7 @@
 # Release Notes
 
 ## 2026-06-15
+- fix(03.1): updateGroup now calls revalidatePath("/groups/${id}", "page") in addition to revalidatePath("/groups") so the detail page cache is invalidated after a rename, preventing stale-page scenarios in cached deployments (WR-04)
 - fix(03.1): added UNIQUE constraint on groups.name (groups_name_unique index) to prevent duplicate group names at the DB level; createGroup and updateGroup now return a user-facing error "A group with that name already exists." on Postgres error code 23505 (WR-03)
 - fix(03.1): GroupFormDialog now calls router.refresh() after a successful create so the groups list updates immediately without requiring navigation away and back (WR-01)
 - fix(03.1): GroupRowActions now calls router.refresh() after a successful delete so the deleted row disappears immediately without requiring navigation away and back (WR-02)

@@ -80,6 +80,7 @@ export async function updateGroup(id: string, name: string): Promise<ActionResul
       .where(eq(groups.id, id));
 
     revalidatePath("/groups");
+    revalidatePath(`/groups/${id}`, "page");
     return { ok: true };
   } catch (err) {
     // Postgres unique-constraint violation: error code 23505

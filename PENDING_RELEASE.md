@@ -1,5 +1,13 @@
 # Pending Release Steps
 
+## fix(03.1): WR-04 updateGroup now revalidates the specific group detail path
+
+### Dev
+- No steps required — server-side only change
+
+### Prod
+- No steps required — deploy new build
+
 ## fix(03.1): WR-03 add UNIQUE constraint on groups.name
 
 ### Dev
