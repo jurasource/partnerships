@@ -56,7 +56,7 @@ created: 2026-06-15
 - [ ] `src/lib/cross-cutting/__tests__/ownership.test.ts` — stubs for PROF-04 (ownership extraction)
 - [ ] `src/lib/cross-cutting/__tests__/conflicts.test.ts` — stubs for ANAL-02 (conflict pair detection)
 - [ ] `src/lib/cross-cutting/__tests__/risk-flags.test.ts` — stubs for PROF-05/ANAL-04 (risk flag extraction)
-- [ ] `src/lib/cross-cutting/__tests__/partnerships.test.ts` — stubs for ANAL-03 (co-supplier detection)
+- [ ] `src/lib/cross-cutting/__tests__/co-supplier.test.ts` — stubs for ANAL-03 (co-supplier detection)
 
 Existing vitest infrastructure from Phase 1 covers all phase requirements — no framework installation needed.
 
