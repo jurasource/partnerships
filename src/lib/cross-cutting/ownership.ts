@@ -14,8 +14,8 @@
 import { eq } from "drizzle-orm";
 
 import { db } from "@/db/client";
-import { firms, ownershipRecords } from "@/db/schema";
-import { getCompanyProfile, getPSC } from "@/lib/clients/companies-house";
+import { firms, ownershipRecords, chSnapshots } from "@/db/schema";
+import { getCompanyProfile, getPSC, getOfficers, type CompanyProfile, type PscRecord, type OfficersRecord } from "@/lib/clients/companies-house";
 import { findFindingByTopicName, TOPIC_NAMES } from "./topic-lookup";
 
 // ---------------------------------------------------------------------------
@@ -41,6 +41,36 @@ const UK_COUNTRY_TERMS = [
 ];
 
 /**
+ * UK jurisdiction tokens returned by the Companies House company profile
+ * `jurisdiction` field (e.g. "england-wales", "scotland", "northern-ireland").
+ * A firm registered under any of these IS UK-incorporated, regardless of
+ * whether its PSC register is populated (LLPs frequently have an empty PSC
+ * register but are unambiguously UK-incorporated).
+ */
+const UK_JURISDICTION_TERMS = [
+  "england",
+  "wales",
+  "scotland",
+  "northern-ireland",
+  "northern ireland",
+  "united-kingdom",
+  "united kingdom",
+  "uk",
+];
+
+/**
+ * Determine whether a Companies House profile.jurisdiction value is UK.
+ * Returns true for UK jurisdictions, false for known non-UK, and null when
+ * the jurisdiction is absent/unrecognised (caller decides the fallback).
+ */
+function isUkJurisdiction(jurisdiction?: string): boolean | null {
+  if (!jurisdiction) return null;
+  const j = jurisdiction.toLowerCase().trim();
+  if (UK_JURISDICTION_TERMS.some((term) => j.includes(term))) return true;
+  return false;
+}
+
+/**
  * Check whether a PSC item represents a UK natural person.
  */
 function isUkNaturalPerson(item: {
@@ -56,26 +86,33 @@ function isUkNaturalPerson(item: {
 
 /**
  * Check whether a corporate PSC is UK-registered.
+ *
+ * Corporate PSCs carry their jurisdiction in identification.country_of_registration,
+ * NOT in country_of_residence (that field is for natural persons only).
  */
 function isUkCorporatePsc(item: {
   kind?: string;
   country_of_residence?: string;
+  identification?: { country_of_registration?: string };
 }): boolean {
   if (!item.kind?.toLowerCase().includes("corporate-entity")) return false;
-  const country = (item.country_of_residence ?? "").toLowerCase();
+  // Prefer identification.country_of_registration; fall back to country_of_residence
+  const raw = item.identification?.country_of_registration ?? item.country_of_residence ?? "";
+  const country = raw.toLowerCase();
   if (!country) return false;
-  return UK_COUNTRY_TERMS.some((term) => country === term);
+  return UK_COUNTRY_TERMS.some((term) => country.includes(term));
 }
 
 /**
- * Derive a country code from a corporate PSC's country_of_residence.
+ * Derive a country code from a corporate PSC's jurisdiction.
  * Returns "UK" for UK entities, the country name for foreign ones (ISO mapping is
  * best-effort from the CH free text — the calling code handles nulls gracefully).
  */
 function deriveForeignCountry(item: {
   country_of_residence?: string;
+  identification?: { country_of_registration?: string };
 }): string | null {
-  const raw = item.country_of_residence;
+  const raw = item.identification?.country_of_registration ?? item.country_of_residence;
   if (!raw) return null;
   // Common ISO mappings from CH free text
   const ISO_MAP: Record<string, string> = {
@@ -112,6 +149,66 @@ function deriveForeignCountry(item: {
 }
 
 // ---------------------------------------------------------------------------
+// CH fetch + snapshot helper
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetch the three Companies House endpoints for a given CH number and upsert
+ * the raw responses into ch_snapshots.
+ *
+ * Individual API call failures are caught and return null — a partial fetch
+ * (e.g. profile OK but PSC 404) is still cached. DB errors are NOT caught
+ * here and will propagate to the caller so the job fails visibly rather than
+ * silently writing nothing.
+ */
+async function fetchAndCacheCH(
+  firmId: string,
+  chNumber: string,
+): Promise<{ profile: CompanyProfile | null; psc: PscRecord | null; officers: OfficersRecord | null }> {
+  const [profile, psc, officers] = await Promise.all([
+    getCompanyProfile(chNumber).catch(() => null),
+    getPSC(chNumber).catch(() => null),
+    getOfficers(chNumber).catch(() => null),
+  ]);
+
+  if (profile !== null || psc !== null || officers !== null) {
+    const now = new Date().toISOString();
+    await db
+      .insert(chSnapshots)
+      .values({
+        firmId,
+        profileJson: profile ? JSON.stringify(profile) : null,
+        pscJson: psc ? JSON.stringify(psc) : null,
+        officersJson: officers ? JSON.stringify(officers) : null,
+        fetchedAt: now,
+      })
+      .onConflictDoUpdate({
+        target: [chSnapshots.firmId],
+        set: {
+          profileJson: profile ? JSON.stringify(profile) : null,
+          pscJson: psc ? JSON.stringify(psc) : null,
+          officersJson: officers ? JSON.stringify(officers) : null,
+          fetchedAt: now,
+        },
+      });
+  }
+
+  return { profile, psc, officers };
+}
+
+/**
+ * Fetch and cache Companies House data for a firm without running the full
+ * ownership extraction. Safe to call standalone (e.g. from a "Refresh CH"
+ * server action on the firm profile page). No-ops if the firm has no CH number.
+ */
+export async function refreshCHSnapshot(firmId: string): Promise<void> {
+  const [firm] = await db.select().from(firms).where(eq(firms.id, firmId)).limit(1);
+  if (!firm) throw new Error(`refreshCHSnapshot: firm not found: ${firmId}`);
+  if (!firm.companiesHouseNumber) return;
+  await fetchAndCacheCH(firmId, firm.companiesHouseNumber);
+}
+
+// ---------------------------------------------------------------------------
 // Main extraction function
 // ---------------------------------------------------------------------------
 
@@ -144,16 +241,10 @@ export async function extractOwnership(firmId: string): Promise<void> {
   // Attempt CH data fetch if a company number is available
   let profile = null;
   let psc = null;
+  let officers = null;
 
   if (chNumber) {
-    try {
-      [profile, psc] = await Promise.all([
-        getCompanyProfile(chNumber).catch(() => null),
-        getPSC(chNumber).catch(() => null),
-      ]);
-    } catch {
-      // CH API failure — fall through to AI research fallback
-    }
+    ({ profile, psc, officers } = await fetchAndCacheCH(firmId, chNumber));
   }
 
   // Attempt to load the "Ownership structure" finding for corroboration / fallback
@@ -178,7 +269,20 @@ export async function extractOwnership(firmId: string): Promise<void> {
     );
 
     const hasForeignCorporatePsc = foreignCorporatePscs.length > 0;
-    const ukIncorporated: "yes" | "no" | "unknown" = allUk ? "yes" : "no";
+
+    // Incorporation is determined by the company's own registration jurisdiction
+    // (authoritative), NOT by who controls it. A UK-registered firm with a
+    // foreign corporate PSC is still UK-incorporated. Fall back to PSC-derived
+    // nationality only when the profile jurisdiction is absent/unrecognised.
+    const jurisdictionIsUk = isUkJurisdiction(profile?.jurisdiction);
+    const ukIncorporated: "yes" | "no" | "unknown" =
+      jurisdictionIsUk === true
+        ? "yes"
+        : jurisdictionIsUk === false
+          ? "no"
+          : allUk
+            ? "yes"
+            : "no";
     const pscNotTraceable: "yes" | "no" = hasForeignCorporatePsc ? "yes" : "no";
 
     // Derive country of ownership — foreign corporate PSC's country takes precedence
@@ -229,6 +333,57 @@ export async function extractOwnership(firmId: string): Promise<void> {
       });
 
     return;
+  }
+
+  // ---------------------------------------------------------------------------
+  // CH profile available but PSC register empty (common for LLPs).
+  // The PSC register being empty does NOT mean incorporation is unknown — the
+  // company profile's jurisdiction is the authoritative incorporation signal.
+  // Use it directly so UK-registered firms with no PSC entries (e.g. Baringa
+  // Partners LLP, OC303471) are correctly marked UK-incorporated.
+  // ---------------------------------------------------------------------------
+
+  if (chNumber && profile) {
+    const jurisdictionIsUk = isUkJurisdiction(profile.jurisdiction);
+
+    if (jurisdictionIsUk !== null) {
+      const ukIncorporated: "yes" | "no" = jurisdictionIsUk ? "yes" : "no";
+      const countryOfOwnership = jurisdictionIsUk ? "UK" : null;
+      const sourceUrl = `https://find-and-update.company-information.service.gov.uk/company/${chNumber}`;
+      const rawSnippet =
+        `Companies House profile: jurisdiction "${profile.jurisdiction}"` +
+        `${profile.type ? ` (type: ${profile.type})` : ""}; ` +
+        `PSC register empty (no persons with significant control listed).`;
+
+      await db
+        .insert(ownershipRecords)
+        .values({
+          firmId,
+          ukIncorporated,
+          ultimateParent: null,
+          countryOfOwnership,
+          pscNotTraceable: "no",
+          sourceType: "companies_house",
+          sourceUrl,
+          sourceTitle: "Companies House — Company Profile",
+          rawSnippet,
+        })
+        .onConflictDoUpdate({
+          target: [ownershipRecords.firmId],
+          set: {
+            ukIncorporated,
+            ultimateParent: null,
+            countryOfOwnership,
+            pscNotTraceable: "no",
+            sourceType: "companies_house",
+            sourceUrl,
+            sourceTitle: "Companies House — Company Profile",
+            rawSnippet,
+          },
+        });
+
+      return;
+    }
   }
 
   // ---------------------------------------------------------------------------

@@ -69,8 +69,10 @@ vi.mock("next/cache", () => ({
 vi.mock("@/lib/jobs/bull", () => ({
   RESEARCH_QUEUE_NAME: "research",
   CROSS_CUTTING_QUEUE_NAME: "cross-cutting-analysis",
+  CH_REFRESH_QUEUE_NAME: "ch-refresh",
   researchQueue: { add: vi.fn().mockResolvedValue({ id: "mock-research-job" }) },
   crossCuttingQueue: { add: vi.fn().mockResolvedValue({ id: "mock-cc-job" }) },
+  chRefreshQueue: { add: vi.fn().mockResolvedValue({ id: "mock-ch-refresh-job" }) },
   getRedisConnection: vi.fn().mockReturnValue({ host: "localhost", port: 6379 }),
 }));
 

@@ -14,12 +14,15 @@ import { Worker } from "bullmq";
 
 import { executeResearchJob } from "@/lib/jobs/runner";
 import { executeCrossCuttingJob } from "@/lib/cross-cutting/runner";
+import { executeCHRefreshJob } from "@/lib/cross-cutting/ch-refresh-runner";
 import {
   RESEARCH_QUEUE_NAME,
   type ResearchJobPayload,
   getRedisConnection,
   CROSS_CUTTING_QUEUE_NAME,
   type CrossCuttingJobPayload,
+  CH_REFRESH_QUEUE_NAME,
+  type CHRefreshJobPayload,
 } from "@/lib/jobs/bull";
 
 const CONCURRENCY = Number(process.env.WORKER_CONCURRENCY ?? "2");
@@ -86,17 +89,50 @@ crossCuttingWorker.on("error", (err) => {
   console.error("[worker] Cross-cutting worker error:", err.message);
 });
 
+// ---------------------------------------------------------------------------
+// CH refresh worker — fetch CH snapshot + derive ownership fields
+// ---------------------------------------------------------------------------
+
+const chRefreshWorker = new Worker<CHRefreshJobPayload>(
+  CH_REFRESH_QUEUE_NAME,
+  async (job) => {
+    const { firmId, jobId } = job.data;
+    console.log(`[worker] Starting CH refresh job ${jobId} for firm ${firmId}`);
+    await executeCHRefreshJob(firmId, jobId);
+  },
+  {
+    connection,
+    concurrency: CONCURRENCY,
+  },
+);
+
+chRefreshWorker.on("completed", (job) => {
+  console.log(`[worker] CH refresh job ${job.id} (db: ${job.data.jobId}) completed`);
+});
+
+chRefreshWorker.on("failed", (job, err) => {
+  console.error(`[worker] CH refresh job ${job?.id} (db: ${job?.data?.jobId}) failed:`, err.message);
+});
+
+chRefreshWorker.on("error", (err) => {
+  console.error("[worker] CH refresh worker error:", err.message);
+});
+
 console.log(
   `[worker] Listening on ${connection.host}:${connection.port} queue="${RESEARCH_QUEUE_NAME}" concurrency=${CONCURRENCY}`,
 );
 console.log(
   `[worker] Listening on ${connection.host}:${connection.port} queue="${CROSS_CUTTING_QUEUE_NAME}" concurrency=${CONCURRENCY}`,
 );
+console.log(
+  `[worker] Listening on ${connection.host}:${connection.port} queue="${CH_REFRESH_QUEUE_NAME}" concurrency=${CONCURRENCY}`,
+);
 
 async function shutdown() {
   console.log("[worker] Shutting down gracefully...");
   await worker.close();
   await crossCuttingWorker.close();
+  await chRefreshWorker.close();
   process.exit(0);
 }
 

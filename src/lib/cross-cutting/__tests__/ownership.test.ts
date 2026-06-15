@@ -98,6 +98,7 @@ const FOREIGN_PSC_RECORD = {
 
 type InsertedOwnershipRow = Record<string, unknown>;
 let capturedOwnershipInserts: InsertedOwnershipRow[] = [];
+let capturedSnapshotInserts: InsertedOwnershipRow[] = [];
 let capturedUpsertCalls: number = 0;
 
 // Control which firm to return from the select mock
@@ -119,7 +120,12 @@ vi.mock("@/db/client", () => ({
     })),
     insert: vi.fn(() => ({
       values: vi.fn((row: InsertedOwnershipRow) => {
-        capturedOwnershipInserts.push({ ...row });
+        if ("ukIncorporated" in row) {
+          capturedOwnershipInserts.push({ ...row });
+        }
+        if ("profileJson" in row) {
+          capturedSnapshotInserts.push({ ...row });
+        }
         return {
           onConflictDoUpdate: vi.fn(() => {
             capturedUpsertCalls++;
@@ -140,6 +146,9 @@ vi.mock("@/db/schema", () => ({
     id: "firms.id",
     canonicalName: "firms.canonical_name",
     companiesHouseNumber: "firms.companies_house_number",
+  },
+  chSnapshots: {
+    firmId: "ch_snapshots.firm_id",
   },
   ownershipRecords: {
     firmId: "ownership_records.firm_id",
@@ -177,10 +186,12 @@ vi.mock("drizzle-orm", () => ({
 
 const mockGetCompanyProfile = vi.fn();
 const mockGetPSC = vi.fn();
+const mockGetOfficers = vi.fn();
 
 vi.mock("@/lib/clients/companies-house", () => ({
   getCompanyProfile: mockGetCompanyProfile,
   getPSC: mockGetPSC,
+  getOfficers: mockGetOfficers,
 }));
 
 // ---------------------------------------------------------------------------
@@ -206,12 +217,14 @@ vi.mock("@/lib/cross-cutting/topic-lookup", () => ({
 
 beforeEach(() => {
   capturedOwnershipInserts = [];
+  capturedSnapshotInserts = [];
   capturedUpsertCalls = 0;
   firmToReturn = MOCK_UK_FIRM; // default
   vi.clearAllMocks();
   mockFindFindingByTopicName.mockResolvedValue(null); // default: no finding
   mockGetCompanyProfile.mockResolvedValue(null);
   mockGetPSC.mockResolvedValue(null);
+  mockGetOfficers.mockResolvedValue(null);
 });
 
 // ---------------------------------------------------------------------------
@@ -249,9 +262,33 @@ describe("extractOwnership — UK firm", () => {
 });
 
 describe("extractOwnership — foreign corporate PSC", () => {
-  it("writes pscNotTraceable 'yes' and ukIncorporated 'no' for foreign corporate PSC", async () => {
+  it("writes pscNotTraceable 'yes' and foreign countryOfOwnership for a foreign corporate PSC, but keeps ukIncorporated 'yes' when the firm is UK-registered", async () => {
+    // Incorporation status (where the firm is REGISTERED) is distinct from
+    // beneficial ownership (who CONTROLS it). A UK-registered firm owned by a
+    // foreign parent is still UK-incorporated; the foreign control surfaces via
+    // pscNotTraceable + countryOfOwnership, NOT via ukIncorporated.
     firmToReturn = MOCK_FOREIGN_FIRM;
-    mockGetCompanyProfile.mockResolvedValue(FOREIGN_CH_PROFILE);
+    mockGetCompanyProfile.mockResolvedValue(FOREIGN_CH_PROFILE); // jurisdiction: england-wales
+    mockGetPSC.mockResolvedValue(FOREIGN_PSC_RECORD);
+
+    const { extractOwnership } = await import("../ownership");
+    await extractOwnership("firm-foreign");
+
+    expect(capturedOwnershipInserts.length).toBe(1);
+    const row = capturedOwnershipInserts[0];
+    expect(row.ukIncorporated).toBe("yes"); // UK-registered jurisdiction
+    expect(row.pscNotTraceable).toBe("yes"); // foreign corporate PSC
+    // Country of ownership should be derived from foreign PSC, not "UK"
+    expect(row.countryOfOwnership).not.toBe("UK");
+    expect(row.countryOfOwnership).not.toBeNull();
+  });
+
+  it("writes ukIncorporated 'no' when the CH profile jurisdiction is non-UK", async () => {
+    firmToReturn = MOCK_FOREIGN_FIRM;
+    mockGetCompanyProfile.mockResolvedValue({
+      ...FOREIGN_CH_PROFILE,
+      jurisdiction: "france",
+    });
     mockGetPSC.mockResolvedValue(FOREIGN_PSC_RECORD);
 
     const { extractOwnership } = await import("../ownership");
@@ -260,10 +297,31 @@ describe("extractOwnership — foreign corporate PSC", () => {
     expect(capturedOwnershipInserts.length).toBe(1);
     const row = capturedOwnershipInserts[0];
     expect(row.ukIncorporated).toBe("no");
-    expect(row.pscNotTraceable).toBe("yes");
-    // Country of ownership should be derived from foreign PSC, not "UK"
-    expect(row.countryOfOwnership).not.toBe("UK");
-    expect(row.countryOfOwnership).not.toBeNull();
+  });
+});
+
+describe("extractOwnership — UK firm with empty PSC register (LLP regression)", () => {
+  it("writes ukIncorporated 'yes' from CH profile jurisdiction when the PSC register is empty (e.g. an LLP)", async () => {
+    // Regression for baringa-uk-incorporated-missing: LLPs frequently have an
+    // empty PSC register. The firm is still UK-incorporated per its CH
+    // jurisdiction and must NOT fall through to the 'unknown' AI fallback.
+    firmToReturn = MOCK_UK_FIRM;
+    mockGetCompanyProfile.mockResolvedValue({
+      ...UK_CH_PROFILE,
+      type: "llp",
+      jurisdiction: "england-wales",
+    });
+    mockGetPSC.mockResolvedValue({ active_count: 0, items: [] });
+    mockFindFindingByTopicName.mockResolvedValue(null);
+
+    const { extractOwnership } = await import("../ownership");
+    await extractOwnership("firm-uk");
+
+    expect(capturedOwnershipInserts.length).toBe(1);
+    const row = capturedOwnershipInserts[0];
+    expect(row.ukIncorporated).toBe("yes");
+    expect(row.sourceType).toBe("companies_house");
+    expect(row.countryOfOwnership).toBe("UK");
   });
 });
 
@@ -319,5 +377,73 @@ describe("extractOwnership — fallback to finding when CH unavailable", () => {
     const row = capturedOwnershipInserts[0];
     expect(row.sourceType).toBe("ai_research");
     expect(row.sourceUrl).toBe("https://example.com/ownership");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// ch_snapshots write tests
+// Regression suite for the silent-failure bug: the outer try-catch was
+// swallowing DB errors, leaving ch_snapshots unpopulated even after a
+// "successful" cross-cutting job.
+// ---------------------------------------------------------------------------
+
+describe("extractOwnership — ch_snapshots write", () => {
+  it("writes a ch_snapshots row with profileJson and pscJson when CH API returns data", async () => {
+    firmToReturn = MOCK_UK_FIRM;
+    mockGetCompanyProfile.mockResolvedValue(UK_CH_PROFILE);
+    mockGetPSC.mockResolvedValue(UK_PSC_RECORD);
+    mockGetOfficers.mockResolvedValue({ active_count: 1, items: [{ name: "Jane Smith", officer_role: "director" }] });
+
+    const { extractOwnership } = await import("../ownership");
+    await extractOwnership("firm-uk");
+
+    expect(capturedSnapshotInserts.length).toBe(1);
+    const snap = capturedSnapshotInserts[0];
+    expect(snap.firmId).toBe("firm-uk");
+    expect(typeof snap.profileJson).toBe("string");
+    const profile = JSON.parse(snap.profileJson as string);
+    expect(profile.company_number).toBe("12345678");
+    expect(typeof snap.pscJson).toBe("string");
+    expect(snap.officersJson).not.toBeNull();
+  });
+
+  it("writes a ch_snapshots row for a UK LLP with empty PSC register (Baringa regression)", async () => {
+    // Regression: the outer try-catch was silently swallowing DB errors so
+    // ch_snapshots was never written. For LLPs the PSC register is empty but
+    // the profile fetch succeeds — the snapshot MUST still be written.
+    firmToReturn = MOCK_UK_FIRM;
+    mockGetCompanyProfile.mockResolvedValue({ ...UK_CH_PROFILE, type: "llp" });
+    mockGetPSC.mockResolvedValue({ active_count: 0, items: [] });
+    mockGetOfficers.mockResolvedValue(null);
+
+    const { extractOwnership } = await import("../ownership");
+    await extractOwnership("firm-uk");
+
+    expect(capturedSnapshotInserts.length).toBe(1);
+    const snap = capturedSnapshotInserts[0];
+    expect(snap.firmId).toBe("firm-uk");
+    expect(typeof snap.profileJson).toBe("string");
+    expect(snap.officersJson).toBeNull();
+  });
+
+  it("does NOT write a ch_snapshots row when all three CH API calls return null", async () => {
+    firmToReturn = MOCK_UK_FIRM;
+    mockGetCompanyProfile.mockResolvedValue(null);
+    mockGetPSC.mockResolvedValue(null);
+    mockGetOfficers.mockResolvedValue(null);
+
+    const { extractOwnership } = await import("../ownership");
+    await extractOwnership("firm-uk");
+
+    expect(capturedSnapshotInserts.length).toBe(0);
+  });
+
+  it("does NOT write a ch_snapshots row when the firm has no CH number", async () => {
+    firmToReturn = MOCK_NO_CH_FIRM;
+
+    const { extractOwnership } = await import("../ownership");
+    await extractOwnership("firm-noch");
+
+    expect(capturedSnapshotInserts.length).toBe(0);
   });
 });

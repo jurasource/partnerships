@@ -105,7 +105,7 @@ export const jobs = pgTable("jobs", {
    * "cross-cutting-analysis"  = Phase 4 derived-record extraction job
    */
   jobType: text("job_type")
-    .$type<"research" | "cross-cutting-analysis">()
+    .$type<"research" | "cross-cutting-analysis" | "ch-refresh">()
     .notNull()
     .default("research"),
 });
@@ -372,6 +372,65 @@ export const firmGroups = pgTable(
       .references(() => groups.id, { onDelete: "cascade" }),
   },
   (table) => [primaryKey({ columns: [table.firmId, table.groupId] })],
+);
+
+// --- jvLeads -------------------------------------------------------------
+/**
+ * Unresolved JV partner mentions extracted during collaboration analysis.
+ * Written when the AI identifies a JV partner by name but that firm is not
+ * yet tracked in the DB. Cleared and re-populated on each re-extraction so
+ * the list stays fresh — once the mentioned firm is added and research is
+ * re-run, the entry resolves into a partnership_pair and disappears here.
+ */
+export const jvLeads = pgTable(
+  "jv_leads",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    /** The firm whose research mentioned this JV partner. */
+    sourceFirmId: text("source_firm_id")
+      .notNull()
+      .references(() => firms.id, { onDelete: "cascade" }),
+    /** Firm name exactly as extracted by the AI — not normalised. */
+    mentionedFirmName: text("mentioned_firm_name").notNull(),
+    evidenceSummary: text("evidence_summary").notNull(),
+    sourceUrl: text("source_url").notNull(),
+    sourceTitle: text("source_title").notNull(),
+    evidenceDate: text("evidence_date"),
+    createdAt: timestamp("created_at", { mode: "string" }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("jv_leads_source_firm_name_unique").on(
+      table.sourceFirmId,
+      table.mentionedFirmName,
+    ),
+  ],
+);
+
+// --- chSnapshots ---------------------------------------------------------
+/**
+ * Cached raw Companies House API responses for each firm.
+ * Written (upserted) during cross-cutting analysis whenever CH data is fetched.
+ * Read on the firm profile page so the UI never calls the CH API directly.
+ * JSON columns are nullable — a field is null when the CH fetch failed or the
+ * firm has no CH number.
+ */
+export const chSnapshots = pgTable(
+  "ch_snapshots",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    firmId: text("firm_id")
+      .notNull()
+      .references(() => firms.id),
+    profileJson: text("profile_json"),
+    pscJson: text("psc_json"),
+    officersJson: text("officers_json"),
+    fetchedAt: timestamp("fetched_at", { mode: "string" }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex("ch_snapshots_firm_unique").on(table.firmId)],
 );
 
 // --- accessCodes ---------------------------------------------------------

@@ -6,15 +6,10 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
-/**
- * Format a Date as "14 Jun 2026" — absolute date for the tooltip.
- */
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
 function formatAbsoluteDate(date: Date): string {
-  return date.toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  return `${date.getUTCDate()} ${MONTHS[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
 }
 
 /**

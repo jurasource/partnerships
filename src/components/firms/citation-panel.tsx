@@ -28,10 +28,12 @@ type CitationEntry = {
   citations: SupportingCitation[];
 };
 
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
 function formatSourceDate(dateStr: string): string {
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return dateStr;
-  return d.toLocaleDateString("en-GB", { year: "numeric", month: "short" });
+  return `${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
 }
 
 /**

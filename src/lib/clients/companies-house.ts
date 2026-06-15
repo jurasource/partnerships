@@ -71,6 +71,15 @@ const PscItemSchema = z
     nationality: z.string().optional(),
     country_of_residence: z.string().optional(),
     natures_of_control: z.array(z.string()).optional(),
+    // Corporate PSCs carry jurisdiction in identification, not country_of_residence
+    identification: z
+      .object({
+        country_of_registration: z.string().optional(),
+        place_registered: z.string().optional(),
+        legal_authority: z.string().optional(),
+        legal_form: z.string().optional(),
+      })
+      .optional(),
   })
   .passthrough();
 

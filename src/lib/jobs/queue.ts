@@ -25,7 +25,7 @@ export type EnqueueJobInput = {
    * "research"                = standard Phase 2 firm research job (default)
    * "cross-cutting-analysis"  = Phase 4 derived-record extraction job
    */
-  jobType?: "research" | "cross-cutting-analysis";
+  jobType?: "research" | "cross-cutting-analysis" | "ch-refresh";
 };
 
 export type JobStatusUpdate = {

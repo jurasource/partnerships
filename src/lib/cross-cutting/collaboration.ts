@@ -19,9 +19,10 @@
 
 import { generateText, Output, NoObjectGeneratedError, NoOutputGeneratedError } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
+import { eq } from "drizzle-orm";
 
 import { db } from "@/db/client";
-import { collaborationRecords, partnershipPairs } from "@/db/schema";
+import { collaborationRecords, jvLeads, partnershipPairs } from "@/db/schema";
 import { findFindingByTopicName, TOPIC_NAMES } from "./topic-lookup";
 import {
   CollaborationExtractionSchema,
@@ -77,6 +78,11 @@ Return a JSON object with a "partnerships" array. Each element must have:
  * @param firmId  ID of the firm to extract collaboration for
  */
 export async function extractCollaboration(firmId: string): Promise<void> {
+  // Clear stale JV leads for this firm so re-runs start fresh.
+  // If a mentioned firm has since been added to the DB, the next extraction
+  // will resolve it properly into a partnership_pair instead.
+  await db.delete(jvLeads).where(eq(jvLeads.sourceFirmId, firmId));
+
   // Read the "Partnerships and JVs" finding
   const finding = await findFindingByTopicName(firmId, TOPIC_NAMES.partnerships);
 
@@ -277,8 +283,28 @@ Return a JSON object with a "partnerships" array.`,
     // Resolve the partner firm's name to a DB ID (Pitfall 3)
     const counterpartId = await resolveFirmName(jv.otherFirmName);
     if (!counterpartId) {
-      console.warn(
-        `[collaboration] Discarding unresolvable JV partner: "${jv.otherFirmName}" (firmId=${firmId})`,
+      // Firm not yet tracked — store as a JV lead so the user can add them.
+      await db
+        .insert(jvLeads)
+        .values({
+          sourceFirmId: firmId,
+          mentionedFirmName: jv.otherFirmName,
+          evidenceSummary: jv.evidenceSummary,
+          sourceUrl: jv.sourceUrl,
+          sourceTitle: jv.sourceTitle,
+          evidenceDate: jv.evidenceDate ?? null,
+        })
+        .onConflictDoUpdate({
+          target: [jvLeads.sourceFirmId, jvLeads.mentionedFirmName],
+          set: {
+            evidenceSummary: jv.evidenceSummary,
+            sourceUrl: jv.sourceUrl,
+            sourceTitle: jv.sourceTitle,
+            evidenceDate: jv.evidenceDate ?? null,
+          },
+        });
+      console.log(
+        `[collaboration] Stored JV lead for untracked firm: "${jv.otherFirmName}" (sourceFirmId=${firmId})`,
       );
       continue;
     }

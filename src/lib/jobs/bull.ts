@@ -65,3 +65,26 @@ export const crossCuttingQueue = new Queue<CrossCuttingJobPayload>(
     },
   },
 );
+
+// ---------------------------------------------------------------------------
+// CH refresh queue — fetch CH snapshot + derive ownership fields
+// ---------------------------------------------------------------------------
+
+export const CH_REFRESH_QUEUE_NAME = "ch-refresh";
+
+export type CHRefreshJobPayload = {
+  firmId: string;
+  jobId: string;
+};
+
+export const chRefreshQueue = new Queue<CHRefreshJobPayload>(
+  CH_REFRESH_QUEUE_NAME,
+  {
+    connection,
+    defaultJobOptions: {
+      attempts: 1,
+      removeOnComplete: { count: 100 },
+      removeOnFail: { count: 100 },
+    },
+  },
+);

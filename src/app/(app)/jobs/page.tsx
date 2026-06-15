@@ -1,14 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { JobStatusBadge } from "@/components/research/job-status-badge";
+import { BatchJobSubmit } from "@/components/jobs/batch-job-submit";
 
 type JobRow = {
   id: string;
   firmId: string;
   firmName: string | null;
   status: "pending" | "running" | "done" | "failed";
+  jobType: "research" | "cross-cutting-analysis" | "ch-refresh";
   progressMessage: string | null;
   createdAt: string;
   startedAt: string | null;
@@ -33,6 +35,10 @@ function formatTime(iso: string | null): string {
 export default function JobsPage() {
   const [rows, setRows] = useState<JobRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pollTick, setPollTick] = useState(0);
+
+  // Expose a stable callback so BatchJobSubmit can trigger an immediate re-poll
+  const triggerPoll = useCallback(() => setPollTick((n) => n + 1), []);
 
   useEffect(() => {
     let cancelled = false;
@@ -60,7 +66,7 @@ export default function JobsPage() {
       cancelled = true;
       clearTimeout(timeout);
     };
-  }, []);
+  }, [pollTick]);
 
   const active = rows.filter(
     (j) => j.status === "pending" || j.status === "running",
@@ -88,6 +94,8 @@ export default function JobsPage() {
           </span>
         )}
       </div>
+
+      <BatchJobSubmit onJobsSubmitted={triggerPoll} />
 
       {loading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
@@ -123,6 +131,7 @@ function JobTable({ title, jobs }: { title: string; jobs: JobRow[] }) {
           <thead className="bg-muted/40">
             <tr>
               <th className="text-left px-4 py-2.5 font-medium text-muted-foreground w-48">Firm</th>
+              <th className="text-left px-4 py-2.5 font-medium text-muted-foreground w-40">Type</th>
               <th className="text-left px-4 py-2.5 font-medium text-muted-foreground w-28">Status</th>
               <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Details</th>
               <th className="text-left px-4 py-2.5 font-medium text-muted-foreground w-28">Started</th>
@@ -139,6 +148,13 @@ function JobTable({ title, jobs }: { title: string; jobs: JobRow[] }) {
                   >
                     {job.firmName ?? job.firmId}
                   </Link>
+                </td>
+                <td className="px-4 py-3 text-sm text-muted-foreground">
+                  {job.jobType === "cross-cutting-analysis"
+                    ? "Cross-Cutting Analysis"
+                    : job.jobType === "ch-refresh"
+                    ? "CH Refresh"
+                    : "Research"}
                 </td>
                 <td className="px-4 py-3">
                   <JobStatusBadge status={job.status} />

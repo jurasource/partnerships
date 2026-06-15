@@ -1,5 +1,85 @@
 # Pending Release Steps
 
+## refactor: CH refresh as dedicated BullMQ job
+
+### Dev
+- Restart the worker process (`npm run worker`) to pick up the new `ch-refresh` queue worker
+- No schema changes — `jobType` is stored as text; the new `"ch-refresh"` value is just a new string
+- Existing firms will have CH refresh triggered automatically on next research run
+- Use "Refresh CH Data" button on firm profile pages, the Building2 icon on the firms table, or the Jobs page batch submit ("CH Refresh" option) to trigger standalone CH refreshes
+
+### Prod
+- Restart/redeploy the worker service to pick up the new `ch-refresh` queue
+
+## fix: CH snapshot silent failure + Refresh CH Data button
+
+### Dev
+- Run `npm run db:push` to ensure `ch_snapshots` table exists (if not already done)
+- Use the new "Refresh CH Data" button on any firm profile page to fetch and cache CH data immediately (no queue required)
+- Alternatively, "Re-run Analysis" still refreshes CH data as part of the cross-cutting job
+
+### Prod
+- Same: `npm run db:push` then use "Refresh CH Data" buttons per firm
+
+## fix(CH panel): distinguish "no CH number" from "no snapshot yet"
+
+### Dev
+- No steps required — UI change only
+
+### Prod
+- No steps required
+
+## feat: cache Companies House data in DB; show CH name on firm profile
+
+### Dev
+- Run `npm run db:migrate` to apply the new `ch_snapshots` migration
+- Re-run cross-cutting analysis on existing firms to populate the CH snapshot ("Re-run Analysis" on each profile)
+
+### Prod
+- Run `npm run db:migrate` before deploying
+- Re-run cross-cutting analysis for all firms after deploying
+
+## feat: Companies House data panel on firm profile page
+
+### Dev
+- No schema changes, no env changes
+- No migrations needed
+- CH data is fetched live from the Companies House API on each firm profile page load; requires `COMPANIES_HOUSE_API_KEY` to be set
+
+### Prod
+- No deployment steps required beyond deploying the new build
+- Ensure `COMPANIES_HOUSE_API_KEY` is set in the production environment
+
+## feat: shared filter bar on analysis page, PSC ownership bug fix, batch job submission, db:migrate script
+
+### Dev
+- No schema changes
+- Run `npm run db:migrate` instead of `db:push` for future schema changes (new script added)
+- Re-run cross-cutting analysis on existing firms to pick up the PSC ownership fix ("Re-run Analysis" button on each firm profile)
+
+### Prod
+- Set Railway pre-deploy command to `npm run db:migrate` (safe, idempotent, non-interactive)
+- After deploying, use the Jobs page → "Submit batch jobs" → select all firms → "Analysis only" to re-derive ownership records with the corrected PSC logic
+
+## feat: store unresolved JV leads and surface them on firm profiles
+
+### Dev
+- Run `npm run db:push` to create the `jv_leads` table (requires Postgres running via `docker compose up -d db`)
+- Re-run cross-cutting analysis on any firm that previously logged "Discarding unresolvable JV partner" — the leads will be stored on the next extraction pass
+
+### Prod
+- Run `npm run db:push` (or apply migration) against the production database before deploying
+
+
+## feat(04): Phase 4 Wave 4 — /analysis page, conflict matrix, partnership table, ownership roll-up
+
+### Dev
+- No steps required — DB tables (conflictPairs, partnershipPairs, ownershipRecords) already exist from earlier phases
+
+### Prod
+- No steps required — no schema changes; deploy new build
+
+
 ## fix(03.1): WR-04 updateGroup now revalidates the specific group detail path
 
 ### Dev
@@ -120,3 +200,13 @@
 
 ### Prod
 - No steps required — change is worker logic only
+
+## fix(ownership): derive ukIncorporated from CH profile.jurisdiction so empty-PSC LLPs are recognised as UK-incorporated
+
+### Dev
+- No schema changes, no env changes required
+- Existing firms with empty PSC registers (LLPs) that were previously marked `unknown` will be corrected on next analysis run; the affected live row (Baringa OC303471) was already re-run during the fix
+
+### Prod
+- No steps required — change is analysis/worker logic only
+- Optional: re-run analysis for LLP firms to refresh any previously `unknown` ukIncorporated values
