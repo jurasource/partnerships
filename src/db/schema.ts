@@ -105,7 +105,7 @@ export const jobs = pgTable("jobs", {
    * "cross-cutting-analysis"  = Phase 4 derived-record extraction job
    */
   jobType: text("job_type")
-    .$type<"research" | "cross-cutting-analysis">()
+    .$type<"research" | "cross-cutting-analysis" | "ch-refresh">()
     .notNull()
     .default("research"),
 });

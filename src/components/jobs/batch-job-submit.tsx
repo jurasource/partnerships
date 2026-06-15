@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ChevronDown, ChevronUp, FlaskConical, BrainCircuit, CheckSquare, Square } from "lucide-react";
+import { ChevronDown, ChevronUp, FlaskConical, BrainCircuit, Building2, CheckSquare, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { runBatchJobs, type BatchJobType } from "@/lib/actions/research-actions";
@@ -44,7 +44,7 @@ export function BatchJobSubmit({ onJobsSubmitted }: Props) {
 
   // Eligibility checks per job type
   function isEligible(firm: FirmListItem): boolean {
-    if (jobType === "research") return firm.companiesHouseNumber !== null;
+    if (jobType === "research" || jobType === "ch-refresh") return firm.companiesHouseNumber !== null;
     return firm.lastResearchedAt !== null;
   }
 
@@ -139,12 +139,27 @@ export function BatchJobSubmit({ onJobsSubmitted }: Props) {
               <BrainCircuit className="h-3.5 w-3.5" />
               Analysis only
             </button>
+            <button
+              type="button"
+              onClick={() => setJobType("ch-refresh")}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-sm transition-colors",
+                jobType === "ch-refresh"
+                  ? "bg-emerald-50 border-emerald-300 text-emerald-700 font-medium"
+                  : "border-neutral-200 text-neutral-600 hover:bg-neutral-50",
+              )}
+            >
+              <Building2 className="h-3.5 w-3.5" />
+              CH Refresh
+            </button>
           </div>
 
           <p className="text-xs text-neutral-500">
             {jobType === "research"
-              ? "Runs full AI research (all 7 topics + Tavily searches) then automatically triggers cross-cutting analysis. Requires a Companies House number."
-              : "Re-derives ownership, risk flags, conflicts, and partnerships from existing findings — no Tavily searches. Requires the firm to have been researched at least once."}
+              ? "Runs full AI research (all 7 topics + Tavily searches) then automatically triggers cross-cutting analysis and CH refresh. Requires a Companies House number."
+              : jobType === "ch-refresh"
+              ? "Fetches a fresh Companies House snapshot and re-derives ownership fields (UK incorporated, country of ownership, etc.). Requires a Companies House number."
+              : "Re-derives risk flags, conflicts, and partnerships from existing findings — no Tavily searches. Requires the firm to have been researched at least once."}
           </p>
 
           {/* Firm list */}
@@ -205,7 +220,7 @@ export function BatchJobSubmit({ onJobsSubmitted }: Props) {
                       </span>
                       <span className="text-xs text-neutral-400 shrink-0">
                         {!eligible && (
-                          jobType === "research"
+                          jobType === "research" || jobType === "ch-refresh"
                             ? "No CH number"
                             : "Not yet researched"
                         )}

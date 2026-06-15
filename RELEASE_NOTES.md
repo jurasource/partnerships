@@ -1,6 +1,7 @@
 # Release Notes
 
 ## 2026-06-15
+- refactor: extracted CH data population (UK incorporated, country of ownership, etc.) from cross-cutting analysis into a dedicated `ch-refresh` BullMQ job; research now auto-enqueues both cross-cutting and ch-refresh jobs on completion; ch-refresh can also be triggered manually from the firm profile page ("Refresh CH Data" button, now queued with live status), the firms table (Building2 icon per row), and the jobs page batch submit ("CH Refresh" option); cross-cutting analysis drops from 5 to 4 steps
 - fix: `extractOwnership` outer try-catch was silently swallowing DB errors (e.g. table-not-found) when writing to `ch_snapshots`, causing CH data to never appear on firm profiles even after running the cross-cutting job; DB errors now propagate and fail the job visibly; CH API fetch errors continue to be caught individually per-call
 - feat: "Refresh CH Data" button added to every firm profile Companies House panel; calls a new `refreshCHData` server action that fetches profile/PSC/officers from CH API and upserts the snapshot inline (no queue) — provides a direct way to populate CH data without running a full analysis job
 - test: added 4 snapshot write tests to `ownership.test.ts` covering: snapshot written with data, LLP empty-PSC regression (Baringa), no snapshot when all CH calls return null, no snapshot for firm with no CH number

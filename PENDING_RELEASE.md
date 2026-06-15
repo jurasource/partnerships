@@ -1,5 +1,16 @@
 # Pending Release Steps
 
+## refactor: CH refresh as dedicated BullMQ job
+
+### Dev
+- Restart the worker process (`npm run worker`) to pick up the new `ch-refresh` queue worker
+- No schema changes — `jobType` is stored as text; the new `"ch-refresh"` value is just a new string
+- Existing firms will have CH refresh triggered automatically on next research run
+- Use "Refresh CH Data" button on firm profile pages, the Building2 icon on the firms table, or the Jobs page batch submit ("CH Refresh" option) to trigger standalone CH refreshes
+
+### Prod
+- Restart/redeploy the worker service to pick up the new `ch-refresh` queue
+
 ## fix: CH snapshot silent failure + Refresh CH Data button
 
 ### Dev

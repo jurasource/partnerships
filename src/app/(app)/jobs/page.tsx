@@ -10,7 +10,7 @@ type JobRow = {
   firmId: string;
   firmName: string | null;
   status: "pending" | "running" | "done" | "failed";
-  jobType: "research" | "cross-cutting-analysis";
+  jobType: "research" | "cross-cutting-analysis" | "ch-refresh";
   progressMessage: string | null;
   createdAt: string;
   startedAt: string | null;
@@ -150,7 +150,11 @@ function JobTable({ title, jobs }: { title: string; jobs: JobRow[] }) {
                   </Link>
                 </td>
                 <td className="px-4 py-3 text-sm text-muted-foreground">
-                  {job.jobType === "cross-cutting-analysis" ? "Cross-Cutting Analysis" : "Research"}
+                  {job.jobType === "cross-cutting-analysis"
+                    ? "Cross-Cutting Analysis"
+                    : job.jobType === "ch-refresh"
+                    ? "CH Refresh"
+                    : "Research"}
                 </td>
                 <td className="px-4 py-3">
                   <JobStatusBadge status={job.status} />

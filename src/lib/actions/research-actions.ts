@@ -4,9 +4,8 @@ import { eq, inArray } from "drizzle-orm";
 
 import { db } from "@/db/client";
 import { firms } from "@/db/schema";
-import { researchQueue, crossCuttingQueue } from "@/lib/jobs/bull";
+import { researchQueue, crossCuttingQueue, chRefreshQueue } from "@/lib/jobs/bull";
 import { enqueueJob } from "@/lib/jobs/queue";
-import { refreshCHSnapshot } from "@/lib/cross-cutting/ownership";
 
 /**
  * runResearch — inserts a pending job row then pushes the job onto the Redis
@@ -82,7 +81,40 @@ export async function runCrossCuttingAnalysis(
   return { ok: true, jobId };
 }
 
-export type BatchJobType = "research" | "analysis";
+/**
+ * runCHRefreshJob — enqueues a ch-refresh job for a firm.
+ *
+ * Fetches a fresh Companies House snapshot and re-derives ownership fields
+ * (ukIncorporated, countryOfOwnership, etc.) from the PSC data.
+ * Requires the firm to have a Companies House number.
+ */
+export async function runCHRefreshJob(
+  firmId: string,
+): Promise<{ ok: boolean; jobId?: string; error?: string }> {
+  const [firm] = await db
+    .select()
+    .from(firms)
+    .where(eq(firms.id, firmId))
+    .limit(1);
+
+  if (!firm) {
+    return { ok: false, error: "Firm not found." };
+  }
+
+  if (!firm.companiesHouseNumber) {
+    return {
+      ok: false,
+      error: "Add a Companies House number before refreshing CH data.",
+    };
+  }
+
+  const jobId = await enqueueJob({ firmId, jobType: "ch-refresh" });
+  await chRefreshQueue.add("ch-refresh", { firmId, jobId });
+
+  return { ok: true, jobId };
+}
+
+export type BatchJobType = "research" | "analysis" | "ch-refresh";
 
 export type BatchJobResult = {
   enqueued: number;
@@ -90,11 +122,12 @@ export type BatchJobResult = {
 };
 
 /**
- * runBatchJobs — enqueues research or cross-cutting-analysis jobs for multiple firms.
+ * runBatchJobs — enqueues research, cross-cutting-analysis, or ch-refresh jobs
+ * for multiple firms.
  *
- * jobType "research" enqueues a full research job (which auto-triggers analysis on
- * completion). jobType "analysis" enqueues a cross-cutting-only job (cheaper; reads
- * existing findings, no Tavily searches).
+ * - "research": full AI research (auto-triggers analysis + ch-refresh on completion)
+ * - "analysis": re-derives risk flags, conflicts, partnerships from existing findings
+ * - "ch-refresh": fetches fresh CH snapshot and re-derives ownership fields
  *
  * Firms that fail their precondition check are skipped and reported back rather than
  * aborting the whole batch.
@@ -132,6 +165,16 @@ export async function runBatchJobs(
       }
       const jobId = await enqueueJob({ firmId });
       await researchQueue.add("research-firm", { firmId, jobId });
+    } else if (jobType === "ch-refresh") {
+      if (!firm.companiesHouseNumber) {
+        skipped.push({
+          firmName: firm.canonicalName,
+          reason: "No Companies House number",
+        });
+        continue;
+      }
+      const jobId = await enqueueJob({ firmId, jobType: "ch-refresh" });
+      await chRefreshQueue.add("ch-refresh", { firmId, jobId });
     } else {
       if (!firm.lastResearchedAt) {
         skipped.push({
@@ -150,20 +193,3 @@ export async function runBatchJobs(
   return { enqueued, skipped };
 }
 
-/**
- * refreshCHData — fetches the Companies House profile, PSC, and officers for a
- * firm and upserts them into ch_snapshots. Runs inline (no queue); completes in
- * a few seconds. Safe to call from a "Refresh CH" button on the firm profile.
- */
-export async function refreshCHData(
-  firmId: string,
-): Promise<{ ok: boolean; error?: string }> {
-  try {
-    await refreshCHSnapshot(firmId);
-    return { ok: true };
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    console.error(`[refreshCHData] Failed for firm ${firmId}:`, message);
-    return { ok: false, error: message };
-  }
-}
