@@ -10,6 +10,7 @@ import { RiskFlagsSection } from "@/components/firms/risk-flags-section";
 import { CollaborationSection } from "@/components/firms/collaboration-section";
 import { FirmConflictsList } from "@/components/firms/firm-conflicts-list";
 import { FirmPartnershipsList } from "@/components/firms/firm-partnerships-list";
+import { CompaniesHousePanel, type CHData } from "@/components/firms/companies-house-panel";
 import { cn, parseCapabilityTags } from "@/lib/utils";
 import type { FirmProfile } from "@/lib/queries/firm-profile";
 import type { CapabilityTag, Firm } from "@/lib/types";
@@ -39,6 +40,7 @@ type FirmProfileLayoutProps = {
   profile: FirmProfile;
   /** All firms — needed by conflict/partnership sections to resolve counterpart names. */
   allFirms: Firm[];
+  chData: CHData | null;
 };
 
 /**
@@ -55,7 +57,7 @@ type FirmProfileLayoutProps = {
  *     - Conflicts of Interest (ANAL-01)
  *     - Known Partnerships (ANAL-02)
  */
-export function FirmProfileLayout({ profile, allFirms }: FirmProfileLayoutProps) {
+export function FirmProfileLayout({ profile, allFirms, chData }: FirmProfileLayoutProps) {
   const {
     firm,
     findingsByTopic,
@@ -130,11 +132,18 @@ export function FirmProfileLayout({ profile, allFirms }: FirmProfileLayoutProps)
 
       {/* Phase 4 cross-cutting sections */}
 
-      {/* Ownership — PROF-04 */}
-      <OwnershipSection
-        ownership={ownership}
-        companiesHouseNumber={firm.companiesHouseNumber}
-      />
+      {/* Ownership + Companies House — side by side, PROF-04 */}
+      <div className="flex items-start">
+        <div className="flex-1">
+          <OwnershipSection
+            ownership={ownership}
+            companiesHouseNumber={firm.companiesHouseNumber}
+          />
+        </div>
+        <div className="flex-1 border-l border-neutral-200">
+          <CompaniesHousePanel chData={chData} />
+        </div>
+      </div>
 
       {/* Risk Flags — PROF-05 */}
       <RiskFlagsSection

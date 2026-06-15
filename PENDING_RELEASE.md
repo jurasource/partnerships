@@ -1,5 +1,16 @@
 # Pending Release Steps
 
+## feat: Companies House data panel on firm profile page
+
+### Dev
+- No schema changes, no env changes
+- No migrations needed
+- CH data is fetched live from the Companies House API on each firm profile page load; requires `COMPANIES_HOUSE_API_KEY` to be set
+
+### Prod
+- No deployment steps required beyond deploying the new build
+- Ensure `COMPANIES_HOUSE_API_KEY` is set in the production environment
+
 ## feat: shared filter bar on analysis page, PSC ownership bug fix, batch job submission, db:migrate script
 
 ### Dev
