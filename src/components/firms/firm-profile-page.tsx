@@ -11,6 +11,7 @@ import { CollaborationSection } from "@/components/firms/collaboration-section";
 import { FirmConflictsList } from "@/components/firms/firm-conflicts-list";
 import { FirmPartnershipsList } from "@/components/firms/firm-partnerships-list";
 import { CompaniesHousePanel, type CHData } from "@/components/firms/companies-house-panel";
+import { FirmFormDialog } from "@/components/firms/firm-form-dialog";
 import { cn, parseCapabilityTags } from "@/lib/utils";
 import type { FirmProfile } from "@/lib/queries/firm-profile";
 import type { CapabilityTag, Firm } from "@/lib/types";
@@ -101,8 +102,9 @@ export function FirmProfileLayout({ profile, allFirms, chData }: FirmProfileLayo
           </div>
         </div>
 
-        {/* Right side: staleness badge + refresh actions */}
+        {/* Right side: edit + staleness badge + refresh actions */}
         <div className="flex items-center gap-3 shrink-0">
+          <FirmFormDialog firm={firm} />
           <StalenessBadge lastResearchedAt={firm.lastResearchedAt} />
           {isResearched && (
             <FirmAnalysisRefresh firmId={firm.id} firmName={firm.canonicalName} />

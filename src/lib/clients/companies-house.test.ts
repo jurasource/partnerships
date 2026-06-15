@@ -246,7 +246,7 @@ describe("Companies House Client (DATA-03)", () => {
       const result = await searchCompanies("");
 
       // Assert
-      expect(result).toEqual([]);
+      expect(result).toEqual({ results: [], totalResults: 0 });
       expect(mockFetch).not.toHaveBeenCalled();
     });
 
@@ -255,7 +255,7 @@ describe("Companies House Client (DATA-03)", () => {
       const result = await searchCompanies("   ");
 
       // Assert
-      expect(result).toEqual([]);
+      expect(result).toEqual({ results: [], totalResults: 0 });
       expect(mockFetch).not.toHaveBeenCalled();
     });
 
@@ -299,13 +299,14 @@ describe("Companies House Client (DATA-03)", () => {
       const result = await searchCompanies(query);
 
       // Assert
-      expect(result).toHaveLength(1);
-      expect(result[0]).toEqual({
+      expect(result.results).toHaveLength(1);
+      expect(result.results[0]).toEqual({
         companyNumber: "01093549",
         title: "ATKINSRÉALIS UK HOLDINGS LIMITED",
         status: "active",
         address: "1 Stowe Avenue, Kympton, RG25 2JD",
       });
+      expect(result.totalResults).toBe(1);
     });
 
     it("includes HTTP Basic auth header in search request", async () => {
