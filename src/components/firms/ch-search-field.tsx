@@ -44,6 +44,7 @@ export function ChSearchStep({ defaultChNumber, onSelect }: ChSearchStepProps) {
   const [totalResults, setTotalResults] = React.useState(0);
   const [selectedResult, setSelectedResult] = React.useState<CompanySearchResult | null>(null);
   const [validation, setValidation] = React.useState<ValidationState>({ status: "idle" });
+  const [statusFilter, setStatusFilter] = React.useState<"all" | "active" | "dissolved">("active");
 
   const debounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -111,8 +112,23 @@ export function ChSearchStep({ defaultChNumber, onSelect }: ChSearchStepProps) {
 
     setResults(res.results);
     setTotalResults(res.totalResults);
-    // Auto-select first result and fetch its full profile
-    await selectResult(res.results[0]);
+    // Auto-select first active result, falling back to first result
+    const firstActive =
+      res.results.find((r) => r.status?.toLowerCase() === "active") ?? res.results[0];
+    await selectResult(firstActive);
+  }
+
+  function handleStatusFilter(next: "all" | "active" | "dissolved") {
+    setStatusFilter(next);
+    // If the currently selected result will be hidden by the new filter, deselect
+    if (next !== "all" && selectedResult) {
+      const stillVisible = selectedResult.status?.toLowerCase() === next;
+      if (!stillVisible) {
+        setSelectedResult(null);
+        setValidation({ status: "idle" });
+        onSelect(null);
+      }
+    }
   }
 
   async function selectResult(result: CompanySearchResult) {
@@ -129,6 +145,11 @@ export function ChSearchStep({ defaultChNumber, onSelect }: ChSearchStepProps) {
 
   const isValid = validation.status === "valid";
   const profile = isValid ? validation.profile : null;
+
+  const filteredResults =
+    statusFilter === "all"
+      ? results
+      : results.filter((r) => r.status?.toLowerCase() === statusFilter);
 
   return (
     <div className="space-y-3">
@@ -177,34 +198,60 @@ export function ChSearchStep({ defaultChNumber, onSelect }: ChSearchStepProps) {
 
       {/* Results list */}
       {results.length > 0 && (
-        <div className="space-y-1">
-          <ul className="max-h-44 overflow-y-auto rounded-md border border-neutral-200 bg-white text-sm">
-            {results.map((r) => (
-              <li key={r.companyNumber}>
-                <button
-                  type="button"
-                  onClick={() => selectResult(r)}
-                  className={cn(
-                    "flex w-full flex-col items-start gap-0.5 px-3 py-2 text-left hover:bg-neutral-50 transition-colors",
-                    selectedResult?.companyNumber === r.companyNumber &&
-                      "bg-blue-50 border-l-2 border-blue-500",
-                  )}
-                >
-                  <span className="font-medium">{r.title}</span>
-                  <span className="text-xs text-neutral-500">
-                    <span className="font-mono">{r.companyNumber}</span>
-                    {r.status ? ` · ${r.status}` : ""}
-                    {r.address ? ` · ${r.address}` : ""}
-                  </span>
-                </button>
-              </li>
+        <div className="space-y-1.5">
+          {/* Status filter toggle */}
+          <div className="flex items-center gap-1">
+            {(["all", "active", "dissolved"] as const).map((f) => (
+              <button
+                key={f}
+                type="button"
+                onClick={() => handleStatusFilter(f)}
+                className={cn(
+                  "rounded px-2 py-0.5 text-xs capitalize transition-colors",
+                  statusFilter === f
+                    ? "bg-neutral-200 text-neutral-800 font-medium"
+                    : "text-neutral-500 hover:text-neutral-700",
+                )}
+              >
+                {f}
+              </button>
             ))}
-          </ul>
-          {totalResults > results.length && (
-            <p className="text-xs text-neutral-400">
-              Showing {results.length} of {totalResults} results — type more to narrow
+          </div>
+
+          {filteredResults.length > 0 ? (
+            <ul className="max-h-40 overflow-y-auto rounded-md border border-neutral-200 bg-white text-sm">
+              {filteredResults.map((r) => (
+                <li key={r.companyNumber}>
+                  <button
+                    type="button"
+                    onClick={() => selectResult(r)}
+                    className={cn(
+                      "flex w-full flex-col items-start gap-0.5 px-3 py-2 text-left hover:bg-neutral-50 transition-colors",
+                      selectedResult?.companyNumber === r.companyNumber &&
+                        "bg-blue-50 border-l-2 border-blue-500",
+                    )}
+                  >
+                    <span className="font-medium">{r.title}</span>
+                    <span className="text-xs text-neutral-500">
+                      <span className="font-mono">{r.companyNumber}</span>
+                      {r.status ? ` · ${r.status}` : ""}
+                      {r.address ? ` · ${r.address}` : ""}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-xs text-neutral-400 py-1">
+              No {statusFilter} companies in these results — try "All" to see everything.
             </p>
           )}
+
+          <p className="text-xs text-neutral-400">
+            {totalResults > results.length
+              ? `Showing ${results.length} of ${totalResults} results — type more to narrow`
+              : `${results.length} result${results.length !== 1 ? "s" : ""}`}
+          </p>
         </div>
       )}
 

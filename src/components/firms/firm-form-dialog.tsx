@@ -253,7 +253,7 @@ export function FirmFormDialog({ firm, trigger, defaultName, onSuccess }: FirmFo
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={trigger ?? defaultTrigger} />
 
-      <DialogContent className="sm:max-w-[520px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[min(460px,calc(100%-2rem))] max-w-none sm:max-w-none">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">
             {isEditMode ? "Edit Firm" : "Add Firm"}
@@ -271,34 +271,27 @@ export function FirmFormDialog({ firm, trigger, defaultName, onSuccess }: FirmFo
 
         {/* Step indicator */}
         <div className="flex items-center gap-2 text-xs text-neutral-400">
-          <span
-            className={cn(
-              "font-medium",
-              step === 1 ? "text-blue-600" : "text-neutral-400",
-            )}
-          >
+          <span className={cn("font-medium", step === 1 ? "text-blue-600" : "text-neutral-400")}>
             1 · Companies House
           </span>
           <span>/</span>
-          <span
-            className={cn(
-              "font-medium",
-              step === 2 ? "text-blue-600" : "text-neutral-400",
-            )}
-          >
+          <span className={cn("font-medium", step === 2 ? "text-blue-600" : "text-neutral-400")}>
             2 · Firm Details
           </span>
         </div>
 
         {/* ── STEP 1 ── */}
         {step === 1 && (
-          <div className="space-y-4 py-1">
-            <ChSearchStep
-              defaultChNumber={firm?.companiesHouseNumber ?? undefined}
-              onSelect={setSelectedProfile}
-            />
+          <>
+            {/* Scrollable body — footer stays pinned below */}
+            <div className="overflow-y-auto max-h-[55vh] space-y-3">
+              <ChSearchStep
+                defaultChNumber={firm?.companiesHouseNumber ?? undefined}
+                onSelect={setSelectedProfile}
+              />
+            </div>
 
-            <DialogFooter className="pt-2">
+            <DialogFooter>
               <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
                 Cancel
               </Button>
@@ -311,110 +304,113 @@ export function FirmFormDialog({ firm, trigger, defaultName, onSuccess }: FirmFo
                 Next →
               </Button>
             </DialogFooter>
-          </div>
+          </>
         )}
 
         {/* ── STEP 2 ── */}
         {step === 2 && (
-          <form onSubmit={handleSubmit} className="space-y-5 py-1">
-            {/* Canonical name */}
-            <div className="space-y-1.5">
-              <Label htmlFor="canonical-name" className="text-sm">
-                Firm Name <span className="text-red-600">*</span>
-              </Label>
-              <Input
-                id="canonical-name"
-                placeholder="e.g. AtkinsRéalis"
-                value={canonicalName}
-                onChange={(e) => {
-                  setCanonicalName(e.target.value);
-                  if (nameError) setNameError(null);
-                }}
-                className={cn(nameError && "border-red-500 focus-visible:ring-red-500")}
-              />
-              {nameError && <p className="text-xs text-red-600">{nameError}</p>}
-            </div>
+          <form onSubmit={handleSubmit} className="contents">
+            {/* Scrollable body — footer stays pinned below */}
+            <div className="overflow-y-auto max-h-[55vh] space-y-5 py-1">
+              {/* Canonical name */}
+              <div className="space-y-1.5">
+                <Label htmlFor="canonical-name" className="text-sm">
+                  Firm Name <span className="text-red-600">*</span>
+                </Label>
+                <Input
+                  id="canonical-name"
+                  placeholder="e.g. AtkinsRéalis"
+                  value={canonicalName}
+                  onChange={(e) => {
+                    setCanonicalName(e.target.value);
+                    if (nameError) setNameError(null);
+                  }}
+                  className={cn(nameError && "border-red-500 focus-visible:ring-red-500")}
+                />
+                {nameError && <p className="text-xs text-red-600">{nameError}</p>}
+              </div>
 
-            {/* Aliases */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <Label className="text-sm">Aliases</Label>
-                <div className="flex items-center gap-2">
-                  {hasChForRefresh && (
+              {/* Aliases */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm">Aliases</Label>
+                  <div className="flex items-center gap-2">
+                    {hasChForRefresh && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleRefreshAliases}
+                        disabled={refreshingAliases}
+                        className="h-7 px-2 text-xs text-neutral-500 hover:text-neutral-800"
+                      >
+                        {refreshingAliases ? (
+                          <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                        ) : (
+                          <RefreshCw className="h-3 w-3 mr-1" />
+                        )}
+                        Refresh from CH
+                      </Button>
+                    )}
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
-                      onClick={handleRefreshAliases}
-                      disabled={refreshingAliases}
+                      onClick={handleGenerateSuggestions}
+                      disabled={generatingSuggestions}
                       className="h-7 px-2 text-xs text-neutral-500 hover:text-neutral-800"
                     >
-                      {refreshingAliases ? (
+                      {generatingSuggestions ? (
                         <Loader2 className="h-3 w-3 animate-spin mr-1" />
                       ) : (
-                        <RefreshCw className="h-3 w-3 mr-1" />
+                        <Sparkles className="h-3 w-3 mr-1" />
                       )}
-                      Refresh from CH
+                      AI Suggest
                     </Button>
-                  )}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleGenerateSuggestions}
-                    disabled={generatingSuggestions}
-                    className="h-7 px-2 text-xs text-neutral-500 hover:text-neutral-800"
-                  >
-                    {generatingSuggestions ? (
-                      <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                    ) : (
-                      <Sparkles className="h-3 w-3 mr-1" />
-                    )}
-                    AI Suggest
-                  </Button>
+                  </div>
+                </div>
+                <AliasChips
+                  aliases={aliases}
+                  onChange={setAliases}
+                  suggestions={aliasSuggestions}
+                  onAcceptSuggestion={acceptSuggestion}
+                  onRejectSuggestion={rejectSuggestion}
+                />
+              </div>
+
+              {/* Capability tags */}
+              <div className="space-y-1.5">
+                <Label className="text-sm">Capability Tags</Label>
+                <div className="flex flex-wrap gap-2">
+                  {ALL_TAGS.map((tag) => {
+                    const isSelected = selectedTags.includes(tag);
+                    const styles = TAG_STYLES[tag];
+                    return (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => toggleTag(tag)}
+                        className={cn(
+                          "inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium transition-colors cursor-pointer",
+                          isSelected ? styles.selected : styles.unselected,
+                        )}
+                      >
+                        {tag}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
-              <AliasChips
-                aliases={aliases}
-                onChange={setAliases}
-                suggestions={aliasSuggestions}
-                onAcceptSuggestion={acceptSuggestion}
-                onRejectSuggestion={rejectSuggestion}
-              />
+
+              {/* Form-level error */}
+              {formError && (
+                <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">
+                  {formError}
+                </p>
+              )}
             </div>
 
-            {/* Capability tags */}
-            <div className="space-y-1.5">
-              <Label className="text-sm">Capability Tags</Label>
-              <div className="flex flex-wrap gap-2">
-                {ALL_TAGS.map((tag) => {
-                  const isSelected = selectedTags.includes(tag);
-                  const styles = TAG_STYLES[tag];
-                  return (
-                    <button
-                      key={tag}
-                      type="button"
-                      onClick={() => toggleTag(tag)}
-                      className={cn(
-                        "inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium transition-colors cursor-pointer",
-                        isSelected ? styles.selected : styles.unselected,
-                      )}
-                    >
-                      {tag}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Form-level error */}
-            {formError && (
-              <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">
-                {formError}
-              </p>
-            )}
-
-            <DialogFooter className="gap-2 pt-2">
+            <DialogFooter className="gap-2">
               <Button
                 type="button"
                 variant="outline"
