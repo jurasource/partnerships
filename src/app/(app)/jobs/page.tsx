@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { JobStatusBadge } from "@/components/research/job-status-badge";
 
@@ -100,10 +101,10 @@ export default function JobsPage() {
       ) : (
         <div className="space-y-4">
           {active.length > 0 && (
-            <JobTable title="Active" jobs={active} showProgress />
+            <JobTable title="Active" jobs={active} />
           )}
           {finished.length > 0 && (
-            <JobTable title="Completed" jobs={finished} showProgress={false} />
+            <JobTable title="Completed" jobs={finished} />
           )}
         </div>
       )}
@@ -111,15 +112,7 @@ export default function JobsPage() {
   );
 }
 
-function JobTable({
-  title,
-  jobs,
-  showProgress,
-}: {
-  title: string;
-  jobs: JobRow[];
-  showProgress: boolean;
-}) {
+function JobTable({ title, jobs }: { title: string; jobs: JobRow[] }) {
   return (
     <div>
       <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
@@ -131,9 +124,7 @@ function JobTable({
             <tr>
               <th className="text-left px-4 py-2.5 font-medium text-muted-foreground w-48">Firm</th>
               <th className="text-left px-4 py-2.5 font-medium text-muted-foreground w-28">Status</th>
-              {showProgress && (
-                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Progress</th>
-              )}
+              <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Details</th>
               <th className="text-left px-4 py-2.5 font-medium text-muted-foreground w-28">Started</th>
               <th className="text-left px-4 py-2.5 font-medium text-muted-foreground w-24">Duration</th>
             </tr>
@@ -142,24 +133,27 @@ function JobTable({
             {jobs.map((job) => (
               <tr key={job.id} className="hover:bg-muted/20 transition-colors">
                 <td className="px-4 py-3 font-medium truncate max-w-0 w-48">
-                  {job.firmName ?? job.firmId}
+                  <Link
+                    href={`/firms/${job.firmId}`}
+                    className="hover:underline text-foreground"
+                  >
+                    {job.firmName ?? job.firmId}
+                  </Link>
                 </td>
                 <td className="px-4 py-3">
                   <JobStatusBadge status={job.status} />
                 </td>
-                {showProgress && (
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {job.status === "running" && job.progressMessage ? (
-                      job.progressMessage
-                    ) : job.status === "failed" && job.errorMessage ? (
-                      <span className="text-red-600 text-xs">{job.errorMessage}</span>
-                    ) : job.status === "pending" ? (
-                      <span className="text-muted-foreground/60">Waiting for worker…</span>
-                    ) : (
-                      "—"
-                    )}
-                  </td>
-                )}
+                <td className="px-4 py-3 text-muted-foreground">
+                  {job.status === "running" && job.progressMessage ? (
+                    job.progressMessage
+                  ) : job.status === "failed" && job.errorMessage ? (
+                    <span className="text-red-600 text-xs">{job.errorMessage}</span>
+                  ) : job.status === "pending" ? (
+                    <span className="text-muted-foreground/60">Waiting for worker…</span>
+                  ) : (
+                    "—"
+                  )}
+                </td>
                 <td className="px-4 py-3 text-muted-foreground tabular-nums">
                   {formatTime(job.startedAt ?? job.createdAt)}
                 </td>
