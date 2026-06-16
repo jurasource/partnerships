@@ -507,7 +507,7 @@ describe("no-valid-team", () => {
     expect(result.recommendations).toHaveLength(0);
     if (result.status === "no_valid_team") {
       expect(result.reason).toBeTruthy();
-      expect(result.reason.length).toBeGreaterThan(0);
+      expect((result.reason ?? "").length).toBeGreaterThan(0);
     }
   });
 });

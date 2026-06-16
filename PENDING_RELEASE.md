@@ -9,6 +9,16 @@
 - Run `npm run db:push` (or equivalent migration) to add `search_results` column
 - Re-run research on existing firms to populate `search_results` (old rows show only cited URLs in sidebar until re-researched)
 
+## Phase 5 — consortium recommender API
+
+### Dev
+- Ensure Postgres is running (`docker compose up -d db`); no migration needed (Phase 5 is read-only — reads from existing firms, conflictPairs, partnershipPairs, ownershipRecords, riskFlags, procurementRecords tables)
+- No new env vars required
+
+### Prod
+- No migration required — Phase 5 reads from tables created in Phases 1–4; no schema changes
+- No new env vars required; deploy new build
+
 ## fix(analysis): group/capability filter freeze on prod — set modal={false}
 
 ### Dev
