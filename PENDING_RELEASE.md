@@ -8,6 +8,17 @@
 ### Prod
 - Run `npm run db:push` (or equivalent migration) to add `search_results` column
 - Re-run research on existing firms to populate `search_results` (old rows show only cited URLs in sidebar until re-researched)
+## Phase 5 — /report page + E9 seeded integration test
+
+### Dev
+- Run `docker compose up -d db` and `npm run db:push && npm run db:seed` (idempotent) before running the E9 seeded test; `npm test` must be green.
+- For the E9 test to execute (not skip), set `DATABASE_URL` in your environment pointing to the seeded Postgres instance.
+- `/report` is read-only — no new migrations required.
+
+### Prod
+- No schema changes — `/report` reads from existing Phase 1–4 tables; read-only.
+- No new env vars required beyond the existing `DATABASE_URL`.
+
 ## Phase 5 — /recommend page + navbar links
 
 ### Dev

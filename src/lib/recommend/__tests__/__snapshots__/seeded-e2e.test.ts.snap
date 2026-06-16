@@ -1,0 +1,184 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`E9 — seeded 12×7 integration test > returns a schema-valid 1+1+1 ok result from the seeded Postgres 1`] = `
+{
+  "recommendations": [
+    {
+      "firms": [
+        {
+          "capabilityTags": [
+            "Consultancy",
+          ],
+          "firmName": "BARINGA PARTNERS LLP",
+          "ownershipRecord": {
+            "countryOfOwnership": "UK",
+            "ukIncorporated": "yes",
+          },
+          "riskFlagCount": 0,
+          "signalScores": {
+            "capabilityMatch": 0.33,
+            "contractRelevance": 0,
+            "riskFlags": 1,
+            "ukOwnership": 1,
+          },
+        },
+        {
+          "capabilityTags": [
+            "Infrastructure",
+            "Nuclear",
+          ],
+          "firmName": "AtkinsRéalis",
+          "ownershipRecord": {
+            "countryOfOwnership": null,
+            "ukIncorporated": "unknown",
+          },
+          "riskFlagCount": 0,
+          "signalScores": {
+            "capabilityMatch": 0.67,
+            "contractRelevance": 0,
+            "riskFlags": 1,
+            "ukOwnership": 0.5,
+          },
+        },
+        {
+          "capabilityTags": [
+            "Infrastructure",
+            "Nuclear",
+          ],
+          "firmName": "Frazer Nash",
+          "ownershipRecord": {
+            "countryOfOwnership": null,
+            "ukIncorporated": "no",
+          },
+          "riskFlagCount": 0,
+          "signalScores": {
+            "capabilityMatch": 0.67,
+            "contractRelevance": 0,
+            "riskFlags": 1,
+            "ukOwnership": 0,
+          },
+        },
+      ],
+      "hasPriorPartnerships": true,
+      "rank": 1,
+    },
+    {
+      "firms": [
+        {
+          "capabilityTags": [
+            "Nuclear",
+          ],
+          "firmName": "CAVENDISH NUCLEAR LIMITED",
+          "ownershipRecord": {
+            "countryOfOwnership": null,
+            "ukIncorporated": "no",
+          },
+          "riskFlagCount": 3,
+          "signalScores": {
+            "capabilityMatch": 0.33,
+            "contractRelevance": 0,
+            "riskFlags": 0.44,
+            "ukOwnership": 0,
+          },
+        },
+        {
+          "capabilityTags": [
+            "Consultancy",
+          ],
+          "firmName": "BARINGA PARTNERS LLP",
+          "ownershipRecord": {
+            "countryOfOwnership": "UK",
+            "ukIncorporated": "yes",
+          },
+          "riskFlagCount": 0,
+          "signalScores": {
+            "capabilityMatch": 0.33,
+            "contractRelevance": 0,
+            "riskFlags": 1,
+            "ukOwnership": 1,
+          },
+        },
+        {
+          "capabilityTags": [
+            "Infrastructure",
+            "Nuclear",
+          ],
+          "firmName": "AMENTUM INTERNATIONAL HOLDINGS UK LTD.",
+          "ownershipRecord": {
+            "countryOfOwnership": null,
+            "ukIncorporated": "yes",
+          },
+          "riskFlagCount": 0,
+          "signalScores": {
+            "capabilityMatch": 0.67,
+            "contractRelevance": 0,
+            "riskFlags": 1,
+            "ukOwnership": 1,
+          },
+        },
+      ],
+      "hasPriorPartnerships": true,
+      "rank": 2,
+    },
+    {
+      "firms": [
+        {
+          "capabilityTags": [
+            "Consultancy",
+            "Infrastructure",
+            "Nuclear",
+          ],
+          "firmName": "Laing O'Rourke",
+          "ownershipRecord": null,
+          "riskFlagCount": 0,
+          "signalScores": {
+            "capabilityMatch": 1,
+            "contractRelevance": 0,
+            "riskFlags": 1,
+            "ukOwnership": 0.5,
+          },
+        },
+        {
+          "capabilityTags": [
+            "Infrastructure",
+            "Nuclear",
+          ],
+          "firmName": "AtkinsRéalis",
+          "ownershipRecord": {
+            "countryOfOwnership": null,
+            "ukIncorporated": "unknown",
+          },
+          "riskFlagCount": 0,
+          "signalScores": {
+            "capabilityMatch": 0.67,
+            "contractRelevance": 0,
+            "riskFlags": 1,
+            "ukOwnership": 0.5,
+          },
+        },
+        {
+          "capabilityTags": [
+            "Infrastructure",
+            "Nuclear",
+          ],
+          "firmName": "Frazer Nash",
+          "ownershipRecord": {
+            "countryOfOwnership": null,
+            "ukIncorporated": "no",
+          },
+          "riskFlagCount": 0,
+          "signalScores": {
+            "capabilityMatch": 0.67,
+            "contractRelevance": 0,
+            "riskFlags": 1,
+            "ukOwnership": 0,
+          },
+        },
+      ],
+      "hasPriorPartnerships": true,
+      "rank": 3,
+    },
+  ],
+  "status": "ok",
+}
+`;
