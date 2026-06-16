@@ -229,3 +229,9 @@
 ### Prod
 - No steps required — change is analysis/worker logic only
 - Optional: re-run analysis for LLP firms to refresh any previously `unknown` ukIncorporated values
+
+## fix(analysis): prevent PartnershipTable infinite render loop
+### Dev
+- No steps required
+### Prod
+- No steps required
