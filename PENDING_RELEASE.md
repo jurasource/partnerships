@@ -8,6 +8,14 @@
 ### Prod
 - Run `npm run db:push` (or equivalent migration) to add `search_results` column
 - Re-run research on existing firms to populate `search_results` (old rows show only cited URLs in sidebar until re-researched)
+## chore: commit Drizzle migration 0003 (ch_snapshots table)
+
+### Dev
+- Run `npm run db:push` or `npx drizzle-kit migrate` to apply migration 0003 if not already applied.
+
+### Prod
+- Apply migration 0003 before deploying: `npx drizzle-kit migrate`.
+
 ## fix(05): Phase 5 code-review fixes — scorer correctness, safe JSON parsing, UI + test fixes
 
 ### Dev

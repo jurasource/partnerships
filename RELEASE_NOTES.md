@@ -6,6 +6,7 @@
 - feat(research): store all raw Tavily search results in a new `search_results` column on `findings`; adds `npm run worker:dry-run` diagnostic script that captures and writes every Anthropic request and response to `dry-run-output/`
 - feat(ui): source type badge ("AI Research" / "Verified API") moved inline with the section title; citation links now listed flat without badge prefix
 - feat(ui): Sources sidebar restructured — grouped by topic section instead of source type; shows all Tavily results per topic with cited URLs in blue and uncited results dimmed; citation dates shown where available
+- chore: commit generated Drizzle migration 0003 (ch_snapshots table — FK to firms, unique index on firm_id).
 - fix(05): CR-001 — added guard in scorer to return no_valid_team when locked firms exceed team size, preventing silent over-sized team output.
 - fix(05): CR-002 — fixed partnership weight normalisation; per-firm signals now normalise independently of the partnership bonus, eliminating ranking distortion at skewed weights.
 - fix(05): WR-001 — replaced unguarded JSON.parse calls on capabilityTags with a safe helper (parseCapabilityTags) in scorer.ts and lock-firms.ts; malformed JSON returns [] instead of crashing.
