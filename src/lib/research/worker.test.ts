@@ -145,6 +145,8 @@ vi.mock("./grounding", () => ({
 vi.mock("./prompts", () => ({
   RESEARCH_SYSTEM_PROMPT: "You are a test analyst.",
   buildSearchQuery: vi.fn((firmName: string, topic: { name: string }) => `${firmName} ${topic.name}`),
+  buildGroundingBlock: vi.fn(() => "Test grounding block"),
+  buildTopicBlock: vi.fn(() => "Test topic block"),
   buildTopicPrompt: vi.fn(() => "Test prompt"),
   formatSearchResults: vi.fn(() => "Test results"),
 }));

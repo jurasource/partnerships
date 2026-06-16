@@ -7,7 +7,7 @@ import { findings, firms, topics } from "@/db/schema";
 import type { WebSearchClient } from "@/lib/search/types";
 import { FindingSchema, NOT_FOUND_SENTINEL, RESEARCH_ERROR_SENTINEL, type SynthesisedFinding } from "./schemas";
 import { buildGroundingContext } from "./grounding";
-import { RESEARCH_SYSTEM_PROMPT, buildSearchQuery, buildTopicPrompt } from "./prompts";
+import { RESEARCH_SYSTEM_PROMPT, buildSearchQuery, buildGroundingBlock, buildTopicBlock } from "./prompts";
 
 /**
  * Per-firm research worker — the core of Phase 2 (AI-SPEC §4).
@@ -55,6 +55,10 @@ export async function runResearchWorker(
       `job ${jobId}, ${allTopics.length} topics`,
   );
 
+  // Pre-compute the grounding block once — it's stable across all 7 topic calls for
+  // this firm and is the cacheable prefix for Anthropic prompt caching.
+  const groundingBlock = buildGroundingBlock(groundingContext);
+
   // Sequential topic loop — intentionally NOT Promise.all (AI-SPEC §4b async design,
   // Anthropic rate limits, and partial-failure handling require sequential execution)
   for (let i = 0; i < allTopics.length; i++) {
@@ -79,11 +83,35 @@ export async function runResearchWorker(
     let genOutputTokens: number | undefined;
     let genRawText: string | undefined;
 
+    // Messages array used for every generateText call in this topic loop.
+    // Split into two content blocks so Anthropic can cache the stable grounding prefix:
+    // - Block 1 (groundingBlock): firm header + CH profile + procurement records — identical
+    //   across all 7 topics, marked with cache_control so it's stored for 5 minutes.
+    // - Block 2 (topicBlock): topic name + Tavily results + instruction — changes per topic.
+    const messages = [
+      {
+        role: "user" as const,
+        content: [
+          {
+            type: "text" as const,
+            text: groundingBlock,
+            providerOptions: {
+              anthropic: { cacheControl: { type: "ephemeral" } },
+            },
+          },
+          {
+            type: "text" as const,
+            text: buildTopicBlock(topic, searchResults, groundingContext.firmName),
+          },
+        ],
+      },
+    ];
+
     try {
       let result = await generateText({
         model: anthropic("claude-sonnet-4-6"),
         system: RESEARCH_SYSTEM_PROMPT,
-        prompt: buildTopicPrompt(topic, groundingContext, searchResults),
+        messages,
         output: Output.object({ schema: FindingSchema }),
         maxOutputTokens: 2048,
         temperature: 0.1,
@@ -96,9 +124,14 @@ export async function runResearchWorker(
       genOutputTokens = result.usage?.outputTokens;
       genRawText = result.text;
 
+      const cacheMeta = result.providerMetadata?.anthropic as {
+        cacheCreationInputTokens?: number;
+        cacheReadInputTokens?: number;
+      } | undefined;
       console.log(
         `[research] generateText: finishReason=${result.finishReason}, ` +
-          `tokens in=${result.usage?.inputTokens} out=${result.usage?.outputTokens}`,
+          `tokens in=${result.usage?.inputTokens} out=${result.usage?.outputTokens}, ` +
+          `cache created=${cacheMeta?.cacheCreationInputTokens ?? 0} read=${cacheMeta?.cacheReadInputTokens ?? 0}`,
       );
 
       // Retry with a higher ceiling when the response was truncated mid-JSON
@@ -109,7 +142,7 @@ export async function runResearchWorker(
         result = await generateText({
           model: anthropic("claude-sonnet-4-6"),
           system: RESEARCH_SYSTEM_PROMPT,
-          prompt: buildTopicPrompt(topic, groundingContext, searchResults),
+          messages,
           output: Output.object({ schema: FindingSchema }),
           maxOutputTokens: 4096,
           temperature: 0.1,
@@ -119,9 +152,14 @@ export async function runResearchWorker(
         genInputTokens = result.usage?.inputTokens;
         genOutputTokens = result.usage?.outputTokens;
         genRawText = result.text;
+        const retryMeta = result.providerMetadata?.anthropic as {
+          cacheCreationInputTokens?: number;
+          cacheReadInputTokens?: number;
+        } | undefined;
         console.log(
           `[research] retry generateText: finishReason=${result.finishReason}, ` +
-            `tokens in=${result.usage?.inputTokens} out=${result.usage?.outputTokens}`,
+            `tokens in=${result.usage?.inputTokens} out=${result.usage?.outputTokens}, ` +
+            `cache created=${retryMeta?.cacheCreationInputTokens ?? 0} read=${retryMeta?.cacheReadInputTokens ?? 0}`,
         );
       }
 

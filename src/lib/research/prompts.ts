@@ -57,13 +57,73 @@ export function formatSearchResults(results: WebSearchResult[]): string {
 }
 
 /**
- * Build the per-topic user prompt.
+ * Build the stable grounding prefix for a firm — identical across all 7 topic calls.
  *
- * Assembles:
- * - Firm header including Companies House number (entity disambiguation — E6)
- * - Grounding context block (CH profile + procurement records)
- * - Tavily search results block
- * - Not-found sentinel instruction
+ * This is the cacheable block for Anthropic prompt caching: it contains the firm
+ * header and all structured UK data (CH profile + procurement records) that does
+ * not change between topics. A cache_control marker is applied to this block in
+ * the worker so Anthropic caches everything up to and including this prefix.
+ *
+ * @param ctx  Grounding context (CH + OCDS data)
+ */
+export function buildGroundingBlock(ctx: GroundingContext): string {
+  const chNumberNote = ctx.companiesHouseNumber
+    ? ` (Companies House: ${ctx.companiesHouseNumber})`
+    : "";
+
+  return `
+## Firm: ${ctx.firmName}${chNumberNote}
+
+### Grounding Context (UK Structured Data — verified, confidence HIGH)
+=== Grounding Context (UK Structured Data — verified, confidence HIGH) ===
+Firm: ${ctx.firmName}${chNumberNote}
+
+${ctx.chSummary}
+
+=== UK Procurement Records (top 10 by recency) ===
+${ctx.procurementSummary}
+`.trim();
+}
+
+/**
+ * Build the per-topic suffix — changes every call, so never cached.
+ *
+ * Contains the topic header, Tavily search results, and synthesis instruction.
+ * Appended after the cached grounding block in the worker's messages array.
+ *
+ * @param topic         The research topic
+ * @param searchResults Tavily search results for this topic
+ * @param firmName      Canonical firm name (for the instruction line)
+ */
+export function buildTopicBlock(
+  topic: Topic,
+  searchResults: WebSearchResult[],
+  firmName: string,
+): string {
+  const searchBlock = formatSearchResults(searchResults);
+
+  return `
+## Topic: ${topic.name}
+
+### Web Search Results (Tavily — cite by URL, confidence MEDIUM)
+${searchBlock}
+
+### Instruction
+Synthesise a finding for topic "${topic.name}" about ${firmName}.
+If no reliable source supports a finding on this topic, respond with:
+  summary: "Not found: <brief reason>"
+  confidence: HIGH
+  sourceUrl: "not-found"
+  sourceTitle: "Research worker"
+  rawSnippet: "No verifiable source found."
+`.trim();
+}
+
+/**
+ * Build the complete per-topic user prompt (grounding + topic blocks joined).
+ *
+ * Kept as a convenience wrapper so existing tests and callers that pass the
+ * combined prompt as a single string continue to work unchanged.
  *
  * @param topic         The research topic
  * @param ctx           Grounding context (CH + OCDS data)
@@ -74,39 +134,5 @@ export function buildTopicPrompt(
   ctx: GroundingContext,
   searchResults: WebSearchResult[],
 ): string {
-  const chNumberNote = ctx.companiesHouseNumber
-    ? ` (Companies House: ${ctx.companiesHouseNumber})`
-    : "";
-
-  const groundingBlock = `
-=== Grounding Context (UK Structured Data — verified, confidence HIGH) ===
-Firm: ${ctx.firmName}${chNumberNote}
-
-${ctx.chSummary}
-
-=== UK Procurement Records (top 10 by recency) ===
-${ctx.procurementSummary}
-`.trim();
-
-  const searchBlock = formatSearchResults(searchResults);
-
-  return `
-## Firm: ${ctx.firmName}${chNumberNote}
-## Topic: ${topic.name}
-
-### Grounding Context (UK Structured Data — verified, confidence HIGH)
-${groundingBlock}
-
-### Web Search Results (Tavily — cite by URL, confidence MEDIUM)
-${searchBlock}
-
-### Instruction
-Synthesise a finding for topic "${topic.name}" about ${ctx.firmName}.
-If no reliable source supports a finding on this topic, respond with:
-  summary: "Not found: <brief reason>"
-  confidence: HIGH
-  sourceUrl: "not-found"
-  sourceTitle: "Research worker"
-  rawSnippet: "No verifiable source found."
-`.trim();
+  return `${buildGroundingBlock(ctx)}\n\n${buildTopicBlock(topic, searchResults, ctx.firmName)}`;
 }

@@ -117,6 +117,8 @@ vi.mock("@/lib/research/prompts", () => ({
   buildSearchQuery: vi.fn(
     (firmName: string, topic: { name: string }) => `${firmName} ${topic.name}`,
   ),
+  buildGroundingBlock: vi.fn(() => "Test grounding block"),
+  buildTopicBlock: vi.fn(() => "Test topic block"),
   buildTopicPrompt: vi.fn(() => "Test prompt"),
   formatSearchResults: vi.fn(() => "Test results"),
 }));

@@ -241,3 +241,9 @@
 - No steps required — stagger is applied automatically when submitting batch jobs
 ### Prod
 - No steps required
+
+## feat(research): Anthropic prompt caching on research worker grounding block
+### Dev
+- No steps required — caching is applied automatically by the worker
+### Prod
+- No steps required

@@ -66,3 +66,4 @@
 
 ## 2026-06-16
 - fix(rate-limit): stagger batch job starts (90s between research jobs, 30s between analysis-only jobs) to prevent simultaneous LLM API calls from breaching the Anthropic 30k input-token-per-minute org rate limit
+- feat(research): split buildTopicPrompt into buildGroundingBlock + buildTopicBlock; apply Anthropic cache_control to the grounding prefix in the research worker so the system prompt + structured firm data is cached across all 7 topic calls per firm (~47% fewer billable input tokens; cache hit/miss stats logged per call as "cache created=N read=N")
