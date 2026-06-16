@@ -36,6 +36,7 @@ export const RecommendRequestSchema = z.object({
     partnerships: 25,
     riskFlags: 25,
   }),
+  poolFirmIds: z.array(z.string().uuid()).optional(),
 });
 
 // ---------------------------------------------------------------------------
