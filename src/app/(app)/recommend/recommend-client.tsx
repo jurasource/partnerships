@@ -93,6 +93,7 @@ export function RecommendClient({ firms }: RecommendClientProps) {
 
   function handleReset() {
     setLockedFirmIds([]);
+    setResult(null);
   }
 
   return (
