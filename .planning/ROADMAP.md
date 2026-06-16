@@ -170,7 +170,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1)*
 
-- [ ] 05-02-PLAN.md — /recommend page vertical slice: shadcn slider/accordion/card installs, capability stepper, weight sliders, lock-firms accordion, firm sub-card (NSI/ownership/conflict/risk badges), score breakdown, in-place lock-and-recompute, navbar promotion (CONS-01..05)
+- [x] 05-02-PLAN.md — /recommend page vertical slice: shadcn slider/accordion/card installs, capability stepper, weight sliders, lock-firms accordion, firm sub-card (NSI/ownership/conflict/risk badges), score breakdown, in-place lock-and-recompute, navbar promotion (CONS-01..05)
 
 **Wave 3** *(blocked on Wave 2)*
 
