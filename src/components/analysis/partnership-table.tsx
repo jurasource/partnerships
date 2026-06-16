@@ -49,107 +49,108 @@ function formatDateGB(iso: string | null): string {
   return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
 }
 
+const COLUMNS: ColumnDef<PartnershipRow>[] = [
+  {
+    accessorKey: "firmAName",
+    header: "Firm A",
+    cell: ({ row }) => (
+      <Link
+        href={`/firms/${row.original.firmAId}`}
+        className="text-blue-600 hover:underline text-sm font-medium"
+      >
+        {row.getValue("firmAName")}
+      </Link>
+    ),
+  },
+  {
+    accessorKey: "firmBName",
+    header: "Firm B",
+    cell: ({ row }) => (
+      <Link
+        href={`/firms/${row.original.firmBId}`}
+        className="text-blue-600 hover:underline text-sm font-medium"
+      >
+        {row.getValue("firmBName")}
+      </Link>
+    ),
+  },
+  {
+    accessorKey: "partnershipType",
+    header: "Type",
+    cell: ({ row }) => {
+      const type = row.getValue<string>("partnershipType");
+      return (
+        <Badge
+          variant="outline"
+          className="text-xs px-1.5 py-0.5 border bg-green-50 text-green-700 border-green-100"
+        >
+          {type === "jv" ? "JV" : "Co-supplier"}
+        </Badge>
+      );
+    },
+  },
+  {
+    accessorKey: "evidenceSummary",
+    header: "Evidence",
+    enableSorting: false,
+    cell: ({ row }) => {
+      const text = row.getValue<string>("evidenceSummary");
+      const truncated = truncate(text, 60);
+      if (truncated === text) {
+        return <span className="text-sm text-neutral-700">{text}</span>;
+      }
+      return (
+        <Tooltip>
+          <TooltipTrigger render={<span className="cursor-default" />}>
+            <span className="text-sm text-neutral-700">{truncated}</span>
+          </TooltipTrigger>
+          <TooltipContent className="max-w-xs">{text}</TooltipContent>
+        </Tooltip>
+      );
+    },
+  },
+  {
+    accessorKey: "sourceType",
+    header: "Source",
+    enableSorting: false,
+    cell: ({ row }) => {
+      const src = row.getValue<string>("sourceType");
+      const isOcds = src === "ocds";
+      return (
+        <Badge
+          variant="outline"
+          className={cn(
+            "text-xs px-1.5 py-0.5 border",
+            isOcds
+              ? "bg-sky-50 text-sky-700 border-sky-100"
+              : "bg-violet-50 text-violet-700 border-violet-100",
+          )}
+        >
+          {isOcds ? "OCDS" : "AI Research"}
+        </Badge>
+      );
+    },
+  },
+  {
+    accessorKey: "evidenceDate",
+    header: "Date",
+    cell: ({ row }) => (
+      <span className="font-mono text-xs text-neutral-600">
+        {formatDateGB(row.getValue<string | null>("evidenceDate"))}
+      </span>
+    ),
+  },
+];
+
 export function PartnershipTable({ allFirms, partnershipPairs }: Props) {
-  const firmNameMap = new Map(allFirms.map((f) => [f.id, f]));
-
-  const rows: PartnershipRow[] = partnershipPairs.map((p) => ({
-    ...p,
-    firmAName: firmNameMap.get(p.firmAId)?.canonicalName ?? p.firmAId,
-    firmBName: firmNameMap.get(p.firmBId)?.canonicalName ?? p.firmBId,
-  }));
-
-  const columns: ColumnDef<PartnershipRow>[] = [
-    {
-      accessorKey: "firmAName",
-      header: "Firm A",
-      cell: ({ row }) => (
-        <Link
-          href={`/firms/${row.original.firmAId}`}
-          className="text-blue-600 hover:underline text-sm font-medium"
-        >
-          {row.getValue("firmAName")}
-        </Link>
-      ),
-    },
-    {
-      accessorKey: "firmBName",
-      header: "Firm B",
-      cell: ({ row }) => (
-        <Link
-          href={`/firms/${row.original.firmBId}`}
-          className="text-blue-600 hover:underline text-sm font-medium"
-        >
-          {row.getValue("firmBName")}
-        </Link>
-      ),
-    },
-    {
-      accessorKey: "partnershipType",
-      header: "Type",
-      cell: ({ row }) => {
-        const type = row.getValue<string>("partnershipType");
-        return (
-          <Badge
-            variant="outline"
-            className="text-xs px-1.5 py-0.5 border bg-green-50 text-green-700 border-green-100"
-          >
-            {type === "jv" ? "JV" : "Co-supplier"}
-          </Badge>
-        );
-      },
-    },
-    {
-      accessorKey: "evidenceSummary",
-      header: "Evidence",
-      enableSorting: false,
-      cell: ({ row }) => {
-        const text = row.getValue<string>("evidenceSummary");
-        const truncated = truncate(text, 60);
-        if (truncated === text) {
-          return <span className="text-sm text-neutral-700">{text}</span>;
-        }
-        return (
-          <Tooltip>
-            <TooltipTrigger render={<span className="cursor-default" />}>
-              <span className="text-sm text-neutral-700">{truncated}</span>
-            </TooltipTrigger>
-            <TooltipContent className="max-w-xs">{text}</TooltipContent>
-          </Tooltip>
-        );
-      },
-    },
-    {
-      accessorKey: "sourceType",
-      header: "Source",
-      enableSorting: false,
-      cell: ({ row }) => {
-        const src = row.getValue<string>("sourceType");
-        const isOcds = src === "ocds";
-        return (
-          <Badge
-            variant="outline"
-            className={cn(
-              "text-xs px-1.5 py-0.5 border",
-              isOcds
-                ? "bg-sky-50 text-sky-700 border-sky-100"
-                : "bg-violet-50 text-violet-700 border-violet-100",
-            )}
-          >
-            {isOcds ? "OCDS" : "AI Research"}
-          </Badge>
-        );
-      },
-    },
-    {
-      accessorKey: "evidenceDate",
-      header: "Date",
-      cell: ({ row }) => (
-        <span className="font-mono text-xs text-neutral-600">
-          {formatDateGB(row.getValue<string | null>("evidenceDate"))}
-        </span>
-      ),
-    },
-  ];
+  const rows = React.useMemo<PartnershipRow[]>(() => {
+    const firmNameMap = new Map(allFirms.map((f) => [f.id, f]));
+    return partnershipPairs.map((p) => ({
+      ...p,
+      firmAName: firmNameMap.get(p.firmAId)?.canonicalName ?? p.firmAId,
+      firmBName: firmNameMap.get(p.firmBId)?.canonicalName ?? p.firmBId,
+    }));
+  }, [partnershipPairs, allFirms]);
 
   const [sorting, setSorting] = React.useState<SortingState>([
     { id: "partnershipType", desc: false },
@@ -158,7 +159,7 @@ export function PartnershipTable({ allFirms, partnershipPairs }: Props) {
 
   const table = useReactTable({
     data: rows,
-    columns,
+    columns: COLUMNS,
     state: { sorting },
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),

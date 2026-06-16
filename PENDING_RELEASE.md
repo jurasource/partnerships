@@ -1,5 +1,13 @@
 # Pending Release Steps
 
+## fix(analysis): group/capability filter freeze on prod — set modal={false}
+
+### Dev
+- No steps required — UI change only
+
+### Prod
+- Deploy new build; no schema or env changes needed
+
 ## feat: 2-step Add/Edit Firm wizard with Companies House search-first UX
 
 ### Dev
@@ -221,3 +229,9 @@
 ### Prod
 - No steps required — change is analysis/worker logic only
 - Optional: re-run analysis for LLP firms to refresh any previously `unknown` ukIncorporated values
+
+## fix(analysis): prevent PartnershipTable infinite render loop
+### Dev
+- No steps required
+### Prod
+- No steps required
