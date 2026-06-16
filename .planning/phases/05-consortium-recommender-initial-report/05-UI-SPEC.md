@@ -76,7 +76,7 @@ Unchanged from Phase 3 (carry forward — source: 03-UI-SPEC.md).
 
 - Stepper counter touch targets: minimum 44px height — icon-only +/− buttons must meet `min-h-[44px]` (matches icon-only button rule from Phase 3)
 - Weight slider track height: 4px; thumb size 20px — use shadcn Slider defaults
-- Firm sub-cards within recommendation result: `p-4` (16px) internal padding; `gap-3` (12px) between sub-cards — slightly tighter than section padding to signal sub-group
+- Firm sub-cards within recommendation result: `p-4` (16px) internal padding; `gap-2` (8px) between sub-cards — slightly tighter than section padding to signal sub-group
 
 ---
 
