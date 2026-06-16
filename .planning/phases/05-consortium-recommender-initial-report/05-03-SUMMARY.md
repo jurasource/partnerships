@@ -18,7 +18,7 @@ dependency_graph:
   provides:
     - /report server-rendered page (RSC, read-only 1+1+1 consortium)
     - E9 seeded 12x7 integration test + golden snapshot
-    - Phase 5 acceptance gate: human sign-off on /report pending
+    - Phase 5 acceptance gate: human sign-off on /report — APPROVED 2026-06-16
   affects:
     - ROADMAP Phase 5 success criterion #5 (E9 acceptance gate — human verification in Task 4)
     - CONS-01 through CONS-05 all delivered and proven end-to-end
@@ -45,7 +45,7 @@ decisions:
 metrics:
   duration: "~6 minutes"
   completed: "2026-06-16"
-  tasks_completed: 3
+  tasks_completed: 4
   files_changed: 5
   tests_added: 1
 ---
@@ -90,9 +90,9 @@ metrics:
 
 `npm test` exits 0 with all 21 test files and 198 tests passing. The E9 test skips gracefully without DATABASE_URL (the correct behavior for `npm test` run without a DB). Running `DATABASE_URL=... npx vitest run src/lib/recommend/__tests__/seeded-e2e.test.ts` with the seeded Postgres confirms the snapshot passes.
 
-### Task 4 (Checkpoint — pending)
+### Task 4: E9 Acceptance Gate — HUMAN APPROVED
 
-E9 acceptance gate: human sign-off on the rendered /report page. Task 4 is a `checkpoint:human-verify` with `gate="blocking-human"` — execution paused here, awaiting human verification in the browser.
+E9 acceptance gate: human sign-off on the rendered /report page. Task 4 was a `checkpoint:human-verify` with `gate="blocking-human"`. Human verified and approved the /report page on 2026-06-16. ROADMAP Phase 5 success criterion #5 is satisfied.
 
 ## Verification Results
 
