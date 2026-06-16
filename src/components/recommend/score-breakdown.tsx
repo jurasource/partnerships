@@ -36,7 +36,7 @@ export function ScoreBreakdown({ team, excludedPairs = [] }: ScoreBreakdownProps
               <thead>
                 <tr className="border-b border-neutral-200">
                   <th className="text-left py-1.5 pr-3 text-neutral-500 font-semibold">Firm</th>
-                  <th className="text-right py-1.5 px-2 text-neutral-500 font-semibold">Partnerships</th>
+                  <th className="text-right py-1.5 px-2 text-neutral-500 font-semibold">Capability</th>
                   <th className="text-right py-1.5 px-2 text-neutral-500 font-semibold">UK Ownership</th>
                   <th className="text-right py-1.5 px-2 text-neutral-500 font-semibold">Contracts</th>
                   <th className="text-right py-1.5 px-2 text-neutral-500 font-semibold">Risk</th>
