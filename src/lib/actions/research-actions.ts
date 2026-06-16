@@ -121,6 +121,14 @@ export type BatchJobResult = {
   skipped: Array<{ firmName: string; reason: string }>;
 };
 
+// Stagger delays for batch jobs — prevents simultaneous bursts of LLM API calls
+// that breach the 30k input-token-per-minute org rate limit.
+// Research jobs are large (~14k tokens per firm); analysis-only jobs are smaller (~3.5k).
+// ch-refresh makes no LLM calls so needs no stagger.
+// Delay is applied per successfully-enqueued firm, so skipped firms don't waste slots.
+const RESEARCH_STAGGER_MS = 90_000;  // 90s between research job starts
+const ANALYSIS_STAGGER_MS = 30_000;  // 30s between analysis-only job starts
+
 /**
  * runBatchJobs — enqueues research, cross-cutting-analysis, or ch-refresh jobs
  * for multiple firms.
@@ -128,6 +136,9 @@ export type BatchJobResult = {
  * - "research": full AI research (auto-triggers analysis + ch-refresh on completion)
  * - "analysis": re-derives risk flags, conflicts, partnerships from existing findings
  * - "ch-refresh": fetches fresh CH snapshot and re-derives ownership fields
+ *
+ * Research and analysis jobs are staggered (RESEARCH_STAGGER_MS / ANALYSIS_STAGGER_MS)
+ * to avoid simultaneous LLM bursts that breach the Anthropic TPM rate limit.
  *
  * Firms that fail their precondition check are skipped and reported back rather than
  * aborting the whole batch.
@@ -164,7 +175,9 @@ export async function runBatchJobs(
         continue;
       }
       const jobId = await enqueueJob({ firmId });
-      await researchQueue.add("research-firm", { firmId, jobId });
+      await researchQueue.add("research-firm", { firmId, jobId }, {
+        delay: enqueued * RESEARCH_STAGGER_MS,
+      });
     } else if (jobType === "ch-refresh") {
       if (!firm.companiesHouseNumber) {
         skipped.push({
@@ -174,6 +187,7 @@ export async function runBatchJobs(
         continue;
       }
       const jobId = await enqueueJob({ firmId, jobType: "ch-refresh" });
+      // No stagger: ch-refresh makes no LLM calls
       await chRefreshQueue.add("ch-refresh", { firmId, jobId });
     } else {
       if (!firm.lastResearchedAt) {
@@ -184,7 +198,9 @@ export async function runBatchJobs(
         continue;
       }
       const jobId = await enqueueJob({ firmId, jobType: "cross-cutting-analysis" });
-      await crossCuttingQueue.add("cross-cutting", { firmId, jobId });
+      await crossCuttingQueue.add("cross-cutting", { firmId, jobId }, {
+        delay: enqueued * ANALYSIS_STAGGER_MS,
+      });
     }
 
     enqueued++;

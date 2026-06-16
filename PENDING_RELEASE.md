@@ -235,3 +235,9 @@
 - No steps required
 ### Prod
 - No steps required
+
+## fix(rate-limit): stagger batch job submission to prevent LLM token burst
+### Dev
+- No steps required — stagger is applied automatically when submitting batch jobs
+### Prod
+- No steps required
