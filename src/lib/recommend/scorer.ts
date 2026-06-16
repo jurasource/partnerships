@@ -30,6 +30,24 @@ import type {
 import { combinations } from "./combinations";
 
 // ---------------------------------------------------------------------------
+// Safe JSON helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Safely parse a JSON text column that should contain a string array.
+ * Returns [] for null, empty string, malformed JSON, or non-array values.
+ * Filters out any non-string elements so callers always get string[].
+ */
+function parseCapabilityTags(raw: string | null): string[] {
+  try {
+    const parsed = JSON.parse(raw ?? "[]");
+    return Array.isArray(parsed) ? parsed.filter((t): t is string => typeof t === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Signal scorers — each returns 0.0–1.0
 // ---------------------------------------------------------------------------
 
@@ -61,7 +79,7 @@ export function scoreContractRelevance(
  */
 export function scoreCapabilityMatch(firm: Firm, requestedTags: string[]): number {
   if (requestedTags.length === 0) return 1.0;
-  const firmTags: string[] = JSON.parse(firm.capabilityTags ?? "[]");
+  const firmTags: string[] = parseCapabilityTags(firm.capabilityTags);
   const matched = requestedTags.filter((tag) => firmTags.includes(tag)).length;
   return matched / requestedTags.length;
 }
@@ -183,15 +201,19 @@ export function scoreAndRankCombinations(input: ScorerInput): ScorerResult {
     procurement,
   } = input;
 
-  // Normalise weights to sum to 1.0 (guard against all-zero weights)
-  const rawTotal =
-    weights.contractRelevance + weights.ukOwnership + weights.partnerships + weights.riskFlags;
-  const wTotal = rawTotal === 0 ? 4 : rawTotal; // equal-weight fallback
+  // Normalise weights — per-firm signals (contractRelevance, ukOwnership, riskFlags) sum to 1.0
+  // amongst themselves. The partnership bonus is applied additively at team level and is
+  // scaled independently so it never inflates the per-firm denominator.
+  const perFirmRaw = weights.contractRelevance + weights.ukOwnership + weights.riskFlags;
+  const perFirmTotal = perFirmRaw === 0 ? 3 : perFirmRaw; // equal-weight fallback
   const w = {
-    contractRelevance: weights.contractRelevance / wTotal,
-    ukOwnership: weights.ukOwnership / wTotal,
-    partnerships: weights.partnerships / wTotal,
-    riskFlags: weights.riskFlags / wTotal,
+    contractRelevance: weights.contractRelevance / perFirmTotal,
+    ukOwnership: weights.ukOwnership / perFirmTotal,
+    riskFlags: weights.riskFlags / perFirmTotal,
+    // Partnership bonus: 0 when weight=0; scales as a fraction of the total signal pool
+    // so a 25/25/25/25 split gives 0.25 bonus (matching the original behaviour) and
+    // skewed weights do not distort per-firm scores.
+    partnerships: weights.partnerships / (weights.partnerships + perFirmTotal),
   };
 
   // Build conflict exclusion Set once — O(conflicts), not O(combinations × conflicts)
@@ -207,6 +229,15 @@ export function scoreAndRankCombinations(input: ScorerInput): ScorerResult {
   // Identify locked vs unlocked firms
   const lockedFirms = allFirms.filter((f) => lockedFirmIds.includes(f.id));
   const unlockedFirms = allFirms.filter((f) => !lockedFirmIds.includes(f.id));
+
+  // Guard: more firms locked than team slots — reject immediately with a clear error
+  if (lockedFirms.length > teamSize) {
+    return {
+      status: "no_valid_team",
+      reason: `${lockedFirms.length} firms are locked but the requested capability mix only requires ${teamSize} slots.`,
+      recommendations: [],
+    };
+  }
 
   // Generate all combinations of (teamSize - lockedFirms.length) from the unlocked pool
   const slotsToFill = teamSize - lockedFirms.length;
@@ -229,9 +260,7 @@ export function scoreAndRankCombinations(input: ScorerInput): ScorerResult {
     if (hasConflict(teamIds, conflictSet)) continue;
 
     // Capability coverage check — team must collectively cover all required slots
-    const teamTags = teamFirms.flatMap(
-      (f): string[] => JSON.parse(f.capabilityTags ?? "[]"),
-    );
+    const teamTags = teamFirms.flatMap((f): string[] => parseCapabilityTags(f.capabilityTags));
     const coversAll = requiredSlots.every((slot) => teamTags.includes(slot));
     if (!coversAll) continue;
 
@@ -262,7 +291,7 @@ export function scoreAndRankCombinations(input: ScorerInput): ScorerResult {
         // ownershipRecord ALWAYS populated — NSI non-suppression invariant
         ownershipRecord: ownership.find((o) => o.firmId === firm.id) ?? null,
         riskFlagCount: riskFlags.filter((r) => r.firmId === firm.id).length,
-        capabilityTags: JSON.parse(firm.capabilityTags ?? "[]") as string[],
+        capabilityTags: parseCapabilityTags(firm.capabilityTags),
       });
     });
 

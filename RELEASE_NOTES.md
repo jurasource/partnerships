@@ -6,6 +6,13 @@
 - feat(research): store all raw Tavily search results in a new `search_results` column on `findings`; adds `npm run worker:dry-run` diagnostic script that captures and writes every Anthropic request and response to `dry-run-output/`
 - feat(ui): source type badge ("AI Research" / "Verified API") moved inline with the section title; citation links now listed flat without badge prefix
 - feat(ui): Sources sidebar restructured — grouped by topic section instead of source type; shows all Tavily results per topic with cited URLs in blue and uncited results dimmed; citation dates shown where available
+- fix(05): CR-001 — added guard in scorer to return no_valid_team when locked firms exceed team size, preventing silent over-sized team output.
+- fix(05): CR-002 — fixed partnership weight normalisation; per-firm signals now normalise independently of the partnership bonus, eliminating ranking distortion at skewed weights.
+- fix(05): WR-001 — replaced unguarded JSON.parse calls on capabilityTags with a safe helper (parseCapabilityTags) in scorer.ts and lock-firms.ts; malformed JSON returns [] instead of crashing.
+- fix(05): WR-002 — renamed "Partnerships" column header in ScoreBreakdown table to "Capability" to match the capabilityMatch data it actually renders.
+- fix(05): WR-003 — handleReset now clears result state as well as lockedFirmIds, so stale recommendations no longer persist after reset.
+- fix(05): WR-004 — API route now validates all lockedFirmIds resolve to real DB rows, returning 422 with missing IDs if any are stale or non-existent.
+- fix(05): WR-005 — replaced early-return guard in E9 integration test with describe.skipIf() so DB-unavailable runs show as skipped (yellow) rather than falsely green.
 - Added /report page (server-rendered seeded 1+1+1 initial report, read-only) and the E9 seeded end-to-end test + golden snapshot proving the full pipeline.
 - Added /recommend page (capability stepper, lock-firms + weight accordions, in-place result with lock-and-recompute and NSI/conflict/risk badges) and promoted Recommend + Report navbar links.
 

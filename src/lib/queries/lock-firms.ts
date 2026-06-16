@@ -32,6 +32,13 @@ export async function getLockFirmsList(): Promise<LockFirmsListItem[]> {
   return rows.map((row) => ({
     id: row.id,
     canonicalName: row.canonicalName,
-    tags: JSON.parse(row.capabilityTags ?? "[]") as string[],
+    tags: (() => {
+      try {
+        const parsed = JSON.parse(row.capabilityTags ?? "[]");
+        return Array.isArray(parsed) ? parsed.filter((t): t is string => typeof t === "string") : [];
+      } catch {
+        return [];
+      }
+    })(),
   }));
 }
