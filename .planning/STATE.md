@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 5 UI-SPEC approved
-last_updated: "2026-06-16T14:10:14.749Z"
-last_activity: 2026-06-15 -- Phase 04 execution started
+stopped_at: Completed 05-01-PLAN.md
+last_updated: "2026-06-16T14:37:57.271Z"
+last_activity: 2026-06-16 -- Phase 05 execution started
 progress:
   total_phases: 6
   completed_phases: 5
-  total_plans: 15
-  completed_plans: 15
+  total_plans: 18
+  completed_plans: 16
   percent: 83
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-13)
 
 **Core value:** Given a list of firms and research questions, surface the intelligence needed to decide which firms to team with and in what combination — in one place, without manual searching.
-**Current focus:** Phase 03.1 — firm-groups
+**Current focus:** Phase 05 — consortium-recommender-initial-report
 
 ## Current Position
 
-Phase: 03.1 (firm-groups) — EXECUTING
-Plan: 3 of 3 complete
+Phase: 05 (consortium-recommender-initial-report) — EXECUTING
+Plan: 2 of 3
 Status: Ready to execute
-Last activity: 2026-06-15 -- Phase 03.1 Plan 02 complete (Groups UI)
+Last activity: 2026-06-16 -- Phase 05 execution started
 
 Progress: [██████████] 100%
 
@@ -58,6 +58,7 @@ Progress: [██████████] 100%
 | Phase 03-dashboard-profiles P02 | 4 | 3 tasks | 6 files |
 | Phase 03.1 P03 | 8 | 2 tasks | 5 files |
 | Phase 04 P02 | 9 min | 2 tasks | 12 files |
+| Phase 05 P01 | 7 | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -92,6 +93,8 @@ Recent decisions affecting current work:
 - [Plan 03.1-02]: router.refresh() called after all mutations in GroupDetailClient to re-pull RSC-derived memberFirms/nonMemberFirms props
 - [Phase 03.1]: Stale filter threshold is 30 days per phase spec; this deliberately differs from StalenessBadge which uses 7 days for its visual indicator
 - [Phase 03.1]: filteredData computed with useMemo before useReactTable — TanStack sorting operates on already-filtered rows
+- [Phase ?]: Zod 4 uuid() enforces RFC 4122 format with version/variant bits — test fixture UUIDs must use format 4xxx-8xxx
+- [Phase ?]: Phase 5 scorer ownershipRecord always populated in FirmScoreBreakdown regardless of ukOwnership weight — CONS-04 NSI invariant
 
 ### Pending Todos
 
@@ -130,6 +133,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-16T12:47:57.466Z
-Stopped at: Phase 5 UI-SPEC approved
-Resume file: .planning/phases/05-consortium-recommender-initial-report/05-UI-SPEC.md
+Last session: 2026-06-16T14:37:57.266Z
+Stopped at: Completed 05-01-PLAN.md
+Resume file: None

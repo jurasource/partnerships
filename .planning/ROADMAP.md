@@ -166,7 +166,7 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 05-01-PLAN.md — Scoring engine vertical slice: Zod schemas + pure scorer (signal scorers, conflict-exclusion Set, combination ranking) + /api/recommend POST route + E1–E8 Vitest evals (CONS-01..05)
+- [x] 05-01-PLAN.md — Scoring engine vertical slice: Zod schemas + pure scorer (signal scorers, conflict-exclusion Set, combination ranking) + /api/recommend POST route + E1–E8 Vitest evals (CONS-01..05)
 
 **Wave 2** *(blocked on Wave 1)*
 
@@ -192,4 +192,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5
 | 3. Dashboard & Profiles | 2/2 | Complete   | 2026-06-15 |
 | 3.1 Firm Groups | 2/3 | In Progress|  |
 | 4. Cross-Cutting Analysis | 3/4 | In Progress|  |
-| 5. Consortium Recommender + Initial Report | 0/3 | Planned | - |
+| 5. Consortium Recommender + Initial Report | 1/3 | In Progress|  |
