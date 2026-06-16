@@ -59,7 +59,19 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         db.select().from(procurementRecords),
       ]);
 
-    // 4. Run deterministic pure-function scorer — no DB access inside
+    // 4a. Validate that all locked firm IDs resolve to actual DB rows (CONS-05)
+    if (lockedFirmIds.length > 0) {
+      const allFirmIdSet = new Set(allFirms.map((f) => f.id));
+      const missingIds = lockedFirmIds.filter((id) => !allFirmIdSet.has(id));
+      if (missingIds.length > 0) {
+        return NextResponse.json(
+          { error: "One or more locked firm IDs do not exist", missingIds },
+          { status: 422 },
+        );
+      }
+    }
+
+    // 4b. Run deterministic pure-function scorer — no DB access inside
     const result = scoreAndRankCombinations({
       capabilityMix,
       lockedFirmIds,
