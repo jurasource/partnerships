@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Research Engine** - Per-(firm x topic) AI research loop with mandatory citations, "not found" output, and visible job status (completed 2026-06-14)
 - [x] **Phase 3: Dashboard & Profiles** - Firm profiles, citation panel, capability filtering, sortable comparison table, refresh + staleness (completed 2026-06-14)
 - [ ] **Phase 4: Cross-Cutting Analysis** - Ownership chains, conflict/audit detection, partnership map, risk flags, recompute pass
-- [ ] **Phase 5: Consortium Recommender + Initial Report** - Explainable rules-based recommender with conflict exclusion + NSI overlay, plus the seeded end-to-end report
+- [x] **Phase 5: Consortium Recommender + Initial Report** - Explainable rules-based recommender with conflict exclusion + NSI overlay, plus the seeded end-to-end report (completed 2026-06-16)
 
 ## Phase Details
 
@@ -174,7 +174,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2)*
 
-- [ ] 05-03-PLAN.md — /report page vertical slice + seeded end-to-end proof: server-rendered best 1+1+1 from seeded 12 firms (read-only), E9 seeded integration test + golden snapshot, full-suite gate, human acceptance sign-off (CONS-01..05)
+- [x] 05-03-PLAN.md — /report page vertical slice + seeded end-to-end proof: server-rendered best 1+1+1 from seeded 12 firms (read-only), E9 seeded integration test + golden snapshot, full-suite gate, human acceptance sign-off (CONS-01..05)
 
 **Note:** Phase 4-04 (/analysis page) remains unexecuted and is deliberately OUT of Phase 5 scope — the CONS requirements do not depend on /analysis. The "Analysis" navbar item stays a disabled placeholder; only Recommend + Report are promoted.
 
@@ -192,4 +192,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5
 | 3. Dashboard & Profiles | 2/2 | Complete   | 2026-06-15 |
 | 3.1 Firm Groups | 2/3 | In Progress|  |
 | 4. Cross-Cutting Analysis | 3/4 | In Progress|  |
-| 5. Consortium Recommender + Initial Report | 1/3 | In Progress|  |
+| 5. Consortium Recommender + Initial Report | 3/3 | Complete   | 2026-06-16 |
