@@ -6,6 +6,7 @@ import {
   Activity,
   BookOpen,
   Building2,
+  FileText,
   LayersIcon,
   LayoutDashboard,
   LogOut,
@@ -30,11 +31,11 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Groups", href: "/groups", icon: LayersIcon },
   { label: "Topics", href: "/topics", icon: BookOpen },
   { label: "Jobs", href: "/jobs", icon: Activity },
+  { label: "Recommend", href: "/recommend", icon: Users },
+  { label: "Report", href: "/report", icon: FileText },
 ];
 
-const PLACEHOLDER_ITEMS: NavItem[] = [
-  { label: "Consortium", href: "#", icon: Users, disabled: true },
-];
+const PLACEHOLDER_ITEMS: NavItem[] = [];
 
 export function AppNavbar() {
   const pathname = usePathname();

@@ -6,6 +6,7 @@
 - feat(research): store all raw Tavily search results in a new `search_results` column on `findings`; adds `npm run worker:dry-run` diagnostic script that captures and writes every Anthropic request and response to `dry-run-output/`
 - feat(ui): source type badge ("AI Research" / "Verified API") moved inline with the section title; citation links now listed flat without badge prefix
 - feat(ui): Sources sidebar restructured — grouped by topic section instead of source type; shows all Tavily results per topic with cited URLs in blue and uncited results dimmed; citation dates shown where available
+- Added /recommend page (capability stepper, lock-firms + weight accordions, in-place result with lock-and-recompute and NSI/conflict/risk badges) and promoted Recommend + Report navbar links.
 
 ## 2026-06-15
 - fix(analysis): selecting a group or capability on the analysis page caused a full UI freeze (no clicks registered until page refresh, no console errors) on production only; root cause was Base UI `<DropdownMenu>` defaulting to `modal:true`, which locks document scroll and disables outside pointer events while open — when a selection closed the menu and simultaneously triggered the heavy ConflictMatrix re-render, the scroll-lock RESTORE raced against the render in prod and lost, leaving the page stuck; fix is `modal={false}` on both filter dropdowns in `firms-filter-bar.tsx`

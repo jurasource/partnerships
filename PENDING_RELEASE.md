@@ -8,6 +8,13 @@
 ### Prod
 - Run `npm run db:push` (or equivalent migration) to add `search_results` column
 - Re-run research on existing firms to populate `search_results` (old rows show only cited URLs in sidebar until re-researched)
+## Phase 5 — /recommend page + navbar links
+
+### Dev
+- /recommend and /report nav links now live; no migration required
+
+### Prod
+- /recommend and /report nav links now live; no migration required
 
 ## Phase 5 — consortium recommender API
 
