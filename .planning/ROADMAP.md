@@ -162,7 +162,22 @@ Plans:
   4. User can override or adjust recommended firms and see updated conflict/capability analysis
   5. Running the seeded 12 firms x 7 topics end-to-end produces the initial report
 
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+**Wave 1**
+
+- [ ] 05-01-PLAN.md — Scoring engine vertical slice: Zod schemas + pure scorer (signal scorers, conflict-exclusion Set, combination ranking) + /api/recommend POST route + E1–E8 Vitest evals (CONS-01..05)
+
+**Wave 2** *(blocked on Wave 1)*
+
+- [ ] 05-02-PLAN.md — /recommend page vertical slice: shadcn slider/accordion/card installs, capability stepper, weight sliders, lock-firms accordion, firm sub-card (NSI/ownership/conflict/risk badges), score breakdown, in-place lock-and-recompute, navbar promotion (CONS-01..05)
+
+**Wave 3** *(blocked on Wave 2)*
+
+- [ ] 05-03-PLAN.md — /report page vertical slice + seeded end-to-end proof: server-rendered best 1+1+1 from seeded 12 firms (read-only), E9 seeded integration test + golden snapshot, full-suite gate, human acceptance sign-off (CONS-01..05)
+
+**Note:** Phase 4-04 (/analysis page) remains unexecuted and is deliberately OUT of Phase 5 scope — the CONS requirements do not depend on /analysis. The "Analysis" navbar item stays a disabled placeholder; only Recommend + Report are promoted.
+
 **UI hint**: yes
 
 ## Progress
@@ -177,4 +192,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 3.1 → 4 → 5
 | 3. Dashboard & Profiles | 2/2 | Complete   | 2026-06-15 |
 | 3.1 Firm Groups | 2/3 | In Progress|  |
 | 4. Cross-Cutting Analysis | 3/4 | In Progress|  |
-| 5. Consortium Recommender + Initial Report | 0/TBD | Not started | - |
+| 5. Consortium Recommender + Initial Report | 0/3 | Planned | - |
