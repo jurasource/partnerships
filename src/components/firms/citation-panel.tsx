@@ -1,4 +1,5 @@
-import { Badge } from "@/components/ui/badge";
+import { ExternalLink } from "lucide-react";
+
 import { Separator } from "@/components/ui/separator";
 import {
   Tooltip,
@@ -12,20 +13,11 @@ type CitationPanelProps = {
   findingsByTopic: FindingByTopic[];
 };
 
-type SupportingCitation = {
+type SourceLink = {
   url: string;
   title: string;
-  snippet: string;
   date?: string | null;
-};
-
-type CitationEntry = {
-  sourceUrl: string;
-  sourceTitle: string;
-  sourceType: "structured" | "ai";
-  topicName: string;
-  sourceDate: string | null;
-  citations: SupportingCitation[];
+  cited: boolean;
 };
 
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -36,167 +28,145 @@ function formatSourceDate(dateStr: string): string {
   return `${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
 }
 
-/**
- * Truncate a URL to 40 characters for display (full URL in Tooltip).
- */
-function truncateUrl(url: string, maxLen = 40): string {
-  if (url.length <= maxLen) return url;
-  return url.slice(0, maxLen - 1) + "…";
-}
+function SourceLinkRow({ link }: { link: SourceLink }) {
+  if (!isSafeUrl(link.url)) return null;
 
-/**
- * SourceTypeBadge — "Verified API" or "AI Research" badge per citation entry.
- *
- * Classes per UI-SPEC Color section (PROF-02):
- *   Verified API → bg-sky-50 text-sky-700 border-sky-100
- *   AI Research  → bg-violet-50 text-violet-700 border-violet-100
- */
-function CitationBadge({ sourceType }: { sourceType: "structured" | "ai" }) {
-  if (sourceType === "structured") {
-    return (
-      <Badge
-        variant="outline"
-        className="text-xs px-1.5 py-0.5 border bg-sky-50 text-sky-700 border-sky-100 shrink-0"
-      >
-        Verified API
-      </Badge>
-    );
-  }
-  return (
-    <Badge
-      variant="outline"
-      className="text-xs px-1.5 py-0.5 border bg-violet-50 text-violet-700 border-violet-100 shrink-0"
+  const anchor = (
+    <a
+      href={link.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={cn(
+        "text-xs underline inline-flex items-center gap-1 min-w-0",
+        link.cited ? "text-blue-600" : "text-neutral-400",
+      )}
     >
-      AI Research
-    </Badge>
+      <span className="truncate">{link.title || link.url}</span>
+      <ExternalLink className="h-3 w-3 shrink-0" aria-hidden="true" />
+    </a>
+  );
+
+  const isLong = link.url.length > 40;
+
+  return (
+    <div className="flex items-baseline gap-2 min-w-0">
+      {isLong ? (
+        <Tooltip>
+          <TooltipTrigger render={<span className="min-w-0" />}>{anchor}</TooltipTrigger>
+          <TooltipContent className="max-w-xs break-all">{link.url}</TooltipContent>
+        </Tooltip>
+      ) : anchor}
+      {link.date && (
+        <span className={cn("text-xs shrink-0", link.cited ? "text-neutral-400" : "text-neutral-300")}>
+          {formatSourceDate(link.date)}
+        </span>
+      )}
+    </div>
   );
 }
 
 /**
- * CitationPanel — sidebar listing all real sources grouped by source type.
+ * CitationPanel — sidebar listing all Tavily search results per topic section.
  *
- * Groups structured (Verified API) entries first, then AI Research entries,
- * separated by a Separator (PROF-02 ordering).
- *
- * Null findings and not-found sentinels are excluded (no real source URL).
- * Citation links carry rel="noopener noreferrer" + target="_blank" (T-03-03).
+ * Cited URLs (primary source + LLM citations) are shown in blue.
+ * Uncited Tavily results are shown dimmed — returned by search but not used by the LLM.
  */
 export function CitationPanel({ findingsByTopic }: CitationPanelProps) {
-  // Build flat list — skip null findings and not-found sentinels
-  const entries: CitationEntry[] = findingsByTopic
+  const sections = findingsByTopic
     .filter(
-      (entry): entry is FindingByTopic & { finding: NonNullable<FindingByTopic["finding"]>; sourceType: "structured" | "ai" } =>
+      (entry): entry is FindingByTopic & {
+        finding: NonNullable<FindingByTopic["finding"]>;
+        sourceType: "structured" | "ai";
+      } =>
         entry.finding !== null &&
         !entry.isNotFound &&
         !entry.isError &&
         entry.sourceType !== null,
     )
     .map((entry) => {
-      let citations: SupportingCitation[] = [];
-      if (entry.sourceType === "ai") {
-        const parsed = JSON.parse(entry.finding.citations || "[]") as SupportingCitation[];
-        citations = parsed.filter((c) => c.url !== entry.finding.sourceUrl);
-      }
-      return {
-        sourceUrl: entry.finding.sourceUrl,
-        sourceTitle: entry.finding.sourceTitle,
-        sourceType: entry.sourceType,
-        topicName: entry.topic.name,
-        sourceDate: entry.finding.sourceDate ?? null,
-        citations,
-      };
-    });
+      const links: SourceLink[] = [];
 
-  // Group: structured first, ai second (PROF-02)
-  const structuredEntries = entries.filter(e => e.sourceType === "structured");
-  const aiEntries = entries.filter(e => e.sourceType === "ai");
+      if (entry.sourceType === "structured") {
+        // Structured findings come from CH/OCDS, not Tavily — show primary source only
+        if (isSafeUrl(entry.finding.sourceUrl)) {
+          links.push({
+            url: entry.finding.sourceUrl,
+            title: entry.finding.sourceTitle,
+            date: entry.finding.sourceDate ?? null,
+            cited: true,
+          });
+        }
+      } else {
+        // Build cited URL set from primary source + LLM citations
+        const citedUrls = new Set<string>();
+        if (isSafeUrl(entry.finding.sourceUrl)) {
+          citedUrls.add(entry.finding.sourceUrl);
+          links.push({
+            url: entry.finding.sourceUrl,
+            title: entry.finding.sourceTitle,
+            date: entry.finding.sourceDate ?? null,
+            cited: true,
+          });
+        }
+        try {
+          const llmCitations = JSON.parse(entry.finding.citations || "[]") as Array<{
+            url: string; title: string; date?: string | null;
+          }>;
+          for (const c of llmCitations) {
+            if (isSafeUrl(c.url) && !citedUrls.has(c.url)) {
+              citedUrls.add(c.url);
+              links.push({ url: c.url, title: c.title, date: c.date ?? null, cited: true });
+            }
+          }
+        } catch { /* malformed */ }
+
+        // Append uncited Tavily results (dimmed)
+        try {
+          const raw = JSON.parse(entry.finding.searchResults || "[]") as Array<{
+            url: string; title: string; publishedDate?: string | null;
+          }>;
+          for (const r of raw) {
+            if (isSafeUrl(r.url) && !citedUrls.has(r.url)) {
+              links.push({
+                url: r.url,
+                title: r.title,
+                date: r.publishedDate ?? null,
+                cited: false,
+              });
+            }
+          }
+        } catch { /* malformed */ }
+      }
+
+      return { topicName: entry.topic.name, links };
+    })
+    .filter((s) => s.links.length > 0);
 
   return (
     <aside className="space-y-4">
       <h2 className="text-sm font-semibold text-neutral-700">Sources</h2>
 
-      {entries.length === 0 ? (
+      {sections.length === 0 ? (
         <p className="text-xs text-neutral-400 italic">
           No sources available. Run research to populate citations.
         </p>
       ) : (
-        <div className="space-y-3">
-          {/* Structured / Verified API entries */}
-          {structuredEntries.map((entry) => (
-            <CitationEntry key={`${entry.topicName}::${entry.sourceUrl}`} entry={entry} />
-          ))}
-
-          {/* Separator between source types (only when both groups have entries) */}
-          {structuredEntries.length > 0 && aiEntries.length > 0 && (
-            <Separator className="my-2" />
-          )}
-
-          {/* AI Research entries */}
-          {aiEntries.map((entry) => (
-            <CitationEntry key={`${entry.topicName}::${entry.sourceUrl}`} entry={entry} />
+        <div className="space-y-4">
+          {sections.map((section, i) => (
+            <div key={section.topicName}>
+              {i > 0 && <Separator className="mb-4" />}
+              <p className="text-xs font-medium text-neutral-500 mb-1.5">
+                {section.topicName}
+              </p>
+              <div className="space-y-1.5">
+                {section.links.map((link) => (
+                  <SourceLinkRow key={link.url} link={link} />
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       )}
     </aside>
-  );
-}
-
-function UrlLink({ url, className }: { url: string; className?: string }) {
-  const displayUrl = truncateUrl(url);
-  const isLong = url.length > 40;
-  const safeUrl = isSafeUrl(url);
-  if (!safeUrl) return null;
-  return isLong ? (
-    <Tooltip>
-      <TooltipTrigger
-        render={
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={cn("block text-xs text-blue-600 underline truncate max-w-full", className)}
-          />
-        }
-      >
-        {displayUrl}
-      </TooltipTrigger>
-      <TooltipContent className="max-w-xs break-all">{url}</TooltipContent>
-    </Tooltip>
-  ) : (
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={cn("block text-xs text-blue-600 underline truncate", className)}
-    >
-      {displayUrl}
-    </a>
-  );
-}
-
-function CitationEntry({ entry }: { entry: CitationEntry }) {
-  return (
-    <div className="space-y-1">
-      <div className="flex items-start gap-1.5 flex-wrap">
-        <CitationBadge sourceType={entry.sourceType} />
-        <span className="text-xs text-neutral-500">{entry.topicName}</span>
-        {entry.sourceDate && (
-          <span className="text-xs text-neutral-400 ml-auto shrink-0">
-            {formatSourceDate(entry.sourceDate)}
-          </span>
-        )}
-      </div>
-
-      <UrlLink url={entry.sourceUrl} />
-
-      {entry.citations.length > 0 && (
-        <div className="pl-2 border-l border-neutral-200 space-y-0.5 mt-1">
-          <span className="text-xs text-neutral-400">Also sourced from:</span>
-          {entry.citations.map((c) => (
-            <UrlLink key={c.url} url={c.url} className="text-neutral-400" />
-          ))}
-        </div>
-      )}
-    </div>
   );
 }

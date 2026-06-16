@@ -1,5 +1,12 @@
 # Release Notes
 
+## 2026-06-16
+- fix(research): move Anthropic prompt cache breakpoint to the system message array so `Output.object`'s `injectJsonInstructionIntoMessages` cannot displace it; expand `RESEARCH_SYSTEM_PROMPT` to ~1,141 tokens so the combined system prefix reliably clears the 1,024-token minimum for Sonnet 4.6
+- feat(research): include topic `description` field in the per-topic user message so the LLM knows what specifically to look for per topic
+- feat(research): store all raw Tavily search results in a new `search_results` column on `findings`; adds `npm run worker:dry-run` diagnostic script that captures and writes every Anthropic request and response to `dry-run-output/`
+- feat(ui): source type badge ("AI Research" / "Verified API") moved inline with the section title; citation links now listed flat without badge prefix
+- feat(ui): Sources sidebar restructured — grouped by topic section instead of source type; shows all Tavily results per topic with cited URLs in blue and uncited results dimmed; citation dates shown where available
+
 ## 2026-06-15
 - fix(analysis): selecting a group or capability on the analysis page caused a full UI freeze (no clicks registered until page refresh, no console errors) on production only; root cause was Base UI `<DropdownMenu>` defaulting to `modal:true`, which locks document scroll and disables outside pointer events while open — when a selection closed the menu and simultaneously triggered the heavy ConflictMatrix re-render, the scroll-lock RESTORE raced against the render in prod and lost, leaving the page stuck; fix is `modal={false}` on both filter dropdowns in `firms-filter-bar.tsx`
 - feat: replaced single-step Add/Edit Firm dialog with a 2-step wizard; Step 1 is a Companies House search-first panel with explicit Search button, auto-selected first result, a preview panel (name/number/type/status/incorporated/address), ✓/✗ validation badge for direct 8-char CH number entry, and a "Showing X of Y" count message; Step 2 has the canonical name pre-filled from CH, aliases as removable chip tags (pre-seeded from registered name and previous company names), "Refresh from CH" button, "AI Suggest" button (Claude via Vercel AI SDK), and capability tag toggles; Edit Firm button added to firm profile page header; no DB migration required

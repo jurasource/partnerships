@@ -1,5 +1,14 @@
 # Pending Release Steps
 
+## feat(research): prompt caching, source transparency, and UI polish
+
+### Dev
+- Run `npm run db:push` to add the `search_results` column to the `findings` table
+
+### Prod
+- Run `npm run db:push` (or equivalent migration) to add `search_results` column
+- Re-run research on existing firms to populate `search_results` (old rows show only cited URLs in sidebar until re-researched)
+
 ## fix(analysis): group/capability filter freeze on prod — set modal={false}
 
 ### Dev

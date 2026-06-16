@@ -55,9 +55,25 @@ export async function runResearchWorker(
       `job ${jobId}, ${allTopics.length} topics`,
   );
 
-  // Pre-compute the grounding block once — it's stable across all 7 topic calls for
-  // this firm and is the cacheable prefix for Anthropic prompt caching.
+  // Pre-compute the grounding block once — stable across all 7 topic calls.
+  // Placed in the system array (not user messages) so that injectJsonInstructionIntoMessages,
+  // which Output.object uses to inject JSON instructions into user messages, cannot
+  // displace the cache breakpoint.
   const groundingBlock = buildGroundingBlock(groundingContext);
+
+  // System message pair: persona/rules first, then grounding context marked as the
+  // cache breakpoint. Anthropic caches everything up to and including the block that
+  // carries cacheControl, so both blocks are cached together.
+  const systemWithGrounding = [
+    { role: "system" as const, content: RESEARCH_SYSTEM_PROMPT },
+    {
+      role: "system" as const,
+      content: groundingBlock,
+      providerOptions: {
+        anthropic: { cacheControl: { type: "ephemeral" as const } },
+      },
+    },
+  ];
 
   // Sequential topic loop — intentionally NOT Promise.all (AI-SPEC §4b async design,
   // Anthropic rate limits, and partial-failure handling require sequential execution)
@@ -83,34 +99,20 @@ export async function runResearchWorker(
     let genOutputTokens: number | undefined;
     let genRawText: string | undefined;
 
-    // Messages array used for every generateText call in this topic loop.
-    // Split into two content blocks so Anthropic can cache the stable grounding prefix:
-    // - Block 1 (groundingBlock): firm header + CH profile + procurement records — identical
-    //   across all 7 topics, marked with cache_control so it's stored for 5 minutes.
-    // - Block 2 (topicBlock): topic name + Tavily results + instruction — changes per topic.
+    // Messages array — per-topic content only. The stable grounding prefix lives in
+    // the system array below (see `systemWithGrounding`) so that injectJsonInstructionIntoMessages
+    // (used by Output.object) cannot displace the cache breakpoint.
     const messages = [
       {
         role: "user" as const,
-        content: [
-          {
-            type: "text" as const,
-            text: groundingBlock,
-            providerOptions: {
-              anthropic: { cacheControl: { type: "ephemeral" } },
-            },
-          },
-          {
-            type: "text" as const,
-            text: buildTopicBlock(topic, searchResults, groundingContext.firmName),
-          },
-        ],
+        content: buildTopicBlock(topic, searchResults, groundingContext.firmName),
       },
     ];
 
     try {
       let result = await generateText({
         model: anthropic("claude-sonnet-4-6"),
-        system: RESEARCH_SYSTEM_PROMPT,
+        system: systemWithGrounding,
         messages,
         output: Output.object({ schema: FindingSchema }),
         maxOutputTokens: 2048,
@@ -141,7 +143,7 @@ export async function runResearchWorker(
         );
         result = await generateText({
           model: anthropic("claude-sonnet-4-6"),
-          system: RESEARCH_SYSTEM_PROMPT,
+          system: systemWithGrounding,
           messages,
           output: Output.object({ schema: FindingSchema }),
           maxOutputTokens: 4096,
@@ -235,6 +237,7 @@ export async function runResearchWorker(
     // accumulating duplicates (CR-03). The unique constraint on (firmId, topicId)
     // in schema.ts makes ON CONFLICT deterministic; createdAt is refreshed so
     // the status endpoint's "findings since startedAt" count stays accurate.
+    const searchResultsJson = JSON.stringify(searchResults);
     await db.insert(findings).values({
       firmId,
       topicId: topic.id,
@@ -245,6 +248,7 @@ export async function runResearchWorker(
       rawSnippet: finding.rawSnippet,
       sourceDate: finding.sourceDate ?? null,
       citations: JSON.stringify(finding.citations ?? []),
+      searchResults: searchResultsJson,
     }).onConflictDoUpdate({
       target: [findings.firmId, findings.topicId],
       set: {
@@ -255,6 +259,7 @@ export async function runResearchWorker(
         rawSnippet: finding.rawSnippet,
         sourceDate: finding.sourceDate ?? null,
         citations: JSON.stringify(finding.citations ?? []),
+        searchResults: searchResultsJson,
         createdAt: new Date().toISOString(),
       },
     });
