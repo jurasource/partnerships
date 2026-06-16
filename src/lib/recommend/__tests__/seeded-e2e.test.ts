@@ -21,7 +21,7 @@
  * than hard-fail, so it does not block the rest of the test suite.
  */
 
-import { describe, it, expect, afterAll } from "vitest";
+import { describe, it, expect, afterAll, beforeAll } from "vitest";
 import { scoreAndRankCombinations } from "../scorer";
 import { RecommendResponseSchema } from "../schemas";
 
@@ -59,26 +59,16 @@ afterAll(async () => {
   if (sql) await sql.end();
 });
 
-describe("E9 — seeded 12×7 integration test", () => {
-  it("returns a schema-valid 1+1+1 ok result from the seeded Postgres", async () => {
-    // Graceful skip when DATABASE_URL is absent or DB is unavailable
-    if (!DB_AVAILABLE || !db || !firms || !conflictPairs || !partnershipPairs || !ownershipRecords || !riskFlags || !procurementRecords) {
-      console.warn(
-        "[E9 SKIP] DATABASE_URL not set — DB integration test skipped. " +
-          "Run: docker compose up -d db && npm run db:push && npm run db:seed",
-      );
-      return;
-    }
+// Use describe.skipIf so Vitest reports a visible skip (yellow) rather than a
+// false-green passing test when DATABASE_URL is absent. A bare `return` inside
+// an `it()` body counts as a passing test in Vitest — not a skip.
+describe.skipIf(!DB_AVAILABLE)("E9 — seeded 12×7 integration test", () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let loadedRows: { af: any[]; ac: any[]; ap: any[]; ao: any[]; ar: any[]; apr: any[] } | null = null;
 
-    // Load all six tables from the real DB
-    const [
-      allFirms,
-      allConflicts,
-      allPartnerships,
-      allOwnership,
-      allRiskFlags,
-      allProcurement,
-    ] = await Promise.all([
+  beforeAll(async () => {
+    if (!db || !firms || !conflictPairs || !partnershipPairs || !ownershipRecords || !riskFlags || !procurementRecords) return;
+    const [af, ac, ap, ao, ar, apr] = await Promise.all([
       db.select().from(firms),
       db.select().from(conflictPairs),
       db.select().from(partnershipPairs),
@@ -86,10 +76,12 @@ describe("E9 — seeded 12×7 integration test", () => {
       db.select().from(riskFlags),
       db.select().from(procurementRecords),
     ]);
+    loadedRows = { af, ac, ap, ao, ar, apr };
+  });
 
-    // Graceful skip when the DB is not seeded — prevents hard-fail on machines
-    // without a running Postgres/seed (e.g. fresh CI without docker compose).
-    if (allFirms.length === 0) {
+  it("returns a schema-valid 1+1+1 ok result from the seeded Postgres", async () => {
+    // Skip if the DB was not seeded — remaining guard for empty-DB state.
+    if (!loadedRows || loadedRows.af.length === 0) {
       console.warn(
         "[E9 SKIP] firms table is empty — DB not seeded. " +
           "Run: docker compose up -d db && npm run db:push && npm run db:seed",
@@ -97,10 +89,13 @@ describe("E9 — seeded 12×7 integration test", () => {
       return;
     }
 
+    const { af, ac, ap, ao, ar, apr } = loadedRows;
+
     // Assertion 1: seeded pool size
-    expect(allFirms.length).toBeGreaterThanOrEqual(12);
+    expect(af.length).toBeGreaterThanOrEqual(12);
 
     // Run the scorer with the default 1+1+1 mix, empty locks, equal 25 weights
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const result = scoreAndRankCombinations({
       capabilityMix: { Consultancy: 1, Infrastructure: 1, Nuclear: 1 },
       lockedFirmIds: [],
@@ -110,12 +105,13 @@ describe("E9 — seeded 12×7 integration test", () => {
         partnerships: 25,
         riskFlags: 25,
       },
-      firms: allFirms,
-      conflicts: allConflicts,
-      partnerships: allPartnerships,
-      ownership: allOwnership,
-      riskFlags: allRiskFlags,
-      procurement: allProcurement,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      firms: af,
+      conflicts: ac,
+      partnerships: ap,
+      ownership: ao,
+      riskFlags: ar,
+      procurement: apr,
     });
 
     // Assertion 2: status must be ok (seeded data covers all three capability tags)
