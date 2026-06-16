@@ -5,6 +5,7 @@ import { ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { isSafeUrl } from "@/lib/utils";
 import type { FindingByTopic } from "@/lib/queries/firm-profile";
+import type { Citation } from "@/lib/research/schemas";
 
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
@@ -12,6 +13,15 @@ function formatSourceDate(dateStr: string): string {
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return dateStr;
   return `${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+}
+
+function parseCitations(raw: string): Citation[] {
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
 }
 
 type FindingsByTopicProps = {
@@ -60,9 +70,14 @@ export function FindingsByTopic({ findingsByTopic }: FindingsByTopicProps) {
           key={entry.topic.id}
           className="border border-neutral-200 rounded-lg p-5 bg-white"
         >
-          <h3 className="text-sm font-semibold text-neutral-900 mb-3">
-            {entry.topic.name}
-          </h3>
+          <div className="flex items-center gap-2 mb-3">
+            <h3 className="text-sm font-semibold text-neutral-900">
+              {entry.topic.name}
+            </h3>
+            {entry.sourceType !== null && !entry.isNotFound && !entry.isError && (
+              <SourceTypeBadge sourceType={entry.sourceType} />
+            )}
+          </div>
 
           {entry.finding === null ? (
             <p className="text-sm text-neutral-400 italic">
@@ -93,27 +108,58 @@ export function FindingsByTopic({ findingsByTopic }: FindingsByTopicProps) {
               <p className="text-sm text-neutral-700 leading-relaxed">
                 {entry.finding.summary}
               </p>
-              {entry.sourceType !== null && (
-                <div className="flex items-center gap-2 flex-wrap">
-                  <SourceTypeBadge sourceType={entry.sourceType} />
-                  {isSafeUrl(entry.finding.sourceUrl) && (
-                    <a
-                      href={entry.finding.sourceUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 underline text-xs inline-flex items-center gap-1"
-                    >
-                      {entry.finding.sourceTitle || "Source"}
-                      <ExternalLink className="h-3 w-3" aria-hidden="true" />
-                    </a>
-                  )}
-                  {entry.finding.sourceDate && (
-                    <span className="text-xs text-neutral-400">
-                      {formatSourceDate(entry.finding.sourceDate)}
-                    </span>
-                  )}
-                </div>
-              )}
+              {entry.sourceType !== null && (() => {
+                const citations = parseCitations(entry.finding.citations);
+                // Build deduplicated source list: primary first, then additional citations
+                // whose URL wasn't already shown as the primary source.
+                const primaryUrl = isSafeUrl(entry.finding.sourceUrl)
+                  ? entry.finding.sourceUrl
+                  : null;
+                const additionalCitations = citations.filter(
+                  (c) => isSafeUrl(c.url) && c.url !== primaryUrl,
+                );
+
+                return (
+                  <div className="space-y-1">
+                    {primaryUrl && (
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <a
+                          href={primaryUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 underline text-xs inline-flex items-center gap-1"
+                        >
+                          {entry.finding.sourceTitle || "Source"}
+                          <ExternalLink className="h-3 w-3" aria-hidden="true" />
+                        </a>
+                        {entry.finding.sourceDate && (
+                          <span className="text-xs text-neutral-400">
+                            {formatSourceDate(entry.finding.sourceDate)}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    {additionalCitations.map((c) => (
+                      <div key={c.url} className="flex items-center gap-2 flex-wrap">
+                        <a
+                          href={c.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 underline text-xs inline-flex items-center gap-1"
+                        >
+                          {c.title || "Source"}
+                          <ExternalLink className="h-3 w-3" aria-hidden="true" />
+                        </a>
+                        {c.date && (
+                          <span className="text-xs text-neutral-400">
+                            {formatSourceDate(c.date)}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
           )}
         </section>

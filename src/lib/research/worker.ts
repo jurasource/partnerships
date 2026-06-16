@@ -7,7 +7,7 @@ import { findings, firms, topics } from "@/db/schema";
 import type { WebSearchClient } from "@/lib/search/types";
 import { FindingSchema, NOT_FOUND_SENTINEL, RESEARCH_ERROR_SENTINEL, type SynthesisedFinding } from "./schemas";
 import { buildGroundingContext } from "./grounding";
-import { RESEARCH_SYSTEM_PROMPT, buildSearchQuery, buildTopicPrompt } from "./prompts";
+import { RESEARCH_SYSTEM_PROMPT, buildSearchQuery, buildGroundingBlock, buildTopicBlock } from "./prompts";
 
 /**
  * Per-firm research worker — the core of Phase 2 (AI-SPEC §4).
@@ -55,6 +55,26 @@ export async function runResearchWorker(
       `job ${jobId}, ${allTopics.length} topics`,
   );
 
+  // Pre-compute the grounding block once — stable across all 7 topic calls.
+  // Placed in the system array (not user messages) so that injectJsonInstructionIntoMessages,
+  // which Output.object uses to inject JSON instructions into user messages, cannot
+  // displace the cache breakpoint.
+  const groundingBlock = buildGroundingBlock(groundingContext);
+
+  // System message pair: persona/rules first, then grounding context marked as the
+  // cache breakpoint. Anthropic caches everything up to and including the block that
+  // carries cacheControl, so both blocks are cached together.
+  const systemWithGrounding = [
+    { role: "system" as const, content: RESEARCH_SYSTEM_PROMPT },
+    {
+      role: "system" as const,
+      content: groundingBlock,
+      providerOptions: {
+        anthropic: { cacheControl: { type: "ephemeral" as const } },
+      },
+    },
+  ];
+
   // Sequential topic loop — intentionally NOT Promise.all (AI-SPEC §4b async design,
   // Anthropic rate limits, and partial-failure handling require sequential execution)
   for (let i = 0; i < allTopics.length; i++) {
@@ -79,11 +99,21 @@ export async function runResearchWorker(
     let genOutputTokens: number | undefined;
     let genRawText: string | undefined;
 
+    // Messages array — per-topic content only. The stable grounding prefix lives in
+    // the system array below (see `systemWithGrounding`) so that injectJsonInstructionIntoMessages
+    // (used by Output.object) cannot displace the cache breakpoint.
+    const messages = [
+      {
+        role: "user" as const,
+        content: buildTopicBlock(topic, searchResults, groundingContext.firmName),
+      },
+    ];
+
     try {
       let result = await generateText({
         model: anthropic("claude-sonnet-4-6"),
-        system: RESEARCH_SYSTEM_PROMPT,
-        prompt: buildTopicPrompt(topic, groundingContext, searchResults),
+        system: systemWithGrounding,
+        messages,
         output: Output.object({ schema: FindingSchema }),
         maxOutputTokens: 2048,
         temperature: 0.1,
@@ -96,9 +126,14 @@ export async function runResearchWorker(
       genOutputTokens = result.usage?.outputTokens;
       genRawText = result.text;
 
+      const cacheMeta = result.providerMetadata?.anthropic as {
+        cacheCreationInputTokens?: number;
+        cacheReadInputTokens?: number;
+      } | undefined;
       console.log(
         `[research] generateText: finishReason=${result.finishReason}, ` +
-          `tokens in=${result.usage?.inputTokens} out=${result.usage?.outputTokens}`,
+          `tokens in=${result.usage?.inputTokens} out=${result.usage?.outputTokens}, ` +
+          `cache created=${cacheMeta?.cacheCreationInputTokens ?? 0} read=${cacheMeta?.cacheReadInputTokens ?? 0}`,
       );
 
       // Retry with a higher ceiling when the response was truncated mid-JSON
@@ -108,8 +143,8 @@ export async function runResearchWorker(
         );
         result = await generateText({
           model: anthropic("claude-sonnet-4-6"),
-          system: RESEARCH_SYSTEM_PROMPT,
-          prompt: buildTopicPrompt(topic, groundingContext, searchResults),
+          system: systemWithGrounding,
+          messages,
           output: Output.object({ schema: FindingSchema }),
           maxOutputTokens: 4096,
           temperature: 0.1,
@@ -119,9 +154,14 @@ export async function runResearchWorker(
         genInputTokens = result.usage?.inputTokens;
         genOutputTokens = result.usage?.outputTokens;
         genRawText = result.text;
+        const retryMeta = result.providerMetadata?.anthropic as {
+          cacheCreationInputTokens?: number;
+          cacheReadInputTokens?: number;
+        } | undefined;
         console.log(
           `[research] retry generateText: finishReason=${result.finishReason}, ` +
-            `tokens in=${result.usage?.inputTokens} out=${result.usage?.outputTokens}`,
+            `tokens in=${result.usage?.inputTokens} out=${result.usage?.outputTokens}, ` +
+            `cache created=${retryMeta?.cacheCreationInputTokens ?? 0} read=${retryMeta?.cacheReadInputTokens ?? 0}`,
         );
       }
 
@@ -197,6 +237,7 @@ export async function runResearchWorker(
     // accumulating duplicates (CR-03). The unique constraint on (firmId, topicId)
     // in schema.ts makes ON CONFLICT deterministic; createdAt is refreshed so
     // the status endpoint's "findings since startedAt" count stays accurate.
+    const searchResultsJson = JSON.stringify(searchResults);
     await db.insert(findings).values({
       firmId,
       topicId: topic.id,
@@ -207,6 +248,7 @@ export async function runResearchWorker(
       rawSnippet: finding.rawSnippet,
       sourceDate: finding.sourceDate ?? null,
       citations: JSON.stringify(finding.citations ?? []),
+      searchResults: searchResultsJson,
     }).onConflictDoUpdate({
       target: [findings.firmId, findings.topicId],
       set: {
@@ -217,6 +259,7 @@ export async function runResearchWorker(
         rawSnippet: finding.rawSnippet,
         sourceDate: finding.sourceDate ?? null,
         citations: JSON.stringify(finding.citations ?? []),
+        searchResults: searchResultsJson,
         createdAt: new Date().toISOString(),
       },
     });

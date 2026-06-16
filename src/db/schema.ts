@@ -324,6 +324,13 @@ export const findings = pgTable(
      */
     citations: text("citations").notNull().default("[]"),
     /**
+     * JSON array of all Tavily search results retrieved for this topic, regardless of
+     * whether the LLM cited them. Each entry: { url, title, snippet, publishedDate? }.
+     * NULL for HIGH-confidence structured findings (no web search is performed).
+     * Stored so the UI can show uncited results as a transparency signal.
+     */
+    searchResults: text("search_results"),
+    /**
      * Confidence level (D-11):
      *   HIGH   = from structured UK API (CH / CF / FTS)
      *   MEDIUM = AI-derived with a cited source
