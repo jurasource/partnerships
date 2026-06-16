@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: context exhaustion at 92% (2026-06-15)
-last_updated: "2026-06-15T18:17:10.938Z"
-last_activity: 2026-06-15 -- Phase 03.1 Plan 02 complete (Groups UI)
+status: verifying
+stopped_at: "Phase 05 fully complete — all 3 plans done, E9 human acceptance gate approved 2026-06-16"
+last_updated: "2026-06-16T15:30:00.000Z"
+last_activity: 2026-06-16 -- Phase 05 Plan 03 complete (/report page + E9 integration test + human acceptance gate APPROVED)
 progress:
   total_phases: 6
-  completed_phases: 5
-  total_plans: 15
-  completed_plans: 15
-  percent: 83
+  completed_phases: 6
+  total_plans: 18
+  completed_plans: 18
+  percent: 100
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-13)
 
 **Core value:** Given a list of firms and research questions, surface the intelligence needed to decide which firms to team with and in what combination — in one place, without manual searching.
-**Current focus:** Phase 03.1 — firm-groups
+**Current focus:** Phase 05 — consortium-recommender-initial-report
 
 ## Current Position
 
-Phase: 03.1 (firm-groups) — EXECUTING
-Plan: 3 of 3 complete
-Status: Ready to execute
-Last activity: 2026-06-15 -- Phase 03.1 Plan 02 complete (Groups UI)
+Phase: 05 (consortium-recommender-initial-report) — COMPLETE
+Plan: 3 of 3
+Status: Phase complete — E9 human acceptance gate approved 2026-06-16
+Last activity: 2026-06-16 -- Phase 05 Plan 03 complete (/report page + E9 integration test + human acceptance gate APPROVED)
 
 Progress: [██████████] 100%
 
@@ -58,6 +58,9 @@ Progress: [██████████] 100%
 | Phase 03-dashboard-profiles P02 | 4 | 3 tasks | 6 files |
 | Phase 03.1 P03 | 8 | 2 tasks | 5 files |
 | Phase 04 P02 | 9 min | 2 tasks | 12 files |
+| Phase 05 P01 | 7 | 3 tasks | 8 files |
+| Phase 05 P02 | 20 | 2 tasks | 13 files |
+| Phase 05 P03 | 6 min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -92,6 +95,13 @@ Recent decisions affecting current work:
 - [Plan 03.1-02]: router.refresh() called after all mutations in GroupDetailClient to re-pull RSC-derived memberFirms/nonMemberFirms props
 - [Phase 03.1]: Stale filter threshold is 30 days per phase spec; this deliberately differs from StalenessBadge which uses 7 days for its visual indicator
 - [Phase 03.1]: filteredData computed with useMemo before useReactTable — TanStack sorting operates on already-filtered rows
+- [Phase ?]: Zod 4 uuid() enforces RFC 4122 format with version/variant bits — test fixture UUIDs must use format 4xxx-8xxx
+- [Phase ?]: Phase 5 scorer ownershipRecord always populated in FirmScoreBreakdown regardless of ukOwnership weight — CONS-04 NSI invariant
+- [Plan 05-02]: Base UI Accordion does not accept type='single' or collapsible props — always collapsible by default; removed Radix props from RecommendClient
+- [Plan 05-02]: Base UI Slider onValueChange callback typed as (value: number | readonly number[]) — handler reads index [0] after array check
+- [Plan 05-02]: RSC shell + client island pattern — getLockFirmsList() server-side in page.tsx, interactive state in RecommendClient island
+- [Phase ?]: RecommendResponseSchema.parse(result) used to cast ScorerResult to RecommendResponse — ScorerResult is a plain interface not type-compatible with the Zod discriminated union without validation
+- [Phase ?]: E9 test uses top-level await dynamic imports on DATABASE_URL flag to guard gracefully when Postgres absent — prevents @/db/client module throw at Vitest import time
 
 ### Pending Todos
 
@@ -130,6 +140,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-15T18:17:10.933Z
-Stopped at: context exhaustion at 92% (2026-06-15)
+Last session: 2026-06-16T15:30:00.000Z
+Stopped at: Phase 05 fully complete — E9 human acceptance gate approved
 Resume file: None

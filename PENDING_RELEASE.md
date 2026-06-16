@@ -8,6 +8,52 @@
 ### Prod
 - Run `npm run db:push` (or equivalent migration) to add `search_results` column
 - Re-run research on existing firms to populate `search_results` (old rows show only cited URLs in sidebar until re-researched)
+## chore: commit Drizzle migration 0003 (ch_snapshots table)
+
+### Dev
+- Run `npm run db:push` or `npx drizzle-kit migrate` to apply migration 0003 if not already applied.
+
+### Prod
+- Apply migration 0003 before deploying: `npx drizzle-kit migrate`.
+
+## fix(05): Phase 5 code-review fixes — scorer correctness, safe JSON parsing, UI + test fixes
+
+### Dev
+- No schema changes required.
+- Run `npm test` to verify all 198 tests pass.
+- The snapshot for `seeded-e2e.test.ts` is now obsolete (scorer normalisation changed); update with `npx vitest run --update-snapshots` against a seeded DB.
+
+### Prod
+- No migration required — logic-only changes; deploy new build.
+
+## Phase 5 — /report page + E9 seeded integration test
+
+### Dev
+- Run `docker compose up -d db` and `npm run db:push && npm run db:seed` (idempotent) before running the E9 seeded test; `npm test` must be green.
+- For the E9 test to execute (not skip), set `DATABASE_URL` in your environment pointing to the seeded Postgres instance.
+- `/report` is read-only — no new migrations required.
+
+### Prod
+- No schema changes — `/report` reads from existing Phase 1–4 tables; read-only.
+- No new env vars required beyond the existing `DATABASE_URL`.
+
+## Phase 5 — /recommend page + navbar links
+
+### Dev
+- /recommend and /report nav links now live; no migration required
+
+### Prod
+- /recommend and /report nav links now live; no migration required
+
+## Phase 5 — consortium recommender API
+
+### Dev
+- Ensure Postgres is running (`docker compose up -d db`); no migration needed (Phase 5 is read-only — reads from existing firms, conflictPairs, partnershipPairs, ownershipRecords, riskFlags, procurementRecords tables)
+- No new env vars required
+
+### Prod
+- No migration required — Phase 5 reads from tables created in Phases 1–4; no schema changes
+- No new env vars required; deploy new build
 
 ## fix(analysis): group/capability filter freeze on prod — set modal={false}
 

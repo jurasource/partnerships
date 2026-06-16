@@ -58,11 +58,11 @@
 
 ### Consortium Recommendation
 
-- [ ] **CONS-01**: User can request a consortium recommendation for a specified capability mix (e.g. one each of Cons, Infra, Nuc)
-- [ ] **CONS-02**: Recommendation is rules-based and explains its reasoning — capability coverage, conflict exclusions, contract relevance — not a black box
-- [ ] **CONS-03**: Recommendation automatically excludes firm pairs with flagged conflicts of interest
-- [ ] **CONS-04**: Recommendation surfaces foreign ownership and NSI (National Security and Investment) considerations for each recommended firm
-- [ ] **CONS-05**: User can override or adjust recommended firms and see updated conflict/capability analysis
+- [x] **CONS-01**: User can request a consortium recommendation for a specified capability mix (e.g. one each of Cons, Infra, Nuc)
+- [x] **CONS-02**: Recommendation is rules-based and explains its reasoning — capability coverage, conflict exclusions, contract relevance — not a black box
+- [x] **CONS-03**: Recommendation automatically excludes firm pairs with flagged conflicts of interest
+- [x] **CONS-04**: Recommendation surfaces foreign ownership and NSI (National Security and Investment) considerations for each recommended firm
+- [x] **CONS-05**: User can override or adjust recommended firms and see updated conflict/capability analysis
 
 ## v2 Requirements
 
@@ -132,11 +132,11 @@ Updated during roadmap creation.
 | ANAL-02 | Phase 4 | Complete |
 | ANAL-03 | Phase 4 | Complete |
 | ANAL-04 | Phase 4 | Complete |
-| CONS-01 | Phase 5 | Pending |
-| CONS-02 | Phase 5 | Pending |
-| CONS-03 | Phase 5 | Pending |
-| CONS-04 | Phase 5 | Pending |
-| CONS-05 | Phase 5 | Pending |
+| CONS-01 | Phase 5 | Complete |
+| CONS-02 | Phase 5 | Complete |
+| CONS-03 | Phase 5 | Complete |
+| CONS-04 | Phase 5 | Complete |
+| CONS-05 | Phase 5 | Complete |
 
 **Coverage:**
 
