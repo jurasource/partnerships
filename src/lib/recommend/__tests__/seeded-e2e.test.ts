@@ -30,14 +30,14 @@ import { RecommendResponseSchema } from "../schemas";
 // on machines without a configured Postgres (e.g. CI without docker compose).
 const DB_AVAILABLE = Boolean(process.env.DATABASE_URL);
 
-let db: Awaited<ReturnType<typeof import("@/db/client")>>["db"] | null = null;
+let db: (typeof import("@/db/client"))["db"] | null = null;
 let firms: (typeof import("@/db/schema"))["firms"] | null = null;
 let conflictPairs: (typeof import("@/db/schema"))["conflictPairs"] | null = null;
 let partnershipPairs: (typeof import("@/db/schema"))["partnershipPairs"] | null = null;
 let ownershipRecords: (typeof import("@/db/schema"))["ownershipRecords"] | null = null;
 let riskFlags: (typeof import("@/db/schema"))["riskFlags"] | null = null;
 let procurementRecords: (typeof import("@/db/schema"))["procurementRecords"] | null = null;
-let sql: Awaited<ReturnType<typeof import("@/db/client")>>["sql"] | null = null;
+let sql: (typeof import("@/db/client"))["sql"] | null = null;
 
 if (DB_AVAILABLE) {
   // Dynamic imports so the module loader never evaluates @/db/client when

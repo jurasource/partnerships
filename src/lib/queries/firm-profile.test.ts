@@ -98,6 +98,7 @@ const FINDING_MEDIUM: Finding = {
   confidence: "MEDIUM",
   sourceDate: "2024-03-15",
   citations: "[]",
+  searchResults: null,
   createdAt: "2026-06-14",
 };
 
@@ -112,6 +113,7 @@ const FINDING_HIGH: Finding = {
   confidence: "HIGH",
   sourceDate: null,
   citations: "[]",
+  searchResults: null,
   createdAt: "2026-06-14",
 };
 
@@ -126,6 +128,7 @@ const FINDING_NOT_FOUND: Finding = {
   confidence: "HIGH",
   sourceDate: null,
   citations: "[]",
+  searchResults: null,
   createdAt: "2026-06-14",
 };
 
@@ -140,6 +143,7 @@ const FINDING_RESEARCH_ERROR: Finding = {
   confidence: "HIGH",
   sourceDate: null,
   citations: "[]",
+  searchResults: null,
   createdAt: "2026-06-14",
 };
 

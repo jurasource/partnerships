@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { createFirm, updateFirm, deleteFirm } from "./firm-actions";
-import type { Firm } from "@/lib/types";
+import type { Firm, CapabilityTag } from "@/lib/types";
 
 // Mock the database and next/cache — explicit factory required because the
 // real client.ts throws at load time when DATABASE_URL is not set.
@@ -46,7 +46,7 @@ describe("Firm Actions", () => {
         canonicalName: "Test Firm",
         aliases: ["Test Co", "Test Ltd"],
         companiesHouseNumber: "12345678",
-        capabilityTags: ["Nuclear"] as const[],
+        capabilityTags: ["Nuclear"] as CapabilityTag[],
       };
 
       // Act
@@ -73,7 +73,7 @@ describe("Firm Actions", () => {
         canonicalName: "",
         aliases: [],
         companiesHouseNumber: "12345678",
-        capabilityTags: [] as const[],
+        capabilityTags: [] as CapabilityTag[],
       };
 
       // Act
@@ -106,7 +106,7 @@ describe("Firm Actions", () => {
         canonicalName: "Test Firm",
         aliases: [],
         companiesHouseNumber: "12345678",
-        capabilityTags: ["Nuclear"] as const[],
+        capabilityTags: ["Nuclear"] as CapabilityTag[],
       };
 
       // Act
@@ -139,7 +139,7 @@ describe("Firm Actions", () => {
         canonicalName: "Test Corp",
         aliases: ["Corp", "TC"],
         companiesHouseNumber: "87654321",
-        capabilityTags: ["Nuclear", "Infrastructure"] as const[],
+        capabilityTags: ["Nuclear", "Infrastructure"] as CapabilityTag[],
       };
 
       // Act
@@ -173,7 +173,7 @@ describe("Firm Actions", () => {
       const firmId = "existing-firm-id";
       const input = {
         canonicalName: "Updated Firm Name",
-        capabilityTags: ["Infrastructure"] as const[],
+        capabilityTags: ["Infrastructure"] as CapabilityTag[],
       };
 
       // Act
