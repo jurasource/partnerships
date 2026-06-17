@@ -440,6 +440,62 @@ export const chSnapshots = pgTable(
   (table) => [uniqueIndex("ch_snapshots_firm_unique").on(table.firmId)],
 );
 
+// --- requestLogs ---------------------------------------------------------
+/**
+ * Audit log of every Tavily search and every Anthropic generateText call made
+ * by the research worker. Written fire-and-forget — failures never abort a job.
+ * Entries are kept indefinitely until the user deletes them via the /request-logs UI.
+ */
+export const requestLogs = pgTable("request_logs", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+
+  /** Discriminator: which kind of external call this row records. */
+  type: text("type")
+    .$type<"tavily_search" | "llm_call">()
+    .notNull(),
+
+  /** FK to the research job that triggered this call. Set null on job delete. */
+  jobId: text("job_id").references(() => jobs.id, { onDelete: "set null" }),
+  /** FK to the firm being researched. Set null on firm delete. */
+  firmId: text("firm_id").references(() => firms.id, { onDelete: "set null" }),
+  /** FK to the research topic. Set null on topic delete. */
+  topicId: text("topic_id").references(() => topics.id, { onDelete: "set null" }),
+
+  // Tavily-specific fields (null for llm_call rows)
+  /** The search query string sent to Tavily. */
+  searchQuery: text("search_query"),
+  /** JSON array of Tavily result objects returned by the API. */
+  searchResultsJson: text("search_results_json"),
+
+  // LLM-specific fields (null for tavily_search rows)
+  /** Model identifier, e.g. "claude-sonnet-4-6". */
+  model: text("model"),
+  /** JSON object: { system: [...], messages: [...] } — the full prompt sent. */
+  promptJson: text("prompt_json"),
+  /** Raw text content of the model response before JSON parsing. */
+  rawResponse: text("raw_response"),
+  /** Total input tokens consumed (stored as text per schema convention). */
+  inputTokens: text("input_tokens"),
+  /** Total output tokens consumed. */
+  outputTokens: text("output_tokens"),
+  /** Tokens written into the Anthropic prompt cache on this call. */
+  cacheCreatedTokens: text("cache_created_tokens"),
+  /** Tokens read from the Anthropic prompt cache on this call. */
+  cacheReadTokens: text("cache_read_tokens"),
+  /** generateText finishReason: "stop" | "length" | "error". */
+  finishReason: text("finish_reason"),
+  /** "true" when this is a length-retry of an earlier call on the same topic. */
+  isRetry: text("is_retry"),
+
+  // Shared fields
+  /** Wall-clock duration of the external call in milliseconds (stored as text). */
+  durationMs: text("duration_ms"),
+  /** Error message when the call threw an exception; null on success. */
+  errorMessage: text("error_message"),
+
+  createdAt: timestamp("created_at", { mode: "string" }).notNull().defaultNow(),
+});
+
 // --- accessCodes ---------------------------------------------------------
 export const accessCodes = pgTable("access_codes", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
