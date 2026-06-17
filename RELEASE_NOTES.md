@@ -88,3 +88,6 @@
 
 ## 2026-06-17
 - fix(tests): resolve TypeScript type errors across three test files — invalid `as const[]` syntax replaced with `as CapabilityTag[]` in firm-actions.test.ts; missing `searchResults` field added to four Finding fixtures in firm-profile.test.ts; invalid `Awaited<ReturnType<typeof import(...)>>` replaced with `(typeof import(...))` in seeded-e2e.test.ts
+
+## 2026-06-17
+- feat(request-log): persist every Tavily search and LLM generateText call to a new `request_logs` table; add `/request-logs` page with tab filter (All / Tavily / LLM), sortable table showing firm, topic, token counts, cache hits, and duration, click-to-expand detail drawer with full prompt JSON and raw model response, per-row and bulk delete controls, and a "Logs" navbar link
