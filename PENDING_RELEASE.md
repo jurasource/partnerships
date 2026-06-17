@@ -302,3 +302,9 @@
 - No steps required — caching is applied automatically by the worker
 ### Prod
 - No steps required
+
+## fix(tests): resolve TypeScript type errors in test files
+### Dev
+- No steps required
+### Prod
+- No steps required
