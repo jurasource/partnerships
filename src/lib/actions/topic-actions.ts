@@ -9,21 +9,25 @@ import { topics } from "@/db/schema";
 const TopicSchema = z.object({
   name: z.string().trim().min(1, "Topic name is required"),
   description: z.string().trim().optional().default(""),
+  searchTerms: z.string().trim().optional().default(""),
 });
 
 const UpdateTopicSchema = z.object({
   name: z.string().trim().min(1, "Topic name is required").optional(),
   description: z.string().trim().optional(),
+  searchTerms: z.string().trim().optional(),
 });
 
 type CreateTopicInput = {
   name: string;
   description?: string;
+  searchTerms?: string;
 };
 
 type UpdateTopicInput = {
   name?: string;
   description?: string;
+  searchTerms?: string;
 };
 
 type CreateTopicResult =
@@ -48,12 +52,12 @@ export async function createTopic(input: CreateTopicInput): Promise<CreateTopicR
     return { ok: false, error: firstError };
   }
 
-  const { name, description } = parsed.data;
+  const { name, description, searchTerms } = parsed.data;
 
   try {
     const [inserted] = await db
       .insert(topics)
-      .values({ name, description })
+      .values({ name, description, searchTerms })
       .returning({ id: topics.id });
 
     if (!inserted) {
@@ -88,11 +92,12 @@ export async function updateTopic(
     return { ok: false, error: firstError };
   }
 
-  const { name, description } = parsed.data;
+  const { name, description, searchTerms } = parsed.data;
 
   const updateValues: Record<string, unknown> = {};
   if (name !== undefined) updateValues.name = name;
   if (description !== undefined) updateValues.description = description;
+  if (searchTerms !== undefined) updateValues.searchTerms = searchTerms;
 
   if (Object.keys(updateValues).length === 0) {
     return { ok: false, error: "No fields to update." };

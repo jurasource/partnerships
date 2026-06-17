@@ -124,6 +124,22 @@ function buildColumns(): ColumnDef<Topic>[] {
       enableSorting: false,
     },
     {
+      accessorKey: "searchTerms",
+      header: "Search Terms",
+      cell: ({ row }) => {
+        const terms = row.getValue("searchTerms") as string;
+        return terms ? (
+          <span className="font-mono text-xs text-neutral-500 bg-neutral-100 px-1.5 py-0.5 rounded break-all">
+            {terms}
+          </span>
+        ) : (
+          <span className="text-xs text-neutral-400 italic">uses topic name</span>
+        );
+      },
+      enableSorting: false,
+      size: 220,
+    },
+    {
       id: "actions",
       header: () => <span className="sr-only">Actions</span>,
       cell: ({ row }) => <TopicRowActions topic={row.original} />,

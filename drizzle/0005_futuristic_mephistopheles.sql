@@ -1,0 +1,1 @@
+ALTER TABLE "topics" ADD COLUMN "search_terms" text DEFAULT '' NOT NULL;

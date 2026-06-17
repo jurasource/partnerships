@@ -37,6 +37,7 @@ export function TopicFormDialog({ topic }: TopicFormDialogProps) {
 
   const [name, setName] = React.useState(topic?.name ?? "");
   const [description, setDescription] = React.useState(topic?.description ?? "");
+  const [searchTerms, setSearchTerms] = React.useState(topic?.searchTerms ?? "");
   const [errors, setErrors] = React.useState<FormErrors>({});
 
   function handleOpenChange(next: boolean) {
@@ -45,6 +46,7 @@ export function TopicFormDialog({ topic }: TopicFormDialogProps) {
       // Re-seed on open in case topic was updated externally
       setName(topic.name);
       setDescription(topic.description ?? "");
+      setSearchTerms(topic.searchTerms ?? "");
       setErrors({});
     } else if (!next) {
       resetForm();
@@ -55,6 +57,7 @@ export function TopicFormDialog({ topic }: TopicFormDialogProps) {
     if (!isEditMode) {
       setName("");
       setDescription("");
+      setSearchTerms("");
     }
     setErrors({});
   }
@@ -79,6 +82,7 @@ export function TopicFormDialog({ topic }: TopicFormDialogProps) {
       const result = await updateTopic(topic.id, {
         name: name.trim(),
         description: description.trim(),
+        searchTerms: searchTerms.trim(),
       });
 
       setPending(false);
@@ -93,6 +97,7 @@ export function TopicFormDialog({ topic }: TopicFormDialogProps) {
       const result = await createTopic({
         name: name.trim(),
         description: description.trim(),
+        searchTerms: searchTerms.trim(),
       });
 
       setPending(false);
@@ -167,6 +172,24 @@ export function TopicFormDialog({ topic }: TopicFormDialogProps) {
               rows={3}
               className="w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             />
+          </div>
+
+          {/* Tavily search terms */}
+          <div className="space-y-1.5">
+            <Label htmlFor="topic-search-terms" className="text-sm">
+              Tavily search terms{" "}
+              <span className="text-neutral-400 font-normal">(optional)</span>
+            </Label>
+            <Input
+              id="topic-search-terms"
+              placeholder="e.g. nuclear capability sites contracts UK"
+              value={searchTerms}
+              onChange={(e) => setSearchTerms(e.target.value)}
+              className="font-mono text-xs"
+            />
+            <p className="text-xs text-neutral-400">
+              Appended after the quoted firm name in each Tavily search. Leave blank to use the topic name.
+            </p>
           </div>
 
           {/* Form-level error */}

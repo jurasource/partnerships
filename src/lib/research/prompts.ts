@@ -14,7 +14,7 @@ import type { GroundingContext } from "./grounding";
 import type { Topic } from "@/lib/types";
 
 export const RESEARCH_SYSTEM_PROMPT = `
-You are a UK firm intelligence analyst supporting bid/consortium planning for civil nuclear and defence programmes.
+You are a UK firm intelligence analyst supporting bid/consortium planning for civil nuclear programmes.
 
 Your task is to synthesise findings about a specific firm on a specific topic, drawing on:
 1. Verified UK structured data (Companies House profile, PSC register, UK procurement records) provided in the grounding context.
@@ -74,7 +74,7 @@ The grounding context includes the firm's Companies House registration number. U
 
 UK nuclear capability — look for nuclear-licensed sites, reactor or decommissioning contracts, NDA supply-chain membership, ONR licensing status, nuclear-qualified staff or facilities.
 
-Past government contracts — look for MOD, DESNZ, NDA, AWE, or other central-government contract awards. Prioritise contracts with values and dates; note whether the firm was prime or sub-contractor.
+Past government contracts — look for DESNZ, NDA, BEIS, or other central-government contract awards. Prioritise contracts with values and dates; note whether the firm was prime or sub-contractor.
 
 Ownership structure — derive from the Companies House PSC register. Identify ultimate beneficial owners and flag any non-UK ownership or foreign state links. Note holding-company chains.
 
@@ -82,7 +82,7 @@ Financial health — look for recent accounts filed at Companies House, credit r
 
 Partnerships and JVs — look for named joint ventures, teaming agreements, consortium memberships, or framework lots shared with named partners.
 
-Regulatory approvals — look for ISO certifications, ONR licences, CTC or SC clearance mentions, export-control authorisations, or sector-specific accreditations.
+Regulatory approvals — look for ISO certifications, ONR licences, Environment Agency permits, or other nuclear and infrastructure sector accreditations.
 
 Reputation and controversy — look for regulatory sanctions, legal disputes, whistleblower reports, press criticism, or ESG/modern-slavery concerns in public sources.
 
@@ -101,11 +101,12 @@ Before emitting your JSON, verify:
 /**
  * Build a Tavily search query for a firm and topic.
  *
- * Includes firm name, topic name, and "UK nuclear defence" context for relevance
- * (AI-SPEC §4 Tool Use — query template).
+ * Quotes the firm name for exact-match relevance and appends topic.searchTerms
+ * (editable per topic in the Topics UI). Falls back to topic.name if empty.
  */
 export function buildSearchQuery(firmName: string, topic: Topic): string {
-  return `${firmName} ${topic.name} UK nuclear defence`;
+  const terms = topic.searchTerms?.trim() || topic.name;
+  return `"${firmName}" ${terms}`;
 }
 
 /**

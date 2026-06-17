@@ -35,6 +35,8 @@ export const topics = pgTable("topics", {
     .$defaultFn(() => crypto.randomUUID()),
   name: text("name").notNull(),
   description: text("description").notNull().default(""),
+  /** Tavily search terms appended after the quoted firm name. Editable per topic. */
+  searchTerms: text("search_terms").notNull().default(""),
   createdAt: timestamp("created_at", { mode: "string" }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { mode: "string" }).notNull().defaultNow(),
 });
