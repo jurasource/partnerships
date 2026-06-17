@@ -7,6 +7,7 @@ import {
   BookOpen,
   Building2,
   FileText,
+  Info,
   LayersIcon,
   LayoutDashboard,
   LogOut,
@@ -35,6 +36,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Logs", href: "/request-logs", icon: ScrollText },
   { label: "Consortium", href: "/consortium", icon: Users },
   { label: "Report", href: "/report", icon: FileText },
+  { label: "How it works", href: "/how-it-works", icon: Info },
 ];
 
 const PLACEHOLDER_ITEMS: NavItem[] = [];

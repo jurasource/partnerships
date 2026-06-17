@@ -1,5 +1,15 @@
 # Pending Release Steps
 
+## feat(docs): How it works page with Mermaid flow diagrams
+
+### Dev
+- No DB migrations required
+- No new env vars required
+- `npm install` picks up the new `mermaid` dependency
+
+### Prod
+- No DB migrations required; deploy new build; `mermaid` is a client-side dependency bundled into the Next.js output
+
 ## feat(consortium-v2): capability tags per role, stale results fix, run modal results phase, export, UX polish
 
 ### Dev

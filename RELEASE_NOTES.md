@@ -1,6 +1,8 @@
 # Release Notes
 
 ## 2026-06-17
+- feat(docs): added "How it works" page at /how-it-works — plain-English explanation of data flow, data sources, and what each section does; includes three interactive Mermaid flow diagrams (research pipeline, data sources, consortium scoring); documents known limitations (public data only, name-matching noise, LLM quality, no live refresh, rate limits, ownership depth, local deployment) and areas for improvement (monitoring, ownership resolution, semantic search, PDF export, cloud deployment, broader sources, conflict detection)
+- feat(docs): added "How it works" nav item to app navbar
 - feat(consortium-v2): required capability tags per role — each role slot has Nuclear/Infrastructure/Consultancy chip toggles; defaults pre-populated for civil nuclear roles; emitted into prompt as "Required capability tags: X, Y" so Claude can explicitly match firms to roles
 - feat(consortium-v2): run modal stays open after streaming completes, showing results inline in a "Consortium suggestions" phase with a Done button — eliminates the jarring close+scroll-to-results transition
 - feat(consortium-v2): stale results cleared on any form input change — suggestions, stream text, and parse error state all reset when opportunity/roles/firms/constraints change
