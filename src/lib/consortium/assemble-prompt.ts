@@ -31,6 +31,9 @@ export function assembleConsortiumPrompt(input: ConsortiumPromptInput): string {
     lines.push("", "## ROLES", "The consortium must fill the following roles:");
     for (const role of namedRoles) {
       lines.push("", `### ${role.title.trim()}`);
+      if (role.requiredTags && role.requiredTags.length > 0) {
+        lines.push(`Required capability tags: ${role.requiredTags.join(", ")}`);
+      }
       if (role.description.trim()) lines.push(role.description.trim());
     }
   }

@@ -35,6 +35,7 @@ export type RoleSlot = {
   id: string;
   title: string;
   description: string;
+  requiredTags?: string[];
 };
 
 export type ConsortiumPromptInput = {

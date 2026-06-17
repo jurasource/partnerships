@@ -1,5 +1,14 @@
 # Pending Release Steps
 
+## feat(consortium-v2): capability tags per role, stale results fix, run modal results phase, export, UX polish
+
+### Dev
+- No DB migrations required
+- No new env vars required
+
+### Prod
+- No DB migrations required; deploy new build
+
 ## fix(consortium): resolve firm names in prompt + rendered prompt modal
 
 ### Dev

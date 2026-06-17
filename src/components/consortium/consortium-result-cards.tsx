@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Copy, ChevronDown, ChevronUp, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Copy, Download, ChevronDown, ChevronUp, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -51,9 +50,14 @@ function ConsortiumCard({ suggestion, rank }: ConsortiumCardProps) {
           <span className="font-semibold text-neutral-900 truncate">{suggestion.name}</span>
           <div className="flex gap-1.5 flex-wrap">
             {suggestion.firms.map((f) => (
-              <Badge key={f.name} variant="secondary" className="text-xs font-normal">
-                {f.name}
-              </Badge>
+              <span
+                key={f.name}
+                className="inline-flex items-center gap-1 text-xs bg-neutral-100 text-neutral-700 rounded-full px-2.5 py-0.5"
+              >
+                <span className="font-medium">{f.name}</span>
+                <span className="text-neutral-400">·</span>
+                <span className="text-neutral-500 max-w-[140px] truncate">{f.role}</span>
+              </span>
             ))}
           </div>
         </div>
@@ -122,6 +126,43 @@ function ConsortiumCard({ suggestion, rank }: ConsortiumCardProps) {
   );
 }
 
+function formatAsMarkdown(suggestions: ConsortiumSuggestion[]): string {
+  return suggestions
+    .map((s, i) => {
+      const firmLines = s.firms.map((f) => `- **${f.name}** — ${f.role}`).join("\n");
+      const scoreLines = [
+        `- Capability coverage: ${Math.round(s.scores.capability * 100)}%`,
+        `- UK ownership: ${Math.round(s.scores.ukOwnership * 100)}%`,
+        `- Risk profile: ${Math.round(s.scores.riskProfile * 100)}%`,
+        `- Partnership evidence: ${Math.round(s.scores.partnershipEvidence * 100)}%`,
+      ].join("\n");
+      return [
+        `## ${i + 1}. ${s.name}`,
+        "",
+        "### Member Firms",
+        firmLines,
+        "",
+        "### Strategic Rationale",
+        s.rationale,
+        ...(s.risks ? ["", "### Risks & Red Flags", s.risks] : []),
+        "",
+        "### Scores",
+        scoreLines,
+      ].join("\n");
+    })
+    .join("\n\n---\n\n");
+}
+
+function downloadJson(suggestions: ConsortiumSuggestion[]) {
+  const blob = new Blob([JSON.stringify(suggestions, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "consortium-suggestions.json";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 type ConsortiumResultCardsProps = {
   suggestions: ConsortiumSuggestion[];
   rawText: string;
@@ -132,32 +173,46 @@ export function ConsortiumResultCards({ suggestions, rawText }: ConsortiumResult
     void navigator.clipboard.writeText(rawText).then(() => toast.success("Copied to clipboard"));
   }
 
+  function copyMarkdown() {
+    void navigator.clipboard
+      .writeText(formatAsMarkdown(suggestions))
+      .then(() => toast.success("Copied as markdown"));
+  }
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
         <h3 className="text-sm font-semibold text-neutral-900">
           {suggestions.length} consortium suggestion{suggestions.length !== 1 ? "s" : ""}
         </h3>
-        <Dialog>
-          <DialogTrigger
-            render={<Button variant="outline" size="sm" className="h-7 text-xs" />}
-          >
-            View full response
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
-            <DialogHeader>
-              <DialogTitle>Full LLM response</DialogTitle>
-            </DialogHeader>
-            <div className="flex-1 overflow-auto">
-              <pre className="text-xs text-neutral-700 whitespace-pre-wrap font-mono leading-relaxed bg-neutral-50 rounded p-4">
-                {rawText}
-              </pre>
-            </div>
-            <Button variant="outline" size="sm" onClick={copyRaw} className="self-end mt-2">
-              <Copy className="h-3.5 w-3.5 mr-1.5" /> Copy
-            </Button>
-          </DialogContent>
-        </Dialog>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={copyMarkdown}>
+            <Copy className="h-3 w-3" /> Copy markdown
+          </Button>
+          <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => downloadJson(suggestions)}>
+            <Download className="h-3 w-3" /> Export JSON
+          </Button>
+          <Dialog>
+            <DialogTrigger
+              render={<Button variant="outline" size="sm" className="h-7 text-xs" />}
+            >
+              View raw response
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+              <DialogHeader>
+                <DialogTitle>Full LLM response</DialogTitle>
+              </DialogHeader>
+              <div className="flex-1 overflow-auto">
+                <pre className="text-xs text-neutral-700 whitespace-pre-wrap font-mono leading-relaxed bg-neutral-50 rounded p-4">
+                  {rawText}
+                </pre>
+              </div>
+              <Button variant="outline" size="sm" onClick={copyRaw} className="self-end mt-2">
+                <Copy className="h-3.5 w-3.5 mr-1.5" /> Copy raw
+              </Button>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <div className="space-y-3">

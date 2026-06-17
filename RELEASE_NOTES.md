@@ -1,5 +1,13 @@
 # Release Notes
 
+## 2026-06-17
+- feat(consortium-v2): required capability tags per role — each role slot has Nuclear/Infrastructure/Consultancy chip toggles; defaults pre-populated for civil nuclear roles; emitted into prompt as "Required capability tags: X, Y" so Claude can explicitly match firms to roles
+- feat(consortium-v2): run modal stays open after streaming completes, showing results inline in a "Consortium suggestions" phase with a Done button — eliminates the jarring close+scroll-to-results transition
+- feat(consortium-v2): stale results cleared on any form input change — suggestions, stream text, and parse error state all reset when opportunity/roles/firms/constraints change
+- feat(consortium-v2): export buttons on result cards — "Copy markdown" formats all suggestions as clean markdown; "Export JSON" downloads consortium-suggestions.json
+- feat(consortium-v2): collapsed result card header now shows "Firm · role" inline for each member — role visible without expanding
+- feat(consortium-v2): tab descriptions added below tab list — one sentence per tab explaining Recommender vs AI Prompt Builder
+
 ## 2026-06-17 (role slots + anchor firm)
 - feat(consortium): replace capability mix sliders with named role slots — each role has a title and free-text brief; pre-populated with three civil nuclear defaults (prime contractor, technical specialist, compliance & assurance); up to 8 roles, add/remove freely
 - feat(consortium): add optional anchor firm selector — pin one firm as lead; LLM builds the rest of the consortium around them; automatically cleared if the firm is removed from scope

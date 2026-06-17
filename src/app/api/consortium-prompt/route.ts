@@ -19,6 +19,7 @@ const ConsortiumPromptRequestSchema = z.object({
       id: z.string(),
       title: z.string().trim().min(1).max(100),
       description: z.string().trim().max(500).default(""),
+      requiredTags: z.array(z.string().max(50)).max(10).default([]),
     }),
   ).min(1).max(8),
   anchorFirmId: z.string().uuid().nullable().default(null),

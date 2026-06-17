@@ -141,6 +141,9 @@ export function ConsortiumClient({ firms, groups }: ConsortiumClientProps) {
 
         {/* ── Recommender tab ───────────────────────────────────────────── */}
         <TabsContent value="recommender" className="mt-6">
+          <p className="text-sm text-neutral-500 mb-6 max-w-2xl">
+            Score and rank firms algorithmically using weighted criteria — UK ownership, risk flags, contract relevance, and known partnerships — to surface the strongest candidates.
+          </p>
           <div className="flex flex-col gap-8">
             <section>
               <h2 className="text-xl font-semibold text-neutral-900 mb-4">Capability Mix</h2>
@@ -201,6 +204,9 @@ export function ConsortiumClient({ firms, groups }: ConsortiumClientProps) {
 
         {/* ── AI Prompt Builder tab ─────────────────────────────────────── */}
         <TabsContent value="prompt-builder" className="mt-6">
+          <p className="text-sm text-neutral-500 mb-6 max-w-2xl">
+            Build a structured prompt for Claude to suggest optimal consortium configurations, using firm profiles, role requirements, and bidding constraints.
+          </p>
           <PromptBuilder allFirms={firms} initialFirms={scopedFirms} />
         </TabsContent>
       </Tabs>

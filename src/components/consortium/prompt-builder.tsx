@@ -41,21 +41,26 @@ type IncludeFlags = {
   ownership: boolean;
 };
 
+const CAPABILITY_TAGS = ["Nuclear", "Infrastructure", "Consultancy"] as const;
+
 const DEFAULT_ROLES: RoleSlot[] = [
   {
     id: "role-1",
     title: "Prime contractor",
     description: "Holds the contract; proven programme delivery at scale; ideally an existing NDA relationship and track record on major civil nuclear programmes.",
+    requiredTags: ["Nuclear", "Infrastructure"],
   },
   {
     id: "role-2",
     title: "Technical specialist",
     description: "Deep civil nuclear expertise in the target area (e.g. decommissioning, new build, fuel cycle); can be an SME.",
+    requiredTags: ["Nuclear"],
   },
   {
     id: "role-3",
     title: "Compliance & assurance",
     description: "Nuclear safety case authorship, ONR/EA regulatory engagement, SQEP workforce supply.",
+    requiredTags: ["Nuclear"],
   },
 ];
 
@@ -148,7 +153,7 @@ export function PromptBuilder({ allFirms, initialFirms }: PromptBuilderProps) {
   const [generatingFor, setGeneratingFor] = useState<"view" | "run" | null>(null);
   const [promptModalOpen, setPromptModalOpen] = useState(false);
   const [runModalOpen, setRunModalOpen] = useState(false);
-  const [runPhase, setRunPhase] = useState<"setup" | "running">("setup");
+  const [runPhase, setRunPhase] = useState<"setup" | "running" | "results">("setup");
   const [selectedModel, setSelectedModel] = useState("claude-sonnet-4-6");
 
   const [streaming, setStreaming] = useState(false);
@@ -189,9 +194,12 @@ export function PromptBuilder({ allFirms, initialFirms }: PromptBuilderProps) {
     }
   }, [anchorFirmId, selectedFirmIds]);
 
-  // Invalidate cached prompt when any form input changes
+  // Invalidate cached prompt and stale results when any form input changes
   useEffect(() => {
     setGeneratedPrompt(null);
+    setSuggestions(null);
+    setStreamText("");
+    setParseError(null);
   }, [opportunityName, opportunityDesc, roles, anchorFirmId, constraints, include, selectedFirmIds]);
 
   function toggleFirm(firmId: string) {
@@ -225,8 +233,23 @@ export function PromptBuilder({ allFirms, initialFirms }: PromptBuilderProps) {
   function addRole() {
     setRoles((prev) => [
       ...prev,
-      { id: crypto.randomUUID(), title: "", description: "" },
+      { id: crypto.randomUUID(), title: "", description: "", requiredTags: [] },
     ]);
+  }
+
+  function toggleRoleTag(roleId: string, tag: string) {
+    setRoles((prev) =>
+      prev.map((r) => {
+        if (r.id !== roleId) return r;
+        const tags = r.requiredTags ?? [];
+        return {
+          ...r,
+          requiredTags: tags.includes(tag)
+            ? tags.filter((t) => t !== tag)
+            : [...tags, tag],
+        };
+      }),
+    );
   }
 
   function removeRole(id: string) {
@@ -288,6 +311,7 @@ export function PromptBuilder({ allFirms, initialFirms }: PromptBuilderProps) {
     setSuggestions(null);
     setStreamText("");
     setParseError(null);
+    let fetchError = false;
     try {
       const res = await fetch("/api/consortium-prompt?stream=true", {
         method: "POST",
@@ -296,6 +320,7 @@ export function PromptBuilder({ allFirms, initialFirms }: PromptBuilderProps) {
       });
       if (!res.ok || !res.body) {
         toast.error("Failed to start Claude run");
+        fetchError = true;
         return;
       }
       const reader = res.body.getReader();
@@ -318,9 +343,11 @@ export function PromptBuilder({ allFirms, initialFirms }: PromptBuilderProps) {
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Streaming failed");
+      fetchError = true;
     } finally {
       setStreaming(false);
-      setRunModalOpen(false);
+      if (fetchError) setRunModalOpen(false);
+      else setRunPhase("results");
     }
   }
 
@@ -392,6 +419,29 @@ export function PromptBuilder({ allFirms, initialFirms }: PromptBuilderProps) {
                     maxLength={500}
                     className="w-full rounded-md border border-input bg-white px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
                   />
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-neutral-400 shrink-0">Required:</span>
+                    <div className="flex gap-1.5 flex-wrap">
+                      {CAPABILITY_TAGS.map((tag) => {
+                        const isActive = (role.requiredTags ?? []).includes(tag);
+                        return (
+                          <button
+                            key={tag}
+                            type="button"
+                            onClick={() => toggleRoleTag(role.id, tag)}
+                            className={cn(
+                              "text-xs px-2 py-0.5 rounded border transition-colors",
+                              isActive
+                                ? CAPABILITY_COLORS[tag]
+                                : "bg-white text-neutral-400 border-neutral-200 hover:text-neutral-600 hover:border-neutral-300",
+                            )}
+                          >
+                            {tag}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
                 <button
                   type="button"
@@ -672,7 +722,9 @@ export function PromptBuilder({ allFirms, initialFirms }: PromptBuilderProps) {
       <Dialog open={runModalOpen} onOpenChange={(open) => { if (!streaming) setRunModalOpen(open); }}>
         <DialogContent className="sm:max-w-3xl max-h-[88vh] flex flex-col" showCloseButton={!streaming}>
           <DialogHeader className="shrink-0">
-            <DialogTitle>{runPhase === "running" ? "Claude is thinking…" : "Run with Claude"}</DialogTitle>
+            <DialogTitle>
+              {runPhase === "running" ? "Claude is thinking…" : runPhase === "results" ? "Consortium suggestions" : "Run with Claude"}
+            </DialogTitle>
           </DialogHeader>
 
           {runPhase === "setup" && (
@@ -720,6 +772,29 @@ export function PromptBuilder({ allFirms, initialFirms }: PromptBuilderProps) {
                 <p className="text-xs text-neutral-400">{streamText.length.toLocaleString()} characters received</p>
               )}
             </div>
+          )}
+
+          {runPhase === "results" && (
+            <>
+              <div className="flex-1 min-h-0 overflow-y-auto mt-1">
+                {parseError && streamText && (
+                  <div className="space-y-3 mb-4">
+                    <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-4 py-3">
+                      {parseError}
+                    </p>
+                    <pre className="text-xs text-neutral-700 whitespace-pre-wrap font-mono bg-neutral-50 rounded p-4 max-h-48 overflow-y-auto">
+                      {streamText}
+                    </pre>
+                  </div>
+                )}
+                {suggestions !== null && suggestions.length > 0 && (
+                  <ConsortiumResultCards suggestions={suggestions} rawText={streamText} />
+                )}
+              </div>
+              <DialogFooter className="shrink-0">
+                <Button variant="outline" onClick={() => setRunModalOpen(false)}>Done</Button>
+              </DialogFooter>
+            </>
           )}
         </DialogContent>
       </Dialog>
