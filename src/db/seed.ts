@@ -68,15 +68,13 @@ async function runSeed() {
     // Topics already exist — backfill searchTerms for any row still using the empty default.
     // Skips rows the user has already customised (searchTerms !== "").
     console.log("Topics already exist — backfilling empty searchTerms...");
-    let updated = 0;
     for (const topic of SEED_TOPICS) {
-      const result = await db
+      await db
         .update(topics)
         .set({ searchTerms: topic.searchTerms })
         .where(and(eq(topics.name, topic.name), eq(topics.searchTerms, "")));
-      if (result.rowCount) updated += result.rowCount;
     }
-    console.log(`  Updated ${updated} topic(s). Seed complete.`);
+    console.log("  Backfill complete.");
     return;
   }
 
