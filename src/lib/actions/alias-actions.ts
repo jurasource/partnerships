@@ -25,7 +25,7 @@ export async function generateAliasesAction(
           .array(z.string())
           .describe("Alias suggestions not already in the known names list"),
       }),
-      prompt: `You are helping build a UK defence and civil nuclear firm intelligence database.
+      prompt: `You are helping build a UK civil nuclear firm intelligence database.
 
 For the company "${firmName}" (registered as "${registeredName}"), suggest additional aliases that would help identify this firm in documents, contracts, and news articles. These might include:
 - Common abbreviations (e.g. "AtkinsRéalis" → "Atkins")

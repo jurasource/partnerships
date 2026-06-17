@@ -19,7 +19,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Partnerships",
   description:
-    "Research and compare firms for UK civil nuclear and defence consortium planning.",
+    "Research and compare firms for UK civil nuclear consortium planning.",
   icons: {
     icon: [
       { url: "/icons8-network-16.png", sizes: "16x16", type: "image/png" },
