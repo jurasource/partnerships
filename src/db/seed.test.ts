@@ -131,7 +131,7 @@ describe("Seed Data (CONF-06)", () => {
     }
   });
 
-  it("seed is marked as idempotent with a check for existing firms", () => {
+  it("seed is marked as idempotent with a check for existing topics", () => {
     // Arrange
     const fs = require("fs");
     const path = require("path");
@@ -139,9 +139,9 @@ describe("Seed Data (CONF-06)", () => {
     const seedFilePath = path.resolve(__dirname, "./seed.ts");
     const seedContent = fs.readFileSync(seedFilePath, "utf-8");
 
-    // Check for idempotency pattern: "existingFirms.length" or similar
+    // Check for idempotency pattern: "existingTopics.length" or similar
     const hasIdempotencyCheck =
-      /existingFirms\.length|firms table is not empty/.test(seedContent);
+      /existingTopics\.length|topics table is not empty/.test(seedContent);
 
     expect(hasIdempotencyCheck).toBe(true);
   });

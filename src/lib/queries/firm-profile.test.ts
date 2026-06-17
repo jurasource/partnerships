@@ -67,6 +67,7 @@ const TOPIC_A: Topic = {
   id: "topic-a",
   name: "Nuclear capability",
   description: "Nuclear-related work",
+  searchTerms: "",
   createdAt: "2026-01-01",
   updatedAt: "2026-01-01",
 };
@@ -75,6 +76,7 @@ const TOPIC_B: Topic = {
   id: "topic-b",
   name: "Ownership structure",
   description: "Corporate ownership",
+  searchTerms: "",
   createdAt: "2026-01-01",
   updatedAt: "2026-01-01",
 };
@@ -83,6 +85,7 @@ const TOPIC_C: Topic = {
   id: "topic-c",
   name: "Past contracts",
   description: "Past UK contracts",
+  searchTerms: "",
   createdAt: "2026-01-01",
   updatedAt: "2026-01-01",
 };

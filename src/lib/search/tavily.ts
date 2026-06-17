@@ -44,7 +44,7 @@ const TavilyResponseSchema = z
   .passthrough();
 
 class TavilySearchClient implements WebSearchClient {
-  async search(query: string, maxResults = 5): Promise<WebSearchResult[]> {
+  async search(query: string, maxResults = 8): Promise<WebSearchResult[]> {
     const apiKey = getTavilyApiKey();
 
     const res = await rateLimitedFetch(`${TAVILY_BASE}/search`, {
@@ -56,6 +56,7 @@ class TavilySearchClient implements WebSearchClient {
       body: JSON.stringify({
         query,
         max_results: maxResults,
+        search_depth: "advanced",
       }),
     });
 
