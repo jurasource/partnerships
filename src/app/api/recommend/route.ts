@@ -45,7 +45,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       { status: 400 },
     );
   }
-  const { capabilityMix, lockedFirmIds, weights } = parsed.data;
+  const { capabilityMix, lockedFirmIds, weights, poolFirmIds } = parsed.data;
 
   try {
     // 3. Load all six signal tables in parallel (single Postgres round-trip — never inside a loop)
@@ -59,9 +59,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         db.select().from(procurementRecords),
       ]);
 
+    // 4a. If poolFirmIds provided, restrict the candidate pool to those firms
+    const pooledFirms = poolFirmIds
+      ? allFirms.filter((f) => poolFirmIds.includes(f.id))
+      : allFirms;
+
     // 4a. Validate that all locked firm IDs resolve to actual DB rows (CONS-05)
     if (lockedFirmIds.length > 0) {
-      const allFirmIdSet = new Set(allFirms.map((f) => f.id));
+      const allFirmIdSet = new Set(pooledFirms.map((f) => f.id));
       const missingIds = lockedFirmIds.filter((id) => !allFirmIdSet.has(id));
       if (missingIds.length > 0) {
         return NextResponse.json(
@@ -76,7 +81,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       capabilityMix,
       lockedFirmIds,
       weights,
-      firms: allFirms,
+      firms: pooledFirms,
       conflicts: allConflicts,
       partnerships: allPartnerships,
       ownership: allOwnership,
@@ -98,7 +103,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         capabilityMix,
         lockedFirmCount: lockedFirmIds.length,
         weights,
-        firmsLoaded: allFirms.length,
+        firmsLoaded: pooledFirms.length,
         conflictsLoaded: allConflicts.length,
         status: validated.status,
         recommendationCount: validated.recommendations.length,

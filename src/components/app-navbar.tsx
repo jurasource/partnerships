@@ -33,7 +33,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Topics", href: "/topics", icon: BookOpen },
   { label: "Jobs", href: "/jobs", icon: Activity },
   { label: "Logs", href: "/request-logs", icon: ScrollText },
-  { label: "Recommend", href: "/recommend", icon: Users },
+  { label: "Consortium", href: "/consortium", icon: Users },
   { label: "Report", href: "/report", icon: FileText },
 ];
 

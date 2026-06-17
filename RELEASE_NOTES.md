@@ -1,5 +1,23 @@
 # Release Notes
 
+## 2026-06-17
+- feat(consortium-v2): required capability tags per role — each role slot has Nuclear/Infrastructure/Consultancy chip toggles; defaults pre-populated for civil nuclear roles; emitted into prompt as "Required capability tags: X, Y" so Claude can explicitly match firms to roles
+- feat(consortium-v2): run modal stays open after streaming completes, showing results inline in a "Consortium suggestions" phase with a Done button — eliminates the jarring close+scroll-to-results transition
+- feat(consortium-v2): stale results cleared on any form input change — suggestions, stream text, and parse error state all reset when opportunity/roles/firms/constraints change
+- feat(consortium-v2): export buttons on result cards — "Copy markdown" formats all suggestions as clean markdown; "Export JSON" downloads consortium-suggestions.json
+- feat(consortium-v2): collapsed result card header now shows "Firm · role" inline for each member — role visible without expanding
+- feat(consortium-v2): tab descriptions added below tab list — one sentence per tab explaining Recommender vs AI Prompt Builder
+
+## 2026-06-17 (role slots + anchor firm)
+- feat(consortium): replace capability mix sliders with named role slots — each role has a title and free-text brief; pre-populated with three civil nuclear defaults (prime contractor, technical specialist, compliance & assurance); up to 8 roles, add/remove freely
+- feat(consortium): add optional anchor firm selector — pin one firm as lead; LLM builds the rest of the consortium around them; automatically cleared if the firm is removed from scope
+- feat(consortium): updated prompt assembly — ROLES and CONSORTIUM STRUCTURE sections; TASK wording updated to ask the LLM to map firms to roles and explain synergies
+
+## 2026-06-17
+- fix(consortium): resolve canonical names for partner/conflict firms outside the selected group (previously fell back to raw UUIDs in the generated prompt)
+- feat(consortium): "Generate Prompt" now opens a modal with nicely rendered markdown; copy button copies raw markdown; "View Prompt" button reopens the modal
+- feat(consortium): Step 3 "Firm scope" is now interactive — searchable checkbox list lets the user add/remove individual firms from the full database; syncs to group scope selector; "Select all" / "Clear" quick actions; capability tag badges for visual scanning
+
 ## 2026-06-16
 - fix(research): move Anthropic prompt cache breakpoint to the system message array so `Output.object`'s `injectJsonInstructionIntoMessages` cannot displace it; expand `RESEARCH_SYSTEM_PROMPT` to ~1,141 tokens so the combined system prefix reliably clears the 1,024-token minimum for Sonnet 4.6
 - feat(research): include topic `description` field in the per-topic user message so the LLM knows what specifically to look for per topic
@@ -88,7 +106,6 @@
 
 ## 2026-06-17
 - fix(tests): resolve TypeScript type errors across three test files — invalid `as const[]` syntax replaced with `as CapabilityTag[]` in firm-actions.test.ts; missing `searchResults` field added to four Finding fixtures in firm-profile.test.ts; invalid `Awaited<ReturnType<typeof import(...)>>` replaced with `(typeof import(...))` in seeded-e2e.test.ts
-
-## 2026-06-17
 - feat(request-log): persist every Tavily search and LLM generateText call to a new `request_logs` table; add `/request-logs` page with tab filter (All / Tavily / LLM), sortable table showing firm, topic, token counts, cache hits, and duration, click-to-expand detail drawer with full prompt JSON and raw model response, per-row and bulk delete controls, and a "Logs" navbar link
 - feat(request-logs): replace sidebar drawer with a wide modal (90vw); Tavily results render as cards with title/snippet/clickable URL; LLM responses parsed and displayed as structured FindingSchema cards (summary, confidence badge, primary source, citations); LLM prompts show role-labelled message blocks (system/user/assistant); all sections have per-section copy buttons and a footer "Copy raw JSON" button; fixes runtime error when system prompt was stored as an array of message objects
+- feat(consortium): rename "Recommend" nav item and route to "Consortium" (/consortium); add firm group scoping (group selector above tabs restricts firm pool and pre-locks all group members); add "AI Prompt Builder" tab — a guided 4-step wizard (opportunity, requirements + constraints, firm scope confirmation, data selection) that assembles a structured LLM prompt from DB data and can run it against Claude inline, streaming the response and parsing it into scored consortium suggestion cards with a "View full response" option

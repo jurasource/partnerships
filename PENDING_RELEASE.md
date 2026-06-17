@@ -1,5 +1,22 @@
 # Pending Release Steps
 
+## feat(consortium-v2): capability tags per role, stale results fix, run modal results phase, export, UX polish
+
+### Dev
+- No DB migrations required
+- No new env vars required
+
+### Prod
+- No DB migrations required; deploy new build
+
+## fix(consortium): resolve firm names in prompt + rendered prompt modal
+
+### Dev
+- No migration required
+
+### Prod
+- No migration required
+
 ## feat(research): prompt caching, source transparency, and UI polish
 
 ### Dev
@@ -320,3 +337,12 @@
 - No steps required — UI change only
 ### Prod
 - No steps required — deploy new build
+
+## feat(consortium): rename Recommend → Consortium, add group scoping, AI Prompt Builder
+### Dev
+- No DB migrations required
+- `ANTHROPIC_API_KEY` must be set (already required for research worker)
+- The `/recommend` route no longer exists; the nav and all links now point to `/consortium`
+### Prod
+- No DB migrations required
+- Ensure `ANTHROPIC_API_KEY` is set in production environment (used by new `/api/consortium-prompt` route)
