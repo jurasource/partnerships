@@ -314,3 +314,9 @@
 - `npm run db:push` to apply migration `0004_damp_princess_powerful` (adds `request_logs` table and `findings.search_results` column)
 ### Prod
 - Run migration `0004_damp_princess_powerful.sql` against production Postgres before deploying
+
+## feat(request-logs): replace sidebar drawer with rich modal detail view
+### Dev
+- No steps required — UI change only
+### Prod
+- No steps required — deploy new build

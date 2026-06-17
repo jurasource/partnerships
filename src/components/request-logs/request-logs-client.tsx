@@ -1,8 +1,13 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Trash2, ChevronRight, AlertCircle } from "lucide-react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Trash2, AlertCircle, Copy, Check, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -33,6 +38,39 @@ type LogDetail = LogRow & {
   rawResponse: string | null;
 };
 
+type SearchResult = {
+  url: string;
+  title: string;
+  snippet: string;
+  publishedDate?: string | null;
+};
+
+type ContentPart = { type: string; text?: string };
+type SystemBlock = { role: string; content: string | ContentPart[]; providerOptions?: unknown };
+type PromptPayload = {
+  system?: string | SystemBlock[];
+  messages?: Array<{ role: string; content: string | ContentPart[] }>;
+};
+type FindingPayload = {
+  summary?: string;
+  confidence?: string;
+  sourceUrl?: string;
+  sourceTitle?: string;
+  rawSnippet?: string;
+  sourceDate?: string | null;
+  citations?: Array<{ url: string; title: string; snippet: string; date?: string | null }>;
+};
+
+function normalizeContent(content: string | ContentPart[] | unknown): string {
+  if (typeof content === "string") return content;
+  if (Array.isArray(content)) {
+    return (content as ContentPart[])
+      .map((p) => (p.type === "text" ? (p.text ?? "") : `[${p.type}]`))
+      .join("\n");
+  }
+  return String(content);
+}
+
 type ActiveTab = "all" | "tavily_search" | "llm_call";
 
 function formatTime(iso: string) {
@@ -50,121 +88,408 @@ function TypeBadge({ type }: { type: "tavily_search" | "llm_call" }) {
   return <Badge className="bg-purple-100 text-purple-700 border-purple-200 font-mono text-xs">LLM</Badge>;
 }
 
-function CollapsibleBlock({ label, content }: { label: string; content: string }) {
-  const [open, setOpen] = useState(false);
+function CopyButton({ text, label = "Copy JSON" }: { text: string; label?: string }) {
+  const [copied, setCopied] = useState(false);
+  function handleCopy() {
+    void navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    });
+  }
   return (
-    <div className="border rounded-md overflow-hidden">
+    <button
+      onClick={handleCopy}
+      className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium border border-border bg-background hover:bg-muted/60 transition-colors shrink-0"
+    >
+      {copied ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
+      {copied ? "Copied" : label}
+    </button>
+  );
+}
+
+function SectionHeader({
+  title,
+  open,
+  onToggle,
+  copyText,
+}: {
+  title: string;
+  open: boolean;
+  onToggle: () => void;
+  copyText?: string;
+}) {
+  return (
+    <div className="flex items-center justify-between px-4 py-2.5 bg-muted/30 border-b">
       <button
-        onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium bg-muted/40 hover:bg-muted/60 transition-colors"
+        onClick={onToggle}
+        className="flex items-center gap-2 text-sm font-medium hover:text-foreground transition-colors flex-1 text-left"
       >
-        <span>{label}</span>
-        <ChevronRight className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-90" : ""}`} />
+        {open
+          ? <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" />
+          : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
+        {title}
       </button>
+      {copyText && <CopyButton text={copyText} />}
+    </div>
+  );
+}
+
+/* ---------- Search results ---------- */
+function SearchResultsSection({ raw }: { raw: string | null }) {
+  const [open, setOpen] = useState(true);
+  if (!raw) return null;
+
+  let results: SearchResult[] = [];
+  try { results = JSON.parse(raw) as SearchResult[]; } catch { return null; }
+
+  const pretty = JSON.stringify(results, null, 2);
+
+  return (
+    <div className="border rounded-lg overflow-hidden">
+      <SectionHeader
+        title={`Search Results (${results.length})`}
+        open={open}
+        onToggle={() => setOpen((v) => !v)}
+        copyText={pretty}
+      />
       {open && (
-        <pre className="p-3 text-xs font-mono whitespace-pre-wrap break-all bg-background max-h-80 overflow-y-auto">
-          {content}
-        </pre>
+        <div className="divide-y">
+          {results.map((r, i) => (
+            <div key={i} className="px-4 py-3 space-y-1">
+              <div className="flex items-start justify-between gap-3">
+                <p className="text-sm font-medium leading-snug">{r.title || "(no title)"}</p>
+                {r.publishedDate && (
+                  <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
+                    {r.publishedDate.slice(0, 10)}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">{r.snippet}</p>
+              <a
+                href={r.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline font-mono break-all"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {r.url}
+                <ExternalLink className="h-3 w-3 shrink-0" />
+              </a>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
 }
 
-function DetailDrawer({ logId, onClose }: { logId: string; onClose: () => void }) {
+/* ---------- Role pill ---------- */
+function RolePill({ role }: { role: string }) {
+  const styles: Record<string, string> = {
+    system: "text-amber-700 bg-amber-100",
+    user: "text-blue-700 bg-blue-100",
+    assistant: "text-purple-700 bg-purple-100",
+  };
+  return (
+    <span className={`inline-block text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded ${styles[role] ?? "text-muted-foreground bg-muted"}`}>
+      {role}
+    </span>
+  );
+}
+
+/* ---------- LLM prompt ---------- */
+function PromptSection({ raw }: { raw: string | null }) {
+  const [open, setOpen] = useState(false);
+  if (!raw) return null;
+
+  let payload: PromptPayload = {};
+  try { payload = JSON.parse(raw) as PromptPayload; } catch { return null; }
+
+  const pretty = JSON.stringify(payload, null, 2);
+
+  const systemBlocks: Array<{ role: string; content: string }> = payload.system
+    ? Array.isArray(payload.system)
+      ? payload.system.map((b) => ({ role: b.role, content: normalizeContent(b.content) }))
+      : [{ role: "system", content: payload.system }]
+    : [];
+
+  const msgs = (payload.messages ?? []).map((m) => ({
+    role: m.role,
+    content: normalizeContent(m.content),
+  }));
+
+  const totalBlocks = systemBlocks.length + msgs.length;
+
+  return (
+    <div className="border rounded-lg overflow-hidden">
+      <SectionHeader
+        title={`Prompt (${totalBlocks} block${totalBlocks !== 1 ? "s" : ""})`}
+        open={open}
+        onToggle={() => setOpen((v) => !v)}
+        copyText={pretty}
+      />
+      {open && (
+        <div className="divide-y">
+          {systemBlocks.map((block, i) => (
+            <div key={`sys-${i}`} className="px-4 py-3 space-y-1.5 bg-amber-50/40">
+              <RolePill role={block.role} />
+              <p className="text-xs whitespace-pre-wrap leading-relaxed">{block.content}</p>
+            </div>
+          ))}
+          {msgs.map((msg, i) => (
+            <div key={`msg-${i}`} className={`px-4 py-3 space-y-1.5 ${msg.role === "user" ? "bg-background" : "bg-muted/20"}`}>
+              <RolePill role={msg.role} />
+              <p className="text-xs whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---------- Model response ---------- */
+function ResponseSection({ content }: { content: string | null }) {
+  const [open, setOpen] = useState(true);
+  if (!content) return null;
+
+  let finding: FindingPayload | null = null;
+  try {
+    const parsed = JSON.parse(content) as FindingPayload;
+    if (parsed && typeof parsed === "object" && "summary" in parsed) finding = parsed;
+  } catch { /* render as plain text */ }
+
+  const confidenceStyle = finding?.confidence === "HIGH"
+    ? "text-emerald-700 bg-emerald-100"
+    : finding?.confidence === "MEDIUM"
+    ? "text-amber-700 bg-amber-100"
+    : "text-muted-foreground bg-muted";
+
+  return (
+    <div className="border rounded-lg overflow-hidden">
+      <SectionHeader
+        title="Model Response"
+        open={open}
+        onToggle={() => setOpen((v) => !v)}
+        copyText={content}
+      />
+      {open && (
+        finding ? (
+          <div className="divide-y">
+            {/* Summary */}
+            <div className="px-4 py-3 space-y-1.5">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Summary</span>
+                {finding.confidence && (
+                  <span className={`text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded ${confidenceStyle}`}>
+                    {finding.confidence}
+                  </span>
+                )}
+              </div>
+              <p className="text-sm leading-relaxed">{finding.summary}</p>
+            </div>
+            {/* Primary source */}
+            {(finding.sourceUrl || finding.sourceTitle || finding.rawSnippet) && (
+              <div className="px-4 py-3 space-y-1.5">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Primary Source</span>
+                {finding.sourceTitle && <p className="text-sm font-medium">{finding.sourceTitle}</p>}
+                {finding.rawSnippet && <p className="text-xs text-muted-foreground leading-relaxed">{finding.rawSnippet}</p>}
+                {finding.sourceUrl && finding.sourceUrl !== "not-found" && (
+                  <a
+                    href={finding.sourceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline font-mono break-all"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {finding.sourceUrl}
+                    <ExternalLink className="h-3 w-3 shrink-0" />
+                  </a>
+                )}
+                {finding.sourceDate && (
+                  <p className="text-xs text-muted-foreground">{finding.sourceDate}</p>
+                )}
+              </div>
+            )}
+            {/* Additional citations */}
+            {finding.citations && finding.citations.length > 0 && (
+              <div className="px-4 py-3 space-y-2">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Citations ({finding.citations.length})
+                </span>
+                {finding.citations.map((c, i) => (
+                  <div key={i} className="space-y-0.5 pl-2 border-l-2 border-muted">
+                    <p className="text-xs font-medium">{c.title}</p>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{c.snippet}</p>
+                    <a
+                      href={c.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline font-mono break-all"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {c.url}
+                      <ExternalLink className="h-3 w-3 shrink-0" />
+                    </a>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="px-4 py-3">
+            <p className="text-sm whitespace-pre-wrap leading-relaxed">{content}</p>
+          </div>
+        )
+      )}
+    </div>
+  );
+}
+
+/* ---------- Meta row ---------- */
+function MetaRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-start gap-3 py-2 border-b last:border-0">
+      <span className="text-xs text-muted-foreground w-36 shrink-0 pt-0.5">{label}</span>
+      <span className="text-xs">{children}</span>
+    </div>
+  );
+}
+
+/* ---------- Modal ---------- */
+function DetailModal({ logId, onClose }: { logId: string; onClose: () => void }) {
   const [detail, setDetail] = useState<LogDetail | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
+    setDetail(null);
     fetch(`/api/request-logs/${logId}`)
       .then((r) => r.json())
-      .then((d) => { setDetail(d); setLoading(false); })
+      .then((d) => { setDetail(d as LogDetail); setLoading(false); })
       .catch(() => setLoading(false));
   }, [logId]);
 
-  function prettyJson(raw: string | null) {
-    if (!raw) return "(empty)";
-    try { return JSON.stringify(JSON.parse(raw), null, 2); } catch { return raw; }
-  }
+  const allRaw = detail ? JSON.stringify(detail, null, 2) : "";
 
   return (
-    <SheetContent className="w-[620px] sm:max-w-[620px] overflow-y-auto">
-      <SheetHeader>
-        <SheetTitle className="text-base">
-          {detail ? (
-            <span className="flex items-center gap-2">
-              <TypeBadge type={detail.type} />
-              {detail.firmName ?? detail.firmId ?? "—"} · {detail.topicName ?? "—"}
-            </span>
-          ) : "Log Detail"}
-        </SheetTitle>
-      </SheetHeader>
+    <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="!max-w-[90vw] w-[90vw] max-h-[92vh] flex flex-col overflow-hidden p-0">
+        <DialogHeader className="px-6 pt-5 pb-4 border-b shrink-0">
+          <DialogTitle className="text-base">
+            {detail ? (
+              <span className="flex items-center gap-2.5 flex-wrap">
+                <TypeBadge type={detail.type} />
+                <span className="font-semibold">{detail.firmName ?? detail.firmId ?? "—"}</span>
+                {(detail.topicName ?? detail.searchQuery) && (
+                  <span className="text-muted-foreground font-normal">·</span>
+                )}
+                <span className="text-muted-foreground font-normal text-sm truncate">
+                  {detail.topicName ?? detail.searchQuery ?? ""}
+                </span>
+              </span>
+            ) : "Log Detail"}
+          </DialogTitle>
+          {detail && (
+            <p className="text-xs text-muted-foreground mt-1">{formatTime(detail.createdAt)}</p>
+          )}
+        </DialogHeader>
 
-      {loading && <p className="text-sm text-muted-foreground mt-4">Loading…</p>}
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+          {loading && <p className="text-sm text-muted-foreground">Loading…</p>}
 
-      {detail && !loading && (
-        <div className="mt-4 space-y-4 text-sm">
-          <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
-            <dt className="text-muted-foreground">Time</dt>
-            <dd>{formatTime(detail.createdAt)}</dd>
-            <dt className="text-muted-foreground">Duration</dt>
-            <dd>{detail.durationMs ? `${detail.durationMs}ms` : "—"}</dd>
-            {detail.type === "llm_call" && (
-              <>
-                <dt className="text-muted-foreground">Model</dt>
-                <dd className="font-mono">{detail.model ?? "—"}</dd>
-                <dt className="text-muted-foreground">Tokens in / out</dt>
-                <dd>{detail.inputTokens ?? "—"} / {detail.outputTokens ?? "—"}</dd>
-                <dt className="text-muted-foreground">Cache created / read</dt>
-                <dd>{detail.cacheCreatedTokens ?? "0"} / {detail.cacheReadTokens ?? "0"}</dd>
-                <dt className="text-muted-foreground">Finish reason</dt>
-                <dd className={detail.finishReason === "length" ? "text-amber-600 font-medium" : ""}>{detail.finishReason ?? "—"}</dd>
-                <dt className="text-muted-foreground">Retry</dt>
-                <dd>{detail.isRetry === "true" ? "Yes" : "No"}</dd>
-              </>
-            )}
-            {detail.type === "tavily_search" && (
-              <>
-                <dt className="text-muted-foreground">Query</dt>
-                <dd className="font-mono">{detail.searchQuery ?? "—"}</dd>
-                <dt className="text-muted-foreground">Results</dt>
-                <dd>{detail.searchResultsJson ? JSON.parse(detail.searchResultsJson).length : "—"}</dd>
-              </>
-            )}
-            {detail.errorMessage && (
-              <>
-                <dt className="text-muted-foreground text-red-600">Error</dt>
-                <dd className="text-red-600">{detail.errorMessage}</dd>
-              </>
-            )}
-          </dl>
+          {detail && !loading && (
+            <>
+              {/* Error banner */}
+              {detail.errorMessage && (
+                <div className="flex items-start gap-2.5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                  <span>{detail.errorMessage}</span>
+                </div>
+              )}
 
-          <div className="space-y-2">
-            {detail.type === "llm_call" && detail.promptJson && (
-              <CollapsibleBlock
-                label="System + User Prompt (JSON)"
-                content={prettyJson(detail.promptJson)}
-              />
-            )}
-            {detail.type === "llm_call" && detail.rawResponse && (
-              <CollapsibleBlock
-                label="Raw Model Response"
-                content={detail.rawResponse}
-              />
-            )}
-            {detail.type === "tavily_search" && detail.searchResultsJson && (
-              <CollapsibleBlock
-                label="Search Results (JSON)"
-                content={prettyJson(detail.searchResultsJson)}
-              />
-            )}
-          </div>
+              {/* Metadata grid */}
+              <div className="rounded-lg border px-4 divide-y">
+                <MetaRow label="Duration">
+                  {detail.durationMs ? `${detail.durationMs} ms` : "—"}
+                </MetaRow>
+
+                {detail.type === "llm_call" && (
+                  <>
+                    <MetaRow label="Model">
+                      <span className="font-mono">{detail.model ?? "—"}</span>
+                    </MetaRow>
+                    <MetaRow label="Tokens in / out">
+                      {detail.inputTokens ?? "—"} / {detail.outputTokens ?? "—"}
+                    </MetaRow>
+                    <MetaRow label="Cache created / read">
+                      <span>
+                        {detail.cacheCreatedTokens ?? "0"} / {detail.cacheReadTokens ?? "0"}
+                        {detail.cacheReadTokens && detail.cacheReadTokens !== "0" && (
+                          <span className="ml-2 text-emerald-600 font-medium">⚡ cache hit</span>
+                        )}
+                      </span>
+                    </MetaRow>
+                    <MetaRow label="Finish reason">
+                      <span className={detail.finishReason === "length" ? "text-amber-600 font-medium" : ""}>
+                        {detail.finishReason ?? "—"}
+                      </span>
+                    </MetaRow>
+                    <MetaRow label="Retry">
+                      {detail.isRetry === "true"
+                        ? <span className="text-amber-600 font-medium">Yes</span>
+                        : "No"}
+                    </MetaRow>
+                  </>
+                )}
+
+                {detail.type === "tavily_search" && (
+                  <>
+                    <MetaRow label="Query">
+                      <span className="font-mono">{detail.searchQuery ?? "—"}</span>
+                    </MetaRow>
+                    <MetaRow label="Results returned">
+                      {detail.searchResultsJson
+                        ? (() => {
+                            try { return String((JSON.parse(detail.searchResultsJson) as unknown[]).length); }
+                            catch { return "—"; }
+                          })()
+                        : "—"}
+                    </MetaRow>
+                  </>
+                )}
+
+                <MetaRow label="Job ID">
+                  <span className="font-mono text-muted-foreground">{detail.jobId ?? "—"}</span>
+                </MetaRow>
+              </div>
+
+              {/* Rich content sections */}
+              {detail.type === "tavily_search" && (
+                <SearchResultsSection raw={detail.searchResultsJson} />
+              )}
+              {detail.type === "llm_call" && (
+                <>
+                  <ResponseSection content={detail.rawResponse} />
+                  <PromptSection raw={detail.promptJson} />
+                </>
+              )}
+            </>
+          )}
         </div>
-      )}
-    </SheetContent>
+
+        {/* Footer */}
+        {detail && !loading && (
+          <div className="px-6 py-3 border-t bg-muted/20 shrink-0 flex justify-end">
+            <CopyButton text={allRaw} label="Copy raw JSON" />
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
 
+/* ---------- Main list ---------- */
 export function RequestLogsClient() {
   const [rows, setRows] = useState<LogRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -177,7 +502,7 @@ export function RequestLogsClient() {
       const params = new URLSearchParams({ limit: "200" });
       if (activeTab !== "all") params.set("type", activeTab);
       const res = await fetch(`/api/request-logs?${params}`);
-      if (res.ok) setRows(await res.json());
+      if (res.ok) setRows(await res.json() as LogRow[]);
     } finally {
       setLoading(false);
     }
@@ -227,7 +552,6 @@ export function RequestLogsClient() {
         </div>
       </div>
 
-      {/* Tab bar */}
       <div className="flex gap-1 border-b">
         {tabs.map((t) => (
           <button
@@ -326,11 +650,9 @@ export function RequestLogsClient() {
         </div>
       )}
 
-      <Sheet open={!!selectedId} onOpenChange={(open) => { if (!open) setSelectedId(null); }}>
-        {selectedId && (
-          <DetailDrawer logId={selectedId} onClose={() => setSelectedId(null)} />
-        )}
-      </Sheet>
+      {selectedId && (
+        <DetailModal logId={selectedId} onClose={() => setSelectedId(null)} />
+      )}
     </div>
   );
 }
