@@ -3,7 +3,7 @@ import { anthropic } from "@ai-sdk/anthropic";
 import { eq, sql } from "drizzle-orm";
 
 import { db } from "@/db/client";
-import { findings, firms, topics } from "@/db/schema";
+import { findings, firms, topics, requestLogs } from "@/db/schema";
 import type { WebSearchClient } from "@/lib/search/types";
 import { FindingSchema, NOT_FOUND_SENTINEL, RESEARCH_ERROR_SENTINEL, type SynthesisedFinding } from "./schemas";
 import { buildGroundingContext } from "./grounding";
@@ -83,9 +83,36 @@ export async function runResearchWorker(
     let finding: SynthesisedFinding;
 
     // D-10: 1-2 Tavily searches per topic
-    const searchResults = await searchClient.search(
-      buildSearchQuery(firm.canonicalName, topic),
-    );
+    const searchQuery = buildSearchQuery(firm.canonicalName, topic);
+    const searchStart = Date.now();
+    let searchResults: ReturnType<typeof searchClient.search> extends Promise<infer T> ? T : never = [];
+    let searchError: string | undefined;
+    try {
+      searchResults = await searchClient.search(searchQuery);
+    } catch (err) {
+      searchError = (err as Error).message;
+      void writeLog({
+        type: "tavily_search",
+        jobId,
+        firmId,
+        topicId: topic.id,
+        searchQuery,
+        searchResultsJson: null,
+        durationMs: String(Date.now() - searchStart),
+        errorMessage: searchError,
+      });
+      throw err;
+    }
+    void writeLog({
+      type: "tavily_search",
+      jobId,
+      firmId,
+      topicId: topic.id,
+      searchQuery,
+      searchResultsJson: JSON.stringify(searchResults),
+      durationMs: String(Date.now() - searchStart),
+      errorMessage: null,
+    });
 
     console.log(
       `[research] Topic ${i + 1}/${allTopics.length} "${topic.name}" — ` +
@@ -110,6 +137,7 @@ export async function runResearchWorker(
     ];
 
     try {
+      const llmStart = Date.now();
       let result = await generateText({
         model: anthropic("claude-sonnet-4-6"),
         system: systemWithGrounding,
@@ -136,11 +164,30 @@ export async function runResearchWorker(
           `cache created=${cacheMeta?.cacheCreationInputTokens ?? 0} read=${cacheMeta?.cacheReadInputTokens ?? 0}`,
       );
 
+      void writeLog({
+        type: "llm_call",
+        jobId,
+        firmId,
+        topicId: topic.id,
+        model: "claude-sonnet-4-6",
+        promptJson: JSON.stringify({ system: systemWithGrounding, messages }),
+        rawResponse: result.text,
+        inputTokens: String(result.usage?.inputTokens ?? ""),
+        outputTokens: String(result.usage?.outputTokens ?? ""),
+        cacheCreatedTokens: String(cacheMeta?.cacheCreationInputTokens ?? 0),
+        cacheReadTokens: String(cacheMeta?.cacheReadInputTokens ?? 0),
+        finishReason: result.finishReason,
+        isRetry: "false",
+        durationMs: String(Date.now() - llmStart),
+        errorMessage: null,
+      });
+
       // Retry with a higher ceiling when the response was truncated mid-JSON
       if (result.finishReason === "length") {
         console.warn(
           `[research] finishReason=length for "${topic.name}" — retrying with 4096 output tokens`,
         );
+        const retryStart = Date.now();
         result = await generateText({
           model: anthropic("claude-sonnet-4-6"),
           system: systemWithGrounding,
@@ -163,6 +210,24 @@ export async function runResearchWorker(
             `tokens in=${result.usage?.inputTokens} out=${result.usage?.outputTokens}, ` +
             `cache created=${retryMeta?.cacheCreationInputTokens ?? 0} read=${retryMeta?.cacheReadInputTokens ?? 0}`,
         );
+
+        void writeLog({
+          type: "llm_call",
+          jobId,
+          firmId,
+          topicId: topic.id,
+          model: "claude-sonnet-4-6",
+          promptJson: JSON.stringify({ system: systemWithGrounding, messages }),
+          rawResponse: result.text,
+          inputTokens: String(result.usage?.inputTokens ?? ""),
+          outputTokens: String(result.usage?.outputTokens ?? ""),
+          cacheCreatedTokens: String(retryMeta?.cacheCreationInputTokens ?? 0),
+          cacheReadTokens: String(retryMeta?.cacheReadInputTokens ?? 0),
+          finishReason: result.finishReason,
+          isRetry: "true",
+          durationMs: String(Date.now() - retryStart),
+          errorMessage: null,
+        });
       }
 
       if (!result.output) {
@@ -189,6 +254,21 @@ export async function runResearchWorker(
             `tokens in=${genInputTokens ?? "?"} out=${genOutputTokens ?? "?"}, ` +
             `rawText="${rawText ?? "(none)"}"`,
         );
+        void writeLog({
+          type: "llm_call",
+          jobId,
+          firmId,
+          topicId: topic.id,
+          model: "claude-sonnet-4-6",
+          promptJson: JSON.stringify({ system: systemWithGrounding, messages }),
+          rawResponse: rawText ?? null,
+          inputTokens: String(genInputTokens ?? ""),
+          outputTokens: String(genOutputTokens ?? ""),
+          finishReason: genFinishReason ?? "error",
+          isRetry: null,
+          durationMs: null,
+          errorMessage: err instanceof Error ? err.message : String(err),
+        });
         finding = RESEARCH_ERROR_SENTINEL(
           topic.id,
           "Model failed to produce structured output after retries",
@@ -201,6 +281,21 @@ export async function runResearchWorker(
             `${(err as Error).constructor?.name ?? "Error"}: ${(err as Error).message}`,
           err instanceof Error ? err.stack : err,
         );
+        void writeLog({
+          type: "llm_call",
+          jobId,
+          firmId,
+          topicId: topic.id,
+          model: "claude-sonnet-4-6",
+          promptJson: JSON.stringify({ system: systemWithGrounding, messages }),
+          rawResponse: genRawText ?? null,
+          inputTokens: String(genInputTokens ?? ""),
+          outputTokens: String(genOutputTokens ?? ""),
+          finishReason: "error",
+          isRetry: null,
+          durationMs: null,
+          errorMessage: err instanceof Error ? err.message : String(err),
+        });
         throw err;
       }
     }
@@ -263,5 +358,22 @@ export async function runResearchWorker(
         createdAt: new Date().toISOString(),
       },
     });
+  }
+}
+
+/**
+ * Fire-and-forget helper — writes one row to request_logs.
+ * A failure here must NEVER propagate; logging is best-effort.
+ */
+async function writeLog(
+  entry: Partial<typeof requestLogs.$inferInsert> & { type: "tavily_search" | "llm_call" },
+): Promise<void> {
+  try {
+    await db.insert(requestLogs).values({
+      ...entry,
+      createdAt: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.warn("[request-log] Failed to write log entry:", err);
   }
 }
