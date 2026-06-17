@@ -31,16 +31,19 @@ export type ConsortiumFirmContext = {
   }[];
 };
 
+export type RoleSlot = {
+  id: string;
+  title: string;
+  description: string;
+};
+
 export type ConsortiumPromptInput = {
   opportunity: {
     name: string;
     description: string;
   };
-  capabilityMix: {
-    Consultancy: number;
-    Infrastructure: number;
-    Nuclear: number;
-  };
+  roles: RoleSlot[];
+  anchorFirmId: string | null;
   constraints: {
     ukOwned: boolean;
     noHighRisk: boolean;

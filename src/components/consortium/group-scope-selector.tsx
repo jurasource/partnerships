@@ -6,7 +6,6 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from "@/components/ui/select";
 import type { GroupForConsortium } from "@/lib/queries/groups-for-consortium";
 
@@ -30,7 +29,9 @@ export function GroupScopeSelector({ groups, value, onChange }: GroupScopeSelect
           onValueChange={(v) => onChange(v === "__all__" ? null : v)}
         >
           <SelectTrigger className="h-9 text-sm">
-            <SelectValue placeholder="All firms" />
+            <span className={value ? "text-foreground" : "text-muted-foreground"}>
+              {value ? (groups.find((g) => g.id === value)?.name ?? "Unknown group") : "All firms"}
+            </span>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="__all__">All firms</SelectItem>

@@ -14,11 +14,14 @@ const ConsortiumPromptRequestSchema = z.object({
     name: z.string().trim().min(1, "Opportunity name required").max(200),
     description: z.string().trim().max(2000).default(""),
   }),
-  capabilityMix: z.object({
-    Consultancy: z.number().int().min(0).max(5),
-    Infrastructure: z.number().int().min(0).max(5),
-    Nuclear: z.number().int().min(0).max(5),
-  }),
+  roles: z.array(
+    z.object({
+      id: z.string(),
+      title: z.string().trim().min(1).max(100),
+      description: z.string().trim().max(500).default(""),
+    }),
+  ).min(1).max(8),
+  anchorFirmId: z.string().uuid().nullable().default(null),
   constraints: z.object({
     ukOwned: z.boolean().default(false),
     noHighRisk: z.boolean().default(false),
@@ -31,6 +34,11 @@ const ConsortiumPromptRequestSchema = z.object({
     partnerships: z.boolean().default(true),
     ownership: z.boolean().default(true),
   }),
+  model: z.enum([
+    "claude-sonnet-4-6",
+    "claude-opus-4-8",
+    "claude-haiku-4-5-20251001",
+  ]).default("claude-sonnet-4-6"),
 });
 
 export type ConsortiumPromptRequest = z.infer<typeof ConsortiumPromptRequestSchema>;
@@ -53,14 +61,15 @@ export async function POST(req: NextRequest): Promise<NextResponse | Response> {
     );
   }
 
-  const { firmIds, opportunity, capabilityMix, constraints, include } = parsed.data;
+  const { firmIds, opportunity, roles, anchorFirmId, constraints, include, model } = parsed.data;
 
   try {
     const firmContexts = await getConsortiumPromptData(firmIds, include);
 
     const prompt = assembleConsortiumPrompt({
       opportunity,
-      capabilityMix,
+      roles,
+      anchorFirmId,
       constraints,
       firms: firmContexts,
       include,
@@ -71,7 +80,7 @@ export async function POST(req: NextRequest): Promise<NextResponse | Response> {
     }
 
     const result = streamText({
-      model: anthropic("claude-sonnet-4-6"),
+      model: anthropic(model),
       prompt,
       maxOutputTokens: 4096,
       temperature: 0.3,

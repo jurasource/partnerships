@@ -1,12 +1,12 @@
 import type { ConsortiumPromptInput } from "./types";
 
 export function assembleConsortiumPrompt(input: ConsortiumPromptInput): string {
-  const { opportunity, capabilityMix, constraints, firms, include } = input;
+  const { opportunity, roles, anchorFirmId, constraints, firms, include } = input;
 
   const lines: string[] = [];
 
   lines.push(
-    "You are a UK public procurement consortium planning expert specialising in civil nuclear and defence programmes.",
+    "You are a UK public procurement consortium planning expert specialising in civil nuclear programmes.",
     "",
     "## OPPORTUNITY",
     `Name: ${opportunity.name}`,
@@ -15,15 +15,27 @@ export function assembleConsortiumPrompt(input: ConsortiumPromptInput): string {
     lines.push(`Description: ${opportunity.description.trim()}`);
   }
 
-  lines.push("", "## REQUIREMENTS");
-
-  const mixParts: string[] = [];
-  if (capabilityMix.Nuclear > 0) mixParts.push(`${capabilityMix.Nuclear} Nuclear`);
-  if (capabilityMix.Infrastructure > 0) mixParts.push(`${capabilityMix.Infrastructure} Infrastructure`);
-  if (capabilityMix.Consultancy > 0) mixParts.push(`${capabilityMix.Consultancy} Consultancy`);
-  if (mixParts.length > 0) {
-    lines.push(`Capability mix: ${mixParts.join(", ")}`);
+  if (anchorFirmId) {
+    const anchorName = firms.find((f) => f.id === anchorFirmId)?.canonicalName;
+    if (anchorName) {
+      lines.push(
+        "",
+        "## CONSORTIUM STRUCTURE",
+        `Anchor firm: ${anchorName} — this firm MUST lead the consortium. Select all other members to complement their specific strengths and fill their gaps.`,
+      );
+    }
   }
+
+  const namedRoles = roles.filter((r) => r.title.trim());
+  if (namedRoles.length > 0) {
+    lines.push("", "## ROLES", "The consortium must fill the following roles:");
+    for (const role of namedRoles) {
+      lines.push("", `### ${role.title.trim()}`);
+      if (role.description.trim()) lines.push(role.description.trim());
+    }
+  }
+
+  lines.push("", "## CONSTRAINTS");
 
   const constraintList: string[] = [];
   if (constraints.ukOwned) constraintList.push("Firms must be UK-incorporated");
@@ -96,8 +108,8 @@ export function assembleConsortiumPrompt(input: ConsortiumPromptInput): string {
     "Based on the firm profiles above, suggest 3 optimal consortium configurations.",
     "For each consortium:",
     "1. Give it a descriptive name",
-    "2. List member firms with their specific roles",
-    "3. Explain the strategic rationale",
+    "2. List member firms mapped to the roles defined above, with a brief explanation of why each firm fits that role",
+    "3. Explain the strategic rationale — how the firms complement each other and what synergies they bring",
     "4. Identify key risks and red flags",
     "5. Score on four dimensions (0.0–1.0): capability coverage, UK ownership compliance, risk profile, prior partnership evidence",
     "",

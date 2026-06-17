@@ -111,6 +111,26 @@ export async function getConsortiumPromptData(
     ]);
 
   const firmNameById = new Map(firmRows.map((f) => [f.id, f.canonicalName]));
+
+  // Partnerships/conflicts may reference firms outside the selected group — fetch those names too.
+  const selectedFirmIdSet = new Set(firmIds);
+  const extraFirmIds = new Set<string>();
+  for (const p of partnershipRows) {
+    if (!selectedFirmIdSet.has(p.firmAId)) extraFirmIds.add(p.firmAId);
+    if (!selectedFirmIdSet.has(p.firmBId)) extraFirmIds.add(p.firmBId);
+  }
+  for (const c of conflictRows) {
+    if (!selectedFirmIdSet.has(c.firmAId)) extraFirmIds.add(c.firmAId);
+    if (!selectedFirmIdSet.has(c.firmBId)) extraFirmIds.add(c.firmBId);
+  }
+  if (extraFirmIds.size > 0) {
+    const extraRows = await db
+      .select({ id: firms.id, canonicalName: firms.canonicalName })
+      .from(firms)
+      .where(inArray(firms.id, [...extraFirmIds]));
+    for (const f of extraRows) firmNameById.set(f.id, f.canonicalName);
+  }
+
   const ownershipByFirmId = new Map(ownershipRows.map((o) => [o.firmId, o]));
 
   return firmRows.map((firm): ConsortiumFirmContext => {

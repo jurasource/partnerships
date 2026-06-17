@@ -1,5 +1,15 @@
 # Release Notes
 
+## 2026-06-17 (role slots + anchor firm)
+- feat(consortium): replace capability mix sliders with named role slots — each role has a title and free-text brief; pre-populated with three civil nuclear defaults (prime contractor, technical specialist, compliance & assurance); up to 8 roles, add/remove freely
+- feat(consortium): add optional anchor firm selector — pin one firm as lead; LLM builds the rest of the consortium around them; automatically cleared if the firm is removed from scope
+- feat(consortium): updated prompt assembly — ROLES and CONSORTIUM STRUCTURE sections; TASK wording updated to ask the LLM to map firms to roles and explain synergies
+
+## 2026-06-17
+- fix(consortium): resolve canonical names for partner/conflict firms outside the selected group (previously fell back to raw UUIDs in the generated prompt)
+- feat(consortium): "Generate Prompt" now opens a modal with nicely rendered markdown; copy button copies raw markdown; "View Prompt" button reopens the modal
+- feat(consortium): Step 3 "Firm scope" is now interactive — searchable checkbox list lets the user add/remove individual firms from the full database; syncs to group scope selector; "Select all" / "Clear" quick actions; capability tag badges for visual scanning
+
 ## 2026-06-16
 - fix(research): move Anthropic prompt cache breakpoint to the system message array so `Output.object`'s `injectJsonInstructionIntoMessages` cannot displace it; expand `RESEARCH_SYSTEM_PROMPT` to ~1,141 tokens so the combined system prefix reliably clears the 1,024-token minimum for Sonnet 4.6
 - feat(research): include topic `description` field in the per-topic user message so the LLM knows what specifically to look for per topic

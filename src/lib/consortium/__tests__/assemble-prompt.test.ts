@@ -4,7 +4,11 @@ import type { ConsortiumPromptInput } from "../types";
 
 const BASE_INPUT: ConsortiumPromptInput = {
   opportunity: { name: "Sellafield Decommissioning", description: "Major nuclear decommissioning programme." },
-  capabilityMix: { Consultancy: 1, Infrastructure: 1, Nuclear: 2 },
+  roles: [
+    { id: "r1", title: "Prime contractor", description: "Holds the contract, NDA relationship required." },
+    { id: "r2", title: "Technical specialist", description: "Deep decommissioning expertise." },
+  ],
+  anchorFirmId: null,
   constraints: { ukOwned: true, noHighRisk: false, priorNuclear: true, freeText: "" },
   firms: [
     {
@@ -42,11 +46,56 @@ describe("assembleConsortiumPrompt", () => {
     expect(prompt).toContain("Major nuclear decommissioning programme.");
   });
 
-  it("includes capability mix", () => {
+  it("includes all role titles and descriptions", () => {
     const prompt = assembleConsortiumPrompt(BASE_INPUT);
-    expect(prompt).toContain("2 Nuclear");
-    expect(prompt).toContain("1 Infrastructure");
-    expect(prompt).toContain("1 Consultancy");
+    expect(prompt).toContain("Prime contractor");
+    expect(prompt).toContain("Holds the contract, NDA relationship required.");
+    expect(prompt).toContain("Technical specialist");
+    expect(prompt).toContain("Deep decommissioning expertise.");
+  });
+
+  it("includes a ROLES section header", () => {
+    const prompt = assembleConsortiumPrompt(BASE_INPUT);
+    expect(prompt).toContain("## ROLES");
+  });
+
+  it("omits CONSORTIUM STRUCTURE section when anchorFirmId is null", () => {
+    const prompt = assembleConsortiumPrompt(BASE_INPUT);
+    expect(prompt).not.toContain("CONSORTIUM STRUCTURE");
+    expect(prompt).not.toContain("Anchor firm:");
+  });
+
+  it("includes CONSORTIUM STRUCTURE and firm name when anchorFirmId is set", () => {
+    const input: ConsortiumPromptInput = {
+      ...BASE_INPUT,
+      anchorFirmId: "a1b2c3d4-0000-0000-0000-000000000001",
+    };
+    const prompt = assembleConsortiumPrompt(input);
+    expect(prompt).toContain("## CONSORTIUM STRUCTURE");
+    expect(prompt).toContain("Alpha Nuclear Ltd");
+    expect(prompt).toContain("MUST lead the consortium");
+  });
+
+  it("omits CONSORTIUM STRUCTURE when anchorFirmId does not match any firm", () => {
+    const input: ConsortiumPromptInput = {
+      ...BASE_INPUT,
+      anchorFirmId: "00000000-0000-0000-0000-000000000000",
+    };
+    const prompt = assembleConsortiumPrompt(input);
+    expect(prompt).not.toContain("CONSORTIUM STRUCTURE");
+  });
+
+  it("skips roles with empty titles", () => {
+    const input: ConsortiumPromptInput = {
+      ...BASE_INPUT,
+      roles: [
+        { id: "r1", title: "Prime contractor", description: "Holds the contract." },
+        { id: "r2", title: "", description: "Ignored because title is blank" },
+      ],
+    };
+    const prompt = assembleConsortiumPrompt(input);
+    expect(prompt).toContain("Prime contractor");
+    expect(prompt).not.toContain("Ignored because title is blank");
   });
 
   it("includes UK ownership constraint when set", () => {
@@ -112,6 +161,12 @@ describe("assembleConsortiumPrompt", () => {
       opportunity: { name: "Test Bid", description: "" },
     });
     expect(prompt).not.toContain("Description:");
+  });
+
+  it("task section references roles", () => {
+    const prompt = assembleConsortiumPrompt(BASE_INPUT);
+    expect(prompt).toContain("mapped to the roles defined above");
+    expect(prompt).toContain("complement each other");
   });
 });
 

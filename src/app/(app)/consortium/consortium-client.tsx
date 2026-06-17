@@ -133,7 +133,7 @@ export function ConsortiumClient({ firms, groups }: ConsortiumClientProps) {
       {/* Group scope selector — shared across both tabs */}
       <GroupScopeSelector groups={groups} value={selectedGroupId} onChange={setSelectedGroupId} />
 
-      <Tabs defaultValue="recommender">
+      <Tabs defaultValue="prompt-builder">
         <TabsList>
           <TabsTrigger value="recommender">Recommender</TabsTrigger>
           <TabsTrigger value="prompt-builder">AI Prompt Builder</TabsTrigger>
@@ -201,7 +201,7 @@ export function ConsortiumClient({ firms, groups }: ConsortiumClientProps) {
 
         {/* ── AI Prompt Builder tab ─────────────────────────────────────── */}
         <TabsContent value="prompt-builder" className="mt-6">
-          <PromptBuilder firms={scopedFirms} />
+          <PromptBuilder allFirms={firms} initialFirms={scopedFirms} />
         </TabsContent>
       </Tabs>
     </div>

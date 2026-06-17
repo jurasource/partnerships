@@ -1,0 +1,46 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-06-17T07:47:01.765Z",
+  "phase": null,
+  "phase_name": "consortium-v2 quick tasks",
+  "phase_dir": ".planning/quick/20260617-firm-id-fix-and-prompt-modal",
+  "plan": null,
+  "task": null,
+  "total_tasks": null,
+  "status": "paused",
+  "completed_tasks": [
+    {"id": 1, "name": "Fix firm ID→name fallback in consortium prompt data", "status": "done"},
+    {"id": 2, "name": "Rendered markdown modal for Generated Prompt", "status": "done"},
+    {"id": 3, "name": "Searchable firm scope selector in Step 3", "status": "done"},
+    {"id": 4, "name": "Role slots + anchor firm (replace capability mix)", "status": "done"},
+    {"id": 5, "name": "Fix SelectValue showing raw IDs (Base UI quirk)", "status": "done"},
+    {"id": 6, "name": "Default tab → AI Prompt Builder", "status": "done"},
+    {"id": 7, "name": "Run with Claude modal (prompt preview + model picker + progress)", "status": "done"},
+    {"id": 8, "name": "Fix run modal overflowing viewport", "status": "done"}
+  ],
+  "remaining_tasks": [],
+  "blockers": [],
+  "human_actions_pending": [
+    {"action": "Test the full prompt builder flow in browser", "context": "All changes are code-only; no DB migrations. Dev server: npm run dev.", "blocking": false}
+  ],
+  "decisions": [
+    {"decision": "Base UI SelectValue renders raw value string, not ItemText", "rationale": "Workaround: compute display label in state and render as <span> inside SelectTrigger — do not use SelectValue", "phase": "consortium-v2"},
+    {"decision": "No dynamic token config needed", "rationale": "4096 output tokens sufficient for 3 consortium JSON objects; input bounded by user firm selection"},
+    {"decision": "Role slots replace capability mix (Nuclear/Infra/Consultancy counts)", "rationale": "Named roles with descriptions give LLM richer intent for complementarity reasoning"},
+    {"decision": "Prompt cached in state, cleared on any form input change via useEffect", "rationale": "Avoids stale prompts without re-fetching on every keystroke"}
+  ],
+  "uncommitted_files": [
+    "src/components/consortium/prompt-builder.tsx",
+    "src/components/consortium/group-scope-selector.tsx",
+    "src/app/(app)/consortium/consortium-client.tsx",
+    "src/app/api/consortium-prompt/route.ts",
+    "src/lib/consortium/types.ts",
+    "src/lib/consortium/assemble-prompt.ts",
+    "src/lib/consortium/__tests__/assemble-prompt.test.ts",
+    "src/lib/queries/consortium-prompt-data.ts",
+    "PENDING_RELEASE.md",
+    "RELEASE_NOTES.md"
+  ],
+  "next_action": "Commit all uncommitted changes on feature/consortium-v2, then open PR or continue with next feature",
+  "context_notes": "All consortium-v2 UI/UX improvements complete. Tests pass (23). No TS errors. Branch is feature/consortium-v2, clean except for uncommitted work from this session."
+}

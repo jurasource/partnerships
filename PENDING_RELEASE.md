@@ -1,5 +1,13 @@
 # Pending Release Steps
 
+## fix(consortium): resolve firm names in prompt + rendered prompt modal
+
+### Dev
+- No migration required
+
+### Prod
+- No migration required
+
 ## feat(research): prompt caching, source transparency, and UI polish
 
 ### Dev
