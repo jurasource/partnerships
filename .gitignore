@@ -46,3 +46,6 @@ next-env.d.ts
 
 # local SQLite (stale dev artifact)
 local.db
+
+# generated docs snapshot (rebuilt on predev/prebuild)
+src/lib/docs/docs.generated.ts

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   Activity,
   BookOpen,
+  BookText,
   Building2,
   FileText,
   Info,
@@ -36,6 +37,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Logs", href: "/request-logs", icon: ScrollText },
   { label: "Consortium", href: "/consortium", icon: Users },
   { label: "Report", href: "/report", icon: FileText },
+  { label: "Docs", href: "/docs", icon: BookText },
   { label: "How it works", href: "/how-it-works", icon: Info },
 ];
 

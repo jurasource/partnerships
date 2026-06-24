@@ -1,5 +1,12 @@
 # Release Notes
 
+## 2026-06-24
+- feat(docs): added a "Documentation" section at /docs that renders the entire `.planning` directory (132 Markdown files) as a browsable docs site — navigation sidebar showing the full folder/file hierarchy with collapsible folders and active-item highlight, clickable cross-document links (relative `.md` links rewritten to `/docs` routes), and an overview landing page listing top-level docs and sections
+- feat(docs): full-text search across all docs — lazy-loaded Fuse.js index (served via /api/docs/search-index) with title/path/content matching and snippet previews
+- feat(docs): rich Markdown rendering — GFM tables/task-lists, syntax-highlighted code blocks (highlight.js), heading anchors, Tailwind Typography prose styling, and embedded Mermaid diagrams reusing the existing diagram component
+- feat(docs): docs content is snapshotted at build time (`scripts/build-docs.mjs`, wired to predev/prebuild) into a statically-imported module, so the section deploys to Vercel/Railway with no runtime filesystem access
+- feat(docs): added "Docs" item to the app navbar
+
 ## 2026-06-17
 - feat(docs): added "How it works" page at /how-it-works — plain-English explanation of data flow, data sources, and what each section does; includes three interactive Mermaid flow diagrams (research pipeline, data sources, consortium scoring); documents known limitations (public data only, name-matching noise, LLM quality, no live refresh, rate limits, ownership depth, local deployment) and areas for improvement (monitoring, ownership resolution, semantic search, PDF export, cloud deployment, broader sources, conflict detection)
 - feat(docs): added "How it works" nav item to app navbar

@@ -1,5 +1,16 @@
 # Pending Release Steps
 
+## feat(docs): Documentation section rendering the .planning directory
+
+### Dev
+- Run `npm install` — adds `react-markdown`, `remark-gfm`, `rehype-highlight`, `rehype-slug`, `fuse.js`, `highlight.js`, `@tailwindcss/typography`, `server-only`
+- No DB migrations or env vars required
+- The `.planning` docs are snapshotted at build via `scripts/build-docs.mjs` (runs automatically on `predev`/`prebuild`); the generated `src/lib/docs/docs.generated.ts` is gitignored. Editing a planning doc requires a dev restart to refresh
+
+### Prod
+- Run `npm install`; deploy new build. The build step regenerates the docs snapshot via `prebuild`, so the content is bundled into the Next.js output — no runtime filesystem access, works on Vercel/Railway with no extra config
+- No DB migrations or env vars required
+
 ## feat(docs): How it works page with Mermaid flow diagrams
 
 ### Dev
